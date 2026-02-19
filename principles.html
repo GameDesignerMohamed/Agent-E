@@ -1,0 +1,969 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AgentE — 54 Principles</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Inter:opsz,wght@14..32,400;14..32,500;14..32,600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            serif: ['Instrument Serif', 'Georgia', 'serif'],
+            sans: ['Inter', 'system-ui', 'sans-serif'],
+            mono: ['JetBrains Mono', 'monospace'],
+          },
+          colors: {
+            accent: '#3b82f6',
+          },
+        },
+      },
+    }
+  </script>
+  <style>
+    html { scroll-behavior: smooth; }
+    body { background: #09090b; }
+    .fade-in { opacity: 0; transform: translateY(12px); transition: opacity 0.5s ease, transform 0.5s ease; }
+    .fade-in.visible { opacity: 1; transform: translateY(0); }
+    .category-pill { cursor: pointer; transition: all 0.2s; }
+    .category-pill:hover { border-color: #52525b; color: #e4e4e7; }
+    .category-pill.active { background: #3b82f6; border-color: #3b82f6; color: white; }
+    .principle-card { transition: all 0.25s ease; }
+    .principle-card.hidden-card { display: none; }
+    .source-badge { font-size: 0.625rem; padding: 2px 6px; border-radius: 4px; font-weight: 500; letter-spacing: 0.03em; }
+    .source-v0 { background: rgba(16,185,129,0.12); color: #34d399; }
+    .source-research { background: rgba(59,130,246,0.12); color: #60a5fa; }
+  </style>
+</head>
+<body class="font-sans text-zinc-100 antialiased">
+
+<!-- Nav -->
+<nav class="fixed top-0 w-full backdrop-blur-xl bg-zinc-950/80 border-b border-zinc-900 z-50 px-6 py-3">
+  <div class="max-w-6xl mx-auto flex items-center justify-between">
+    <div class="flex items-center gap-3">
+      <a href="landing.html" class="font-mono text-sm text-zinc-400 hover:text-white transition-colors">AgentE</a>
+      <span class="text-zinc-800">/</span>
+      <span class="font-mono text-sm text-white">Principles</span>
+      <span class="font-mono text-xs text-zinc-600 bg-zinc-900 px-2 py-0.5 rounded">54</span>
+    </div>
+    <a href="landing.html" class="text-sm text-zinc-500 hover:text-white transition-colors">
+      &larr; Back to home
+    </a>
+  </div>
+</nav>
+
+<!-- Hero -->
+<section class="pt-28 pb-12 px-6 max-w-6xl mx-auto">
+  <div class="max-w-3xl">
+    <p class="font-mono text-xs text-accent mb-3">THE KNOWLEDGE BASE</p>
+    <h1 class="font-serif text-5xl md:text-6xl leading-[1.05] text-balance mb-6">
+      54 principles.<br><em>Zero guesswork.</em>
+    </h1>
+    <p class="text-zinc-400 text-lg leading-relaxed text-pretty max-w-xl">
+      Extracted from V0.0–V0.4.6 development failures and ~130 articles across Machinations.io and Naavik.co. Every principle is a check AgentE runs automatically, every tick.
+    </p>
+  </div>
+</section>
+
+<!-- Filter bar -->
+<section class="px-6 pb-6 max-w-6xl mx-auto sticky top-[57px] z-40 bg-[#09090b] pt-4">
+  <div class="flex flex-wrap gap-2" id="filters">
+    <button class="category-pill active font-mono text-xs border border-zinc-800 rounded-full px-3 py-1.5 text-zinc-400" data-filter="all">All (54)</button>
+    <button class="category-pill font-mono text-xs border border-zinc-800 rounded-full px-3 py-1.5 text-zinc-400" data-filter="supply-chain">Supply Chain (4)</button>
+    <button class="category-pill font-mono text-xs border border-zinc-800 rounded-full px-3 py-1.5 text-zinc-400" data-filter="incentive">Incentive (4)</button>
+    <button class="category-pill font-mono text-xs border border-zinc-800 rounded-full px-3 py-1.5 text-zinc-400" data-filter="population">Population (4)</button>
+    <button class="category-pill font-mono text-xs border border-zinc-800 rounded-full px-3 py-1.5 text-zinc-400" data-filter="currency">Currency (6)</button>
+    <button class="category-pill font-mono text-xs border border-zinc-800 rounded-full px-3 py-1.5 text-zinc-400" data-filter="bootstrap">Bootstrap (3)</button>
+    <button class="category-pill font-mono text-xs border border-zinc-800 rounded-full px-3 py-1.5 text-zinc-400" data-filter="feedback">Feedback (5)</button>
+    <button class="category-pill font-mono text-xs border border-zinc-800 rounded-full px-3 py-1.5 text-zinc-400" data-filter="regulator">Regulator (5)</button>
+    <button class="category-pill font-mono text-xs border border-zinc-800 rounded-full px-3 py-1.5 text-zinc-400" data-filter="market">Market (2)</button>
+    <button class="category-pill font-mono text-xs border border-zinc-800 rounded-full px-3 py-1.5 text-zinc-400" data-filter="measurement">Measurement (2)</button>
+    <button class="category-pill font-mono text-xs border border-zinc-800 rounded-full px-3 py-1.5 text-zinc-400" data-filter="wealth">Wealth (1)</button>
+    <button class="category-pill font-mono text-xs border border-zinc-800 rounded-full px-3 py-1.5 text-zinc-400" data-filter="resource">Resource (3)</button>
+    <button class="category-pill font-mono text-xs border border-zinc-800 rounded-full px-3 py-1.5 text-zinc-400" data-filter="system-design">System Design (2)</button>
+    <button class="category-pill font-mono text-xs border border-zinc-800 rounded-full px-3 py-1.5 text-zinc-400" data-filter="player-exp">Player Exp (3)</button>
+    <button class="category-pill font-mono text-xs border border-zinc-800 rounded-full px-3 py-1.5 text-zinc-400" data-filter="statistical">Statistical (2)</button>
+    <button class="category-pill font-mono text-xs border border-zinc-800 rounded-full px-3 py-1.5 text-zinc-400" data-filter="dynamics">Dynamics (1)</button>
+    <button class="category-pill font-mono text-xs border border-zinc-800 rounded-full px-3 py-1.5 text-zinc-400" data-filter="open-economy">Open Economy (3)</button>
+    <button class="category-pill font-mono text-xs border border-zinc-800 rounded-full px-3 py-1.5 text-zinc-400" data-filter="liveops">LiveOps (4)</button>
+  </div>
+</section>
+
+<!-- Principles Grid -->
+<section class="px-6 pb-24 max-w-6xl mx-auto">
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-3" id="principles-grid">
+
+    <!-- P1 -->
+    <div class="principle-card bg-zinc-950 border border-zinc-800 rounded-xl p-5 hover:border-zinc-700 transition-colors" data-category="supply-chain" data-source="v0">
+      <div class="flex items-start gap-4">
+        <span class="font-mono text-xs text-accent shrink-0 mt-0.5 w-8">P1</span>
+        <div class="flex-1">
+          <div class="flex items-center gap-2 mb-1">
+            <div class="text-sm font-medium text-white">Production Must Match Consumption</div>
+            <span class="source-badge source-v0">V0</span>
+          </div>
+          <div class="text-zinc-500 text-xs leading-relaxed">consumer_rate > producer_rate &rarr; supply deficit. If consumers need 10 widgets/tick and producers make 8, the economy starves in 20 ticks.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- P2 -->
+    <div class="principle-card bg-zinc-950 border border-zinc-800 rounded-xl p-5 hover:border-zinc-700 transition-colors" data-category="supply-chain" data-source="v0">
+      <div class="flex items-start gap-4">
+        <span class="font-mono text-xs text-accent shrink-0 mt-0.5 w-8">P2</span>
+        <div class="flex-1">
+          <div class="flex items-center gap-2 mb-1">
+            <div class="text-sm font-medium text-white">Closed Loops Need Direct Handoff</div>
+            <span class="source-badge source-v0">V0</span>
+          </div>
+          <div class="text-zinc-500 text-xs leading-relaxed">Raw materials appearing in finished-goods markets &rarr; noise. Each supply chain stage must hand off directly to the next.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- P3 -->
+    <div class="principle-card bg-zinc-950 border border-zinc-800 rounded-xl p-5 hover:border-zinc-700 transition-colors" data-category="supply-chain" data-source="v0">
+      <div class="flex items-start gap-4">
+        <span class="font-mono text-xs text-accent shrink-0 mt-0.5 w-8">P3</span>
+        <div class="flex-1">
+          <div class="flex items-center gap-2 mb-1">
+            <div class="text-sm font-medium text-white">Bootstrap Capital Covers First Transaction</div>
+            <span class="source-badge source-v0">V0</span>
+          </div>
+          <div class="text-zinc-500 text-xs leading-relaxed">New producer can't afford inputs &rarr; bootstrap failure. Starting capital must cover at least one full production cycle.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- P4 -->
+    <div class="principle-card bg-zinc-950 border border-zinc-800 rounded-xl p-5 hover:border-zinc-700 transition-colors" data-category="supply-chain" data-source="v0">
+      <div class="flex items-start gap-4">
+        <span class="font-mono text-xs text-accent shrink-0 mt-0.5 w-8">P4</span>
+        <div class="flex-1">
+          <div class="flex items-center gap-2 mb-1">
+            <div class="text-sm font-medium text-white">Materials Flow Faster Than Cooldown</div>
+            <span class="source-badge source-v0">V0</span>
+          </div>
+          <div class="text-zinc-500 text-xs leading-relaxed">input_delivery_rate &lt; production_rate &rarr; starvation. If crafters can produce every 3 ticks but materials arrive every 5, they idle 40% of the time.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- P5 -->
+    <div class="principle-card bg-zinc-950 border border-zinc-800 rounded-xl p-5 hover:border-zinc-700 transition-colors" data-category="incentive" data-source="v0">
+      <div class="flex items-start gap-4">
+        <span class="font-mono text-xs text-accent shrink-0 mt-0.5 w-8">P5</span>
+        <div class="flex-1">
+          <div class="flex items-center gap-2 mb-1">
+            <div class="text-sm font-medium text-white">Profitability Is Competitive, Not Absolute</div>
+            <span class="source-badge source-v0">V0</span>
+          </div>
+          <div class="text-zinc-500 text-xs leading-relaxed">Any profit formula that ignores role population causes stampedes. 97 Traders happened because profit = transactions &times; 10 with no competition denominator.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- P6 -->
+    <div class="principle-card bg-zinc-950 border border-zinc-800 rounded-xl p-5 hover:border-zinc-700 transition-colors" data-category="incentive" data-source="v0">
+      <div class="flex items-start gap-4">
+        <span class="font-mono text-xs text-accent shrink-0 mt-0.5 w-8">P6</span>
+        <div class="flex-1">
+          <div class="flex items-center gap-2 mb-1">
+            <div class="text-sm font-medium text-white">Crowding Multiplier on ALL Roles</div>
+            <span class="source-badge source-v0">V0</span>
+          </div>
+          <div class="text-zinc-500 text-xs leading-relaxed">Any role without inverse-population scaling &rarr; herd vulnerability. One unprotected role becomes the black hole that absorbs the entire economy.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- P7 -->
+    <div class="principle-card bg-zinc-950 border border-zinc-800 rounded-xl p-5 hover:border-zinc-700 transition-colors" data-category="incentive" data-source="v0">
+      <div class="flex items-start gap-4">
+        <span class="font-mono text-xs text-accent shrink-0 mt-0.5 w-8">P7</span>
+        <div class="flex-1">
+          <div class="flex items-center gap-2 mb-1">
+            <div class="text-sm font-medium text-white">Non-Specialists Subsidize Specialists</div>
+            <span class="source-badge source-v0">V0</span>
+          </div>
+          <div class="text-zinc-500 text-xs leading-relaxed">Pot &gt;70% specialists &rarr; sustainability risk. The generalist majority funds the specialist minority. Without generalists, the pot starves.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- P8 -->
+    <div class="principle-card bg-zinc-950 border border-zinc-800 rounded-xl p-5 hover:border-zinc-700 transition-colors" data-category="incentive" data-source="v0">
+      <div class="flex items-start gap-4">
+        <span class="font-mono text-xs text-accent shrink-0 mt-0.5 w-8">P8</span>
+        <div class="flex-1">
+          <div class="flex items-center gap-2 mb-1">
+            <div class="text-sm font-medium text-white">Regulator Cannot Fight Design</div>
+            <span class="source-badge source-v0">V0</span>
+          </div>
+          <div class="text-zinc-500 text-xs leading-relaxed">Structural dominance treated as bug &rarr; overreach. If the design makes Fighters dominant, AgentE must not suppress Fighters&mdash;that's fighting the game's own rules.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- P9 -->
+    <div class="principle-card bg-zinc-950 border border-zinc-800 rounded-xl p-5 hover:border-zinc-700 transition-colors" data-category="population" data-source="v0">
+      <div class="flex items-start gap-4">
+        <span class="font-mono text-xs text-accent shrink-0 mt-0.5 w-8">P9</span>
+        <div class="flex-1">
+          <div class="flex items-center gap-2 mb-1">
+            <div class="text-sm font-medium text-white">Role Switching Needs Friction</div>
+            <span class="source-badge source-v0">V0</span>
+          </div>
+          <div class="text-zinc-500 text-xs leading-relaxed">&gt;5% switch in one period &rarr; herd movement. Without switching costs, agents oscillate between roles and never reach equilibrium.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- P10 -->
+    <div class="principle-card bg-zinc-950 border border-zinc-800 rounded-xl p-5 hover:border-zinc-700 transition-colors" data-category="population" data-source="v0">
+      <div class="flex items-start gap-4">
+        <span class="font-mono text-xs text-accent shrink-0 mt-0.5 w-8">P10</span>
+        <div class="flex-1">
+          <div class="flex items-center gap-2 mb-1">
+            <div class="text-sm font-medium text-white">Spawn Weighting Uses Inverse Population</div>
+            <span class="source-badge source-v0">V0</span>
+          </div>
+          <div class="text-zinc-500 text-xs leading-relaxed">New agents don't fill least-populated role &rarr; imbalance. Spawn probability must be inversely proportional to current role count.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- P11 -->
+    <div class="principle-card bg-zinc-950 border border-zinc-800 rounded-xl p-5 hover:border-zinc-700 transition-colors" data-category="population" data-source="v0">
+      <div class="flex items-start gap-4">
+        <span class="font-mono text-xs text-accent shrink-0 mt-0.5 w-8">P11</span>
+        <div class="flex-1">
+          <div class="flex items-center gap-2 mb-1">
+            <div class="text-sm font-medium text-white">Two-Tier Pressure</div>
+            <span class="source-badge source-v0">V0</span>
+          </div>
+          <div class="text-zinc-500 text-xs leading-relaxed">Corrections only at thresholds &rarr; delayed response. Apply light pressure continuously, strong pressure only at critical deviations.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- P12 -->
+    <div class="principle-card bg-zinc-950 border border-zinc-800 rounded-xl p-5 hover:border-zinc-700 transition-colors" data-category="currency" data-source="v0">
+      <div class="flex items-start gap-4">
+        <span class="font-mono text-xs text-accent shrink-0 mt-0.5 w-8">P12</span>
+        <div class="flex-1">
+          <div class="flex items-center gap-2 mb-1">
+            <div class="text-sm font-medium text-white">One Primary Faucet</div>
+            <span class="source-badge source-v0">V0</span>
+          </div>
+          <div class="text-zinc-500 text-xs leading-relaxed">Multiple independent currency sources &rarr; inflation risk. One master dial controls total inflow, just like a central bank's interest rate.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- P13 -->
+    <div class="principle-card bg-zinc-950 border border-zinc-800 rounded-xl p-5 hover:border-zinc-700 transition-colors" data-category="currency" data-source="v0">
+      <div class="flex items-start gap-4">
+        <span class="font-mono text-xs text-accent shrink-0 mt-0.5 w-8">P13</span>
+        <div class="flex-1">
+          <div class="flex items-center gap-2 mb-1">
+            <div class="text-sm font-medium text-white">Pots Self-Regulate</div>
+            <span class="source-badge source-v0">V0</span>
+          </div>
+          <div class="text-zinc-500 text-xs leading-relaxed">winRate &times; multiplier &gt; (1 - houseCut) &rarr; pot drain. Every prize pool must be mathematically sustainable before it's opened.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- P14 -->
+    <div class="principle-card bg-zinc-950 border border-zinc-800 rounded-xl p-5 hover:border-zinc-700 transition-colors" data-category="currency" data-source="v0">
+      <div class="flex items-start gap-4">
+        <span class="font-mono text-xs text-accent shrink-0 mt-0.5 w-8">P14</span>
+        <div class="flex-1">
+          <div class="flex items-center gap-2 mb-1">
+            <div class="text-sm font-medium text-white">Track Actual Injection</div>
+            <span class="source-badge source-v0">V0</span>
+          </div>
+          <div class="text-zinc-500 text-xs leading-relaxed">Resource gathering counted as currency &rarr; accounting error. Distinguish between resource creation (gathering wood) and currency injection (earning gold).</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- P15 -->
+    <div class="principle-card bg-zinc-950 border border-zinc-800 rounded-xl p-5 hover:border-zinc-700 transition-colors" data-category="currency" data-source="v0">
+      <div class="flex items-start gap-4">
+        <span class="font-mono text-xs text-accent shrink-0 mt-0.5 w-8">P15</span>
+        <div class="flex-1">
+          <div class="flex items-center gap-2 mb-1">
+            <div class="text-sm font-medium text-white">Pools Need Cap + Decay</div>
+            <span class="source-badge source-v0">V0</span>
+          </div>
+          <div class="text-zinc-500 text-xs leading-relaxed">Any pool &gt;10% of total currency &rarr; liquidity trap. Uncapped pools become gravity wells that absorb all economic activity.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- P16 -->
+    <div class="principle-card bg-zinc-950 border border-zinc-800 rounded-xl p-5 hover:border-zinc-700 transition-colors" data-category="currency" data-source="v0">
+      <div class="flex items-start gap-4">
+        <span class="font-mono text-xs text-accent shrink-0 mt-0.5 w-8">P16</span>
+        <div class="flex-1">
+          <div class="flex items-center gap-2 mb-1">
+            <div class="text-sm font-medium text-white">Withdrawal Penalty Scales</div>
+            <span class="source-badge source-v0">V0</span>
+          </div>
+          <div class="text-zinc-500 text-xs leading-relaxed">Penalty doesn't scale to lock duration &rarr; weak lock. A 1% penalty on a 1000-tick lock is meaningless. Scale penalty with commitment.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- P17 -->
+    <div class="principle-card bg-zinc-950 border border-zinc-800 rounded-xl p-5 hover:border-zinc-700 transition-colors" data-category="bootstrap" data-source="v0">
+      <div class="flex items-start gap-4">
+        <span class="font-mono text-xs text-accent shrink-0 mt-0.5 w-8">P17</span>
+        <div class="flex-1">
+          <div class="flex items-center gap-2 mb-1">
+            <div class="text-sm font-medium text-white">Grace Period Before Intervention</div>
+            <span class="source-badge source-v0">V0</span>
+          </div>
+          <div class="text-zinc-500 text-xs leading-relaxed">Intervention during first N ticks &rarr; premature. AgentE at tick 1 seeing 55% Fighters and slashing arena rewards is overreach&mdash;the economy needs time to bootstrap.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- P18 -->
+    <div class="principle-card bg-zinc-950 border border-zinc-800 rounded-xl p-5 hover:border-zinc-700 transition-colors" data-category="bootstrap" data-source="v0">
+      <div class="flex items-start gap-4">
+        <span class="font-mono text-xs text-accent shrink-0 mt-0.5 w-8">P18</span>
+        <div class="flex-1">
+          <div class="flex items-center gap-2 mb-1">
+            <div class="text-sm font-medium text-white">First Producer Needs Inventory</div>
+            <span class="source-badge source-v0">V0</span>
+          </div>
+          <div class="text-zinc-500 text-xs leading-relaxed">Can't produce on tick 0 &rarr; bootstrap failure. The first Crafter needs materials already in the world to create the economy's first product.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- P19 -->
+    <div class="principle-card bg-zinc-950 border border-zinc-800 rounded-xl p-5 hover:border-zinc-700 transition-colors" data-category="bootstrap" data-source="v0">
+      <div class="flex items-start gap-4">
+        <span class="font-mono text-xs text-accent shrink-0 mt-0.5 w-8">P19</span>
+        <div class="flex-1">
+          <div class="flex items-center gap-2 mb-1">
+            <div class="text-sm font-medium text-white">Starting Supply Exceeds Demand</div>
+            <span class="source-badge source-v0">V0</span>
+          </div>
+          <div class="text-zinc-500 text-xs leading-relaxed">Scarce consumables at launch &rarr; cold-start. The world must feel abundant on day one. Scarcity is earned through play, not imposed at birth.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- P20 -->
+    <div class="principle-card bg-zinc-950 border border-zinc-800 rounded-xl p-5 hover:border-zinc-700 transition-colors" data-category="feedback" data-source="v0">
+      <div class="flex items-start gap-4">
+        <span class="font-mono text-xs text-accent shrink-0 mt-0.5 w-8">P20</span>
+        <div class="flex-1">
+          <div class="flex items-center gap-2 mb-1">
+            <div class="text-sm font-medium text-white">Decay Prevents Accumulation</div>
+            <span class="source-badge source-v0">V0</span>
+          </div>
+          <div class="text-zinc-500 text-xs leading-relaxed">Resources never decay &rarr; hoarding risk. Without entropy, wealth concentrates exponentially. EVE Online survives because ships explode.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- P21 -->
+    <div class="principle-card bg-zinc-950 border border-zinc-800 rounded-xl p-5 hover:border-zinc-700 transition-colors" data-category="feedback" data-source="v0">
+      <div class="flex items-start gap-4">
+        <span class="font-mono text-xs text-accent shrink-0 mt-0.5 w-8">P21</span>
+        <div class="flex-1">
+          <div class="flex items-center gap-2 mb-1">
+            <div class="text-sm font-medium text-white">Price From Global Supply</div>
+            <span class="source-badge source-v0">V0</span>
+          </div>
+          <div class="text-zinc-500 text-xs leading-relaxed">Prices don't reflect total inventory &rarr; disconnect. If 10,000 swords exist but NPC sells at the Day-1 price, the market is lying.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- P22 -->
+    <div class="principle-card bg-zinc-950 border border-zinc-800 rounded-xl p-5 hover:border-zinc-700 transition-colors" data-category="feedback" data-source="v0">
+      <div class="flex items-start gap-4">
+        <span class="font-mono text-xs text-accent shrink-0 mt-0.5 w-8">P22</span>
+        <div class="flex-1">
+          <div class="flex items-center gap-2 mb-1">
+            <div class="text-sm font-medium text-white">Market Awareness</div>
+            <span class="source-badge source-v0">V0</span>
+          </div>
+          <div class="text-zinc-500 text-xs leading-relaxed">Producers don't check market &rarr; overproduction. Every production decision should consider current supply, demand, and margin.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- P23 -->
+    <div class="principle-card bg-zinc-950 border border-zinc-800 rounded-xl p-5 hover:border-zinc-700 transition-colors" data-category="feedback" data-source="v0">
+      <div class="flex items-start gap-4">
+        <span class="font-mono text-xs text-accent shrink-0 mt-0.5 w-8">P23</span>
+        <div class="flex-1">
+          <div class="flex items-center gap-2 mb-1">
+            <div class="text-sm font-medium text-white">Profitability Factors Feasibility</div>
+            <span class="source-badge source-v0">V0</span>
+          </div>
+          <div class="text-zinc-500 text-xs leading-relaxed">Theoretical profit ignores liquidity &rarr; phantom profit. A trade that yields 100 gold is worthless if there's nobody to buy the output.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- P24 -->
+    <div class="principle-card bg-zinc-950 border border-zinc-800 rounded-xl p-5 hover:border-zinc-700 transition-colors" data-category="feedback" data-source="v0">
+      <div class="flex items-start gap-4">
+        <span class="font-mono text-xs text-accent shrink-0 mt-0.5 w-8">P24</span>
+        <div class="flex-1">
+          <div class="flex items-center gap-2 mb-1">
+            <div class="text-sm font-medium text-white">Blocked Agents Decay Faster</div>
+            <span class="source-badge source-v0">V0</span>
+          </div>
+          <div class="text-zinc-500 text-xs leading-relaxed">Waiting agents don't churn &rarr; silent bottleneck. Agents blocked from their primary activity should lose wealth faster, creating urgency to switch or adapt.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- P25 -->
+    <div class="principle-card bg-zinc-950 border border-zinc-800 rounded-xl p-5 hover:border-zinc-700 transition-colors" data-category="regulator" data-source="v0">
+      <div class="flex items-start gap-4">
+        <span class="font-mono text-xs text-accent shrink-0 mt-0.5 w-8">P25</span>
+        <div class="flex-1">
+          <div class="flex items-center gap-2 mb-1">
+            <div class="text-sm font-medium text-white">Correct Levers</div>
+            <span class="source-badge source-v0">V0</span>
+          </div>
+          <div class="text-zinc-500 text-xs leading-relaxed">Sink adjustment for inflation &rarr; wrong lever. Match the intervention to the root cause. Inflation is a faucet problem, not a sink problem.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- P26 -->
+    <div class="principle-card bg-zinc-950 border border-zinc-800 rounded-xl p-5 hover:border-zinc-700 transition-colors" data-category="regulator" data-source="v0">
+      <div class="flex items-start gap-4">
+        <span class="font-mono text-xs text-accent shrink-0 mt-0.5 w-8">P26</span>
+        <div class="flex-1">
+          <div class="flex items-center gap-2 mb-1">
+            <div class="text-sm font-medium text-white">Continuous &gt; Threshold</div>
+            <span class="source-badge source-v0">V0</span>
+          </div>
+          <div class="text-zinc-500 text-xs leading-relaxed">1% per tick beats 10% once &rarr; smooth adjustments. Gradual pressure is invisible to players. Sudden shocks feel like punishment.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- P27 -->
+    <div class="principle-card bg-zinc-950 border border-zinc-800 rounded-xl p-5 hover:border-zinc-700 transition-colors" data-category="regulator" data-source="v0">
+      <div class="flex items-start gap-4">
+        <span class="font-mono text-xs text-accent shrink-0 mt-0.5 w-8">P27</span>
+        <div class="flex-1">
+          <div class="flex items-center gap-2 mb-1">
+            <div class="text-sm font-medium text-white">Adjustments Need Cooldowns</div>
+            <span class="source-badge source-v0">V0</span>
+          </div>
+          <div class="text-zinc-500 text-xs leading-relaxed">Same param adjusted twice in window &rarr; oscillation. Minimum 15-tick cooldown between adjustments to the same parameter.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- P28 -->
+    <div class="principle-card bg-zinc-950 border border-zinc-800 rounded-xl p-5 hover:border-zinc-700 transition-colors" data-category="regulator" data-source="v0">
+      <div class="flex items-start gap-4">
+        <span class="font-mono text-xs text-accent shrink-0 mt-0.5 w-8">P28</span>
+        <div class="flex-1">
+          <div class="flex items-center gap-2 mb-1">
+            <div class="text-sm font-medium text-white">Structural &ne; Pathological</div>
+            <span class="source-badge source-v0">V0</span>
+          </div>
+          <div class="text-zinc-500 text-xs leading-relaxed">Designed majority suppressed &rarr; overreach. If the game was designed with 60% combat focus, 60% Fighters is correct, not a bug.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- P29 -->
+    <div class="principle-card bg-zinc-950 border border-zinc-800 rounded-xl p-5 hover:border-zinc-700 transition-colors" data-category="market" data-source="research">
+      <div class="flex items-start gap-4">
+        <span class="font-mono text-xs text-accent shrink-0 mt-0.5 w-8">P29</span>
+        <div class="flex-1">
+          <div class="flex items-center gap-2 mb-1">
+            <div class="text-sm font-medium text-white">Pinch Point</div>
+            <span class="source-badge source-research">Research</span>
+          </div>
+          <div class="text-zinc-500 text-xs leading-relaxed">Demand drops &rarr; oversupply; frustration rises &rarr; undersupply. The ideal state is maximum demand from supply being <em>just</em> scarce enough to worry about.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- P30 -->
+    <div class="principle-card bg-zinc-950 border border-zinc-800 rounded-xl p-5 hover:border-zinc-700 transition-colors" data-category="market" data-source="research">
+      <div class="flex items-start gap-4">
+        <span class="font-mono text-xs text-accent shrink-0 mt-0.5 w-8">P30</span>
+        <div class="flex-1">
+          <div class="flex items-center gap-2 mb-1">
+            <div class="text-sm font-medium text-white">Moving Pinch Point</div>
+            <span class="source-badge source-research">Research</span>
+          </div>
+          <div class="text-zinc-500 text-xs leading-relaxed">Static pinch point + player progression &rarr; eventual overshoot. As players get stronger, the scarcity threshold must shift upward or the challenge evaporates.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- P31 -->
+    <div class="principle-card bg-zinc-950 border border-zinc-800 rounded-xl p-5 hover:border-zinc-700 transition-colors" data-category="measurement" data-source="research">
+      <div class="flex items-start gap-4">
+        <span class="font-mono text-xs text-accent shrink-0 mt-0.5 w-8">P31</span>
+        <div class="flex-1">
+          <div class="flex items-center gap-2 mb-1">
+            <div class="text-sm font-medium text-white">Anchor Value Tracking</div>
+            <span class="source-badge source-research">Research</span>
+          </div>
+          <div class="text-zinc-500 text-xs leading-relaxed">1hr &ne; X gold &ne; Y items anymore &rarr; ratio drift. Track anchor ratios (time-to-currency, currency-to-items) and alert when they drift &gt;20%.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- P32 -->
+    <div class="principle-card bg-zinc-950 border border-zinc-800 rounded-xl p-5 hover:border-zinc-700 transition-colors" data-category="currency" data-source="research">
+      <div class="flex items-start gap-4">
+        <span class="font-mono text-xs text-accent shrink-0 mt-0.5 w-8">P32</span>
+        <div class="flex-1">
+          <div class="flex items-center gap-2 mb-1">
+            <div class="text-sm font-medium text-white">Velocity &gt; Supply</div>
+            <span class="source-badge source-research">Research</span>
+          </div>
+          <div class="text-zinc-500 text-xs leading-relaxed">Low transactions despite adequate supply &rarr; stagnation. Money supply is meaningless if it's not moving. Track velocity (transactions/total supply).</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- P33 -->
+    <div class="principle-card bg-zinc-950 border border-zinc-800 rounded-xl p-5 hover:border-zinc-700 transition-colors" data-category="wealth" data-source="research">
+      <div class="flex items-start gap-4">
+        <span class="font-mono text-xs text-accent shrink-0 mt-0.5 w-8">P33</span>
+        <div class="flex-1">
+          <div class="flex items-center gap-2 mb-1">
+            <div class="text-sm font-medium text-white">Fair &ne; Equal</div>
+            <span class="source-badge source-research">Research</span>
+          </div>
+          <div class="text-zinc-500 text-xs leading-relaxed">Gini = 0 &rarr; boring; inequality from money &gt; inequality from skill &rarr; toxic. Some inequality motivates play. Pay-to-win inequality kills it.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- P34 -->
+    <div class="principle-card bg-zinc-950 border border-zinc-800 rounded-xl p-5 hover:border-zinc-700 transition-colors" data-category="open-economy" data-source="research">
+      <div class="flex items-start gap-4">
+        <span class="font-mono text-xs text-accent shrink-0 mt-0.5 w-8">P34</span>
+        <div class="flex-1">
+          <div class="flex items-center gap-2 mb-1">
+            <div class="text-sm font-medium text-white">Extraction Ratio</div>
+            <span class="source-badge source-research">Research</span>
+          </div>
+          <div class="text-zinc-500 text-xs leading-relaxed">Net extractors / total participants &gt; 0.65 &rarr; economy needs external subsidy. Yellow at 0.50, red at 0.65. Below that, the system is self-sustaining.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- P35 -->
+    <div class="principle-card bg-zinc-950 border border-zinc-800 rounded-xl p-5 hover:border-zinc-700 transition-colors" data-category="resource" data-source="research">
+      <div class="flex items-start gap-4">
+        <span class="font-mono text-xs text-accent shrink-0 mt-0.5 w-8">P35</span>
+        <div class="flex-1">
+          <div class="flex items-center gap-2 mb-1">
+            <div class="text-sm font-medium text-white">Destruction Creates Value</div>
+            <span class="source-badge source-research">Research</span>
+          </div>
+          <div class="text-zinc-500 text-xs leading-relaxed">Nothing permanently lost &rarr; inevitable inflation. EVE Online thrives because ships explode. Every stable economy has aggressive sinks.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- P36 -->
+    <div class="principle-card bg-zinc-950 border border-zinc-800 rounded-xl p-5 hover:border-zinc-700 transition-colors" data-category="system-design" data-source="research">
+      <div class="flex items-start gap-4">
+        <span class="font-mono text-xs text-accent shrink-0 mt-0.5 w-8">P36</span>
+        <div class="flex-1">
+          <div class="flex items-center gap-2 mb-1">
+            <div class="text-sm font-medium text-white">Mechanic Friction Detector</div>
+            <span class="source-badge source-research">Research</span>
+          </div>
+          <div class="text-zinc-500 text-xs leading-relaxed">Deterministic + probabilistic systems &rarr; expectation mismatch. When crafting is guaranteed but combat is random, players feel betrayed by the random side.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- P37 -->
+    <div class="principle-card bg-zinc-950 border border-zinc-800 rounded-xl p-5 hover:border-zinc-700 transition-colors" data-category="player-exp" data-source="research">
+      <div class="flex items-start gap-4">
+        <span class="font-mono text-xs text-accent shrink-0 mt-0.5 w-8">P37</span>
+        <div class="flex-1">
+          <div class="flex items-center gap-2 mb-1">
+            <div class="text-sm font-medium text-white">Latecomer Problem</div>
+            <span class="source-badge source-research">Research</span>
+          </div>
+          <div class="text-zinc-500 text-xs leading-relaxed">New player can't reach viability in reasonable time &rarr; churn. If time-to-value exceeds the patience threshold, the economy loses all new blood.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- P38 -->
+    <div class="principle-card bg-zinc-950 border border-zinc-800 rounded-xl p-5 hover:border-zinc-700 transition-colors" data-category="regulator" data-source="research">
+      <div class="flex items-start gap-4">
+        <span class="font-mono text-xs text-accent shrink-0 mt-0.5 w-8">P38</span>
+        <div class="flex-1">
+          <div class="flex items-center gap-2 mb-1">
+            <div class="text-sm font-medium text-white">Communication Prevents Revolt</div>
+            <span class="source-badge source-research">Research</span>
+          </div>
+          <div class="text-zinc-500 text-xs leading-relaxed">Adjustment made without explanation &rarr; player revolt. Every AgentE action must be logged with reasoning. Transparency is non-negotiable.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- P39 -->
+    <div class="principle-card bg-zinc-950 border border-zinc-800 rounded-xl p-5 hover:border-zinc-700 transition-colors" data-category="dynamics" data-source="research">
+      <div class="flex items-start gap-4">
+        <span class="font-mono text-xs text-accent shrink-0 mt-0.5 w-8">P39</span>
+        <div class="flex-1">
+          <div class="flex items-center gap-2 mb-1">
+            <div class="text-sm font-medium text-white">The Lag Principle</div>
+            <span class="source-badge source-research">Research</span>
+          </div>
+          <div class="text-zinc-500 text-xs leading-relaxed">Total intervention lag = 3&ndash;5&times; observation interval. Don't re-adjust before the estimated effect tick or you'll overshoot by default.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- P40 -->
+    <div class="principle-card bg-zinc-950 border border-zinc-800 rounded-xl p-5 hover:border-zinc-700 transition-colors" data-category="resource" data-source="research">
+      <div class="flex items-start gap-4">
+        <span class="font-mono text-xs text-accent shrink-0 mt-0.5 w-8">P40</span>
+        <div class="flex-1">
+          <div class="flex items-center gap-2 mb-1">
+            <div class="text-sm font-medium text-white">Replacement Rate &ge; 2&times; Consumption</div>
+            <span class="source-badge source-research">Research</span>
+          </div>
+          <div class="text-zinc-500 text-xs leading-relaxed">Respawn &lt; 2&times; consumption &rarr; permanent depletion. At 1&times; you drift toward empty. At 2&times; you have buffer for demand spikes.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- P41 -->
+    <div class="principle-card bg-zinc-950 border border-zinc-800 rounded-xl p-5 hover:border-zinc-700 transition-colors" data-category="measurement" data-source="research">
+      <div class="flex items-start gap-4">
+        <span class="font-mono text-xs text-accent shrink-0 mt-0.5 w-8">P41</span>
+        <div class="flex-1">
+          <div class="flex items-center gap-2 mb-1">
+            <div class="text-sm font-medium text-white">Multi-Resolution Monitoring</div>
+            <span class="source-badge source-research">Research</span>
+          </div>
+          <div class="text-zinc-500 text-xs leading-relaxed">Fine vs coarse metrics diverge &rarr; hidden crisis. Watch at per-tick, per-10-tick, and per-100-tick. A crisis at one resolution may be invisible at another.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- P42 -->
+    <div class="principle-card bg-zinc-950 border border-zinc-800 rounded-xl p-5 hover:border-zinc-700 transition-colors" data-category="statistical" data-source="research">
+      <div class="flex items-start gap-4">
+        <span class="font-mono text-xs text-accent shrink-0 mt-0.5 w-8">P42</span>
+        <div class="flex-1">
+          <div class="flex items-center gap-2 mb-1">
+            <div class="text-sm font-medium text-white">The Median Principle</div>
+            <span class="source-badge source-research">Research</span>
+          </div>
+          <div class="text-zinc-500 text-xs leading-relaxed">(mean &minus; median) / median &gt; 0.30 &rarr; balance to median, not mean. Whales distort the mean. The median tells you what the majority actually experiences.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- P43 -->
+    <div class="principle-card bg-zinc-950 border border-zinc-800 rounded-xl p-5 hover:border-zinc-700 transition-colors" data-category="statistical" data-source="research">
+      <div class="flex items-start gap-4">
+        <span class="font-mono text-xs text-accent shrink-0 mt-0.5 w-8">P43</span>
+        <div class="flex-1">
+          <div class="flex items-center gap-2 mb-1">
+            <div class="text-sm font-medium text-white">Simulation Minimum (100 Iterations)</div>
+            <span class="source-badge source-research">Research</span>
+          </div>
+          <div class="text-zinc-500 text-xs leading-relaxed">&lt;100 Monte Carlo iterations &rarr; unreliable prediction. Below 100, variance swamps signal and the p10/p90 range is meaningless noise.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- P44 -->
+    <div class="principle-card bg-zinc-950 border border-zinc-800 rounded-xl p-5 hover:border-zinc-700 transition-colors" data-category="system-design" data-source="research">
+      <div class="flex items-start gap-4">
+        <span class="font-mono text-xs text-accent shrink-0 mt-0.5 w-8">P44</span>
+        <div class="flex-1">
+          <div class="flex items-center gap-2 mb-1">
+            <div class="text-sm font-medium text-white">Complexity Budget</div>
+            <span class="source-badge source-research">Research</span>
+          </div>
+          <div class="text-zinc-500 text-xs leading-relaxed">&gt;20 active parameters &rarr; exponential debugging cost. Hard cap at 20. Each parameter beyond creates non-linear interaction effects.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- P45 -->
+    <div class="principle-card bg-zinc-950 border border-zinc-800 rounded-xl p-5 hover:border-zinc-700 transition-colors" data-category="player-exp" data-source="research">
+      <div class="flex items-start gap-4">
+        <span class="font-mono text-xs text-accent shrink-0 mt-0.5 w-8">P45</span>
+        <div class="flex-1">
+          <div class="flex items-center gap-2 mb-1">
+            <div class="text-sm font-medium text-white">Time Budget</div>
+            <span class="source-badge source-research">Research</span>
+          </div>
+          <div class="text-zinc-500 text-xs leading-relaxed">required_time &gt; available_time &times; 0.80 &rarr; disguised paywall. If the economy demands more time than players have, it's a monetization trap, not a game.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- P46 -->
+    <div class="principle-card bg-zinc-950 border border-zinc-800 rounded-xl p-5 hover:border-zinc-700 transition-colors" data-category="population" data-source="research">
+      <div class="flex items-start gap-4">
+        <span class="font-mono text-xs text-accent shrink-0 mt-0.5 w-8">P46</span>
+        <div class="flex-1">
+          <div class="flex items-center gap-2 mb-1">
+            <div class="text-sm font-medium text-white">Persona Diversity</div>
+            <span class="source-badge source-research">Research</span>
+          </div>
+          <div class="text-zinc-500 text-xs leading-relaxed">Any persona &gt;40% &rarr; behavioral monoculture. A healthy economy needs Gamers, Traders, Collectors, Earners, Builders coexisting. Monoculture is fragile.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- P47 -->
+    <div class="principle-card bg-zinc-950 border border-zinc-800 rounded-xl p-5 hover:border-zinc-700 transition-colors" data-category="open-economy" data-source="research">
+      <div class="flex items-start gap-4">
+        <span class="font-mono text-xs text-accent shrink-0 mt-0.5 w-8">P47</span>
+        <div class="flex-1">
+          <div class="flex items-center gap-2 mb-1">
+            <div class="text-sm font-medium text-white">Smoke Test</div>
+            <span class="source-badge source-research">Research</span>
+          </div>
+          <div class="text-zinc-500 text-xs leading-relaxed">intrinsic_utility / market_value &lt; 0.30 &rarr; speculation-dependent. Below 0.10 is critical&mdash;a price correction kills the economy because there's no floor.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- P48 -->
+    <div class="principle-card bg-zinc-950 border border-zinc-800 rounded-xl p-5 hover:border-zinc-700 transition-colors" data-category="open-economy" data-source="research">
+      <div class="flex items-start gap-4">
+        <span class="font-mono text-xs text-accent shrink-0 mt-0.5 w-8">P48</span>
+        <div class="flex-1">
+          <div class="flex items-center gap-2 mb-1">
+            <div class="text-sm font-medium text-white">Currency Insulation</div>
+            <span class="source-badge source-research">Research</span>
+          </div>
+          <div class="text-zinc-500 text-xs leading-relaxed">Correlation(gameplay_currency, external_markets) &gt; 0.50 &rarr; insulation failure. Your in-game economy shouldn't tank because Bitcoin crashed.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- P49 -->
+    <div class="principle-card bg-zinc-950 border border-zinc-800 rounded-xl p-5 hover:border-zinc-700 transition-colors" data-category="resource" data-source="research">
+      <div class="flex items-start gap-4">
+        <span class="font-mono text-xs text-accent shrink-0 mt-0.5 w-8">P49</span>
+        <div class="flex-1">
+          <div class="flex items-center gap-2 mb-1">
+            <div class="text-sm font-medium text-white">Idle Asset Tax</div>
+            <span class="source-badge source-research">Research</span>
+          </div>
+          <div class="text-zinc-500 text-xs leading-relaxed">Appreciating assets without holding cost &rarr; wealth concentration. Decay rates, storage costs, or expiry force circulation and prevent Gini runaway.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- P50 -->
+    <div class="principle-card bg-zinc-950 border border-zinc-800 rounded-xl p-5 hover:border-zinc-700 transition-colors" data-category="player-exp" data-source="research">
+      <div class="flex items-start gap-4">
+        <span class="font-mono text-xs text-accent shrink-0 mt-0.5 w-8">P50</span>
+        <div class="flex-1">
+          <div class="flex items-center gap-2 mb-1">
+            <div class="text-sm font-medium text-white">Pay-Power Ratio</div>
+            <span class="source-badge source-research">Research</span>
+          </div>
+          <div class="text-zinc-500 text-xs leading-relaxed">median_spender_power / median_nonspender_power &gt; 2.0 &rarr; pay-to-win hemorrhage. Target 1.5&times; maximum. Above 2.0&times; free players leave permanently.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- P51 -->
+    <div class="principle-card bg-zinc-950 border border-zinc-800 rounded-xl p-5 hover:border-zinc-700 transition-colors" data-category="liveops" data-source="research">
+      <div class="flex items-start gap-4">
+        <span class="font-mono text-xs text-accent shrink-0 mt-0.5 w-8">P51</span>
+        <div class="flex-1">
+          <div class="flex items-center gap-2 mb-1">
+            <div class="text-sm font-medium text-white">Shark Tooth Graph</div>
+            <span class="source-badge source-research">Research</span>
+          </div>
+          <div class="text-zinc-500 text-xs leading-relaxed">Peaks shrinking OR valleys deepening &rarr; event fatigue. Healthy LiveOps shows revenue spikes with each event, valleys that hold. Diablo Immortal made $525M with this pattern.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- P52 -->
+    <div class="principle-card bg-zinc-950 border border-zinc-800 rounded-xl p-5 hover:border-zinc-700 transition-colors" data-category="liveops" data-source="research">
+      <div class="flex items-start gap-4">
+        <span class="font-mono text-xs text-accent shrink-0 mt-0.5 w-8">P52</span>
+        <div class="flex-1">
+          <div class="flex items-center gap-2 mb-1">
+            <div class="text-sm font-medium text-white">Endowment Effect</div>
+            <span class="source-badge source-research">Research</span>
+          </div>
+          <div class="text-zinc-500 text-xs leading-relaxed">Trial events don't convert &rarr; premium items lack value. Let players use premium items temporarily. Once they "own" it mentally, purchase intent increases dramatically.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- P53 -->
+    <div class="principle-card bg-zinc-950 border border-zinc-800 rounded-xl p-5 hover:border-zinc-700 transition-colors" data-category="liveops" data-source="research">
+      <div class="flex items-start gap-4">
+        <span class="font-mono text-xs text-accent shrink-0 mt-0.5 w-8">P53</span>
+        <div class="flex-1">
+          <div class="flex items-center gap-2 mb-1">
+            <div class="text-sm font-medium text-white">Event Completion Rate</div>
+            <span class="source-badge source-research">Research</span>
+          </div>
+          <div class="text-zinc-500 text-xs leading-relaxed">Free completion 100% &rarr; zero monetization pressure. Target 60&ndash;80% free completion. Below 40% is predatory. Above 80% leaves no reason to spend.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- P54 -->
+    <div class="principle-card bg-zinc-950 border border-zinc-800 rounded-xl p-5 hover:border-zinc-700 transition-colors" data-category="liveops" data-source="research">
+      <div class="flex items-start gap-4">
+        <span class="font-mono text-xs text-accent shrink-0 mt-0.5 w-8">P54</span>
+        <div class="flex-1">
+          <div class="flex items-center gap-2 mb-1">
+            <div class="text-sm font-medium text-white">LiveOps Cadence</div>
+            <span class="source-badge source-research">Research</span>
+          </div>
+          <div class="text-zinc-500 text-xs leading-relaxed">&gt;50% events are rewrapped existing content &rarr; staleness. Players recognize reskins. New mechanics, new rewards, new narratives keep the shark tooth healthy.</div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<!-- Thresholds Reference -->
+<section class="px-6 pb-24 max-w-6xl mx-auto fade-in">
+  <div class="mb-8">
+    <p class="font-mono text-xs text-accent mb-3">REFERENCE</p>
+    <h2 class="font-serif text-3xl md:text-4xl text-balance">Default thresholds</h2>
+    <p class="text-zinc-400 mt-3 max-w-xl text-pretty text-sm">Every threshold is overridable. These are the calibrated defaults AgentE ships with.</p>
+  </div>
+  <div class="bg-zinc-950 border border-zinc-800 rounded-xl p-6 overflow-x-auto">
+    <pre class="font-mono text-xs text-zinc-300 leading-relaxed"><code><span class="text-zinc-500">const</span> <span class="text-white">DEFAULT_THRESHOLDS</span> = {
+  <span class="text-zinc-500">// Statistical (P42-P43)</span>
+  meanMedianDivergenceMax: <span class="text-accent">0.30</span>,
+  simulationMinIterations: <span class="text-accent">100</span>,
+
+  <span class="text-zinc-500">// Population (P46)</span>
+  personaMonocultureMax: <span class="text-accent">0.40</span>,
+  personaMinClusters: <span class="text-accent">3</span>,
+
+  <span class="text-zinc-500">// Open Economy (P34, P47-P48)</span>
+  extractionRatioYellow: <span class="text-accent">0.50</span>,
+  extractionRatioRed: <span class="text-accent">0.65</span>,
+  smokeTestWarning: <span class="text-accent">0.30</span>,
+  smokeTestCritical: <span class="text-accent">0.10</span>,
+  currencyInsulationMax: <span class="text-accent">0.50</span>,
+
+  <span class="text-zinc-500">// Player Experience (P45, P50)</span>
+  timeBudgetRatio: <span class="text-accent">0.80</span>,
+  payPowerRatioMax: <span class="text-accent">2.0</span>,
+  payPowerRatioTarget: <span class="text-accent">1.5</span>,
+
+  <span class="text-zinc-500">// LiveOps (P51, P53)</span>
+  sharkToothPeakDecay: <span class="text-accent">0.95</span>,
+  sharkToothValleyDecay: <span class="text-accent">0.90</span>,
+  eventCompletionMin: <span class="text-accent">0.40</span>,
+  eventCompletionMax: <span class="text-accent">0.80</span>,
+  eventCompletionTarget: [<span class="text-accent">0.60</span>, <span class="text-accent">0.80</span>],
+
+  <span class="text-zinc-500">// System Dynamics (P39, P44)</span>
+  lagMultiplier: [<span class="text-accent">3</span>, <span class="text-accent">5</span>],
+  complexityBudgetMax: <span class="text-accent">20</span>,
+  complexityImpactMin: <span class="text-accent">0.05</span>,
+
+  <span class="text-zinc-500">// Resource (P40)</span>
+  replacementRateMultiplier: <span class="text-accent">2.0</span>,
+
+  <span class="text-zinc-500">// Regulator (P26-P27)</span>
+  maxAdjustmentPercent: <span class="text-accent">0.15</span>,
+  cooldownTicks: <span class="text-accent">15</span>,
+};</code></pre>
+  </div>
+</section>
+
+<!-- Back to landing CTA -->
+<section class="px-6 pb-24 max-w-6xl mx-auto text-center fade-in">
+  <a href="landing.html" class="inline-flex items-center gap-2 border border-zinc-800 hover:border-zinc-600 text-zinc-300 hover:text-white rounded-lg px-6 py-3 text-sm font-medium transition-colors">
+    &larr; Back to AgentE
+  </a>
+</section>
+
+<!-- Footer -->
+<footer class="border-t border-zinc-900 px-6 py-8 max-w-6xl mx-auto">
+  <div class="flex flex-col sm:flex-row items-center justify-between gap-4">
+    <div class="flex items-center gap-3">
+      <span class="font-mono text-sm text-zinc-600">AgentE</span>
+      <span class="font-mono text-xs text-zinc-800">v1.0.1</span>
+    </div>
+    <p class="font-mono text-xs text-zinc-700">Built by Oka &times; Claude &mdash; AB Labs</p>
+    <span class="font-mono text-xs text-zinc-700">54 principles &middot; 130 articles &middot; Zero guesswork</span>
+  </div>
+</footer>
+
+<script>
+  // Filter functionality
+  const filters = document.getElementById('filters');
+  const cards = document.querySelectorAll('.principle-card');
+
+  filters.addEventListener('click', (e) => {
+    const btn = e.target.closest('.category-pill');
+    if (!btn) return;
+
+    // Update active state
+    filters.querySelectorAll('.category-pill').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+
+    const filter = btn.dataset.filter;
+
+    cards.forEach(card => {
+      if (filter === 'all' || card.dataset.category === filter) {
+        card.classList.remove('hidden-card');
+      } else {
+        card.classList.add('hidden-card');
+      }
+    });
+  });
+
+  // Fade-in observer
+  const observer = new IntersectionObserver(
+    (entries) => {
+      for (const entry of entries) {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('visible');
+          observer.unobserve(entry.target);
+        }
+      }
+    },
+    { threshold: 0.1 }
+  );
+  document.querySelectorAll('.fade-in').forEach(el => observer.observe(el));
+</script>
+
+</body>
+</html>
