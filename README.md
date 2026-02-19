@@ -167,10 +167,6 @@ npm run build
 cd demo && npm start
 ```
 
-## Wiring to V0 Demo Game
-
-See `demo/src/index.ts` for the full integration example and the comment block showing how to replace the embedded `agentEDecide()` in `index.html` with `await agentE.tick()`.
-
 ## Implementation Roadmap
 
 | Phase | Scope | Status |
