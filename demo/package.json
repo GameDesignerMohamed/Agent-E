@@ -1,0 +1,14 @@
+{
+  "name": "@agent-e/demo",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Demo: AgentE V1 connected to the V0 game",
+  "type": "module",
+  "scripts": {
+    "start": "node src/index.js"
+  },
+  "dependencies": {
+    "@agent-e/core": "*",
+    "@agent-e/adapter-game": "*"
+  }
+}
