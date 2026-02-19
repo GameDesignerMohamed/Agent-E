@@ -35,7 +35,7 @@
     .principle-card { transition: all 0.25s ease; }
     .principle-card.hidden-card { display: none; }
     .source-badge { font-size: 0.625rem; padding: 2px 6px; border-radius: 4px; font-weight: 500; letter-spacing: 0.03em; }
-    .source-core { background: rgba(16,185,129,0.12); color: #34d399; }
+    .source-v0 { background: rgba(16,185,129,0.12); color: #34d399; }
     .source-v1 { background: rgba(59,130,246,0.12); color: #60a5fa; }
   </style>
 </head>
@@ -64,7 +64,7 @@
       54 principles.<br><em>Zero guesswork.</em>
     </h1>
     <p class="text-zinc-400 text-lg leading-relaxed text-pretty max-w-xl">
-      Extracted from real development failures and 130+ articles on game economy design. Every principle is a check AgentE runs automatically, every tick.
+      Distilled from real economy failures and 130+ articles on game economy design. Every principle is a check AgentE runs autonomously, every tick.
     </p>
   </div>
 </section>
@@ -104,7 +104,7 @@
         <div class="flex-1">
           <div class="flex items-center gap-2 mb-1">
             <div class="text-sm font-medium text-white">Production Must Match Consumption</div>
-            <span class="source-badge source-core">Core</span>
+            <span class="source-badge source-v0">V0</span>
           </div>
           <div class="text-zinc-500 text-xs leading-relaxed">consumer_rate > producer_rate &rarr; supply deficit. If consumers need 10 widgets/tick and producers make 8, the economy starves in 20 ticks.</div>
         </div>
@@ -118,7 +118,7 @@
         <div class="flex-1">
           <div class="flex items-center gap-2 mb-1">
             <div class="text-sm font-medium text-white">Closed Loops Need Direct Handoff</div>
-            <span class="source-badge source-core">Core</span>
+            <span class="source-badge source-v0">V0</span>
           </div>
           <div class="text-zinc-500 text-xs leading-relaxed">Raw materials appearing in finished-goods markets &rarr; noise. Each supply chain stage must hand off directly to the next.</div>
         </div>
@@ -132,7 +132,7 @@
         <div class="flex-1">
           <div class="flex items-center gap-2 mb-1">
             <div class="text-sm font-medium text-white">Bootstrap Capital Covers First Transaction</div>
-            <span class="source-badge source-core">Core</span>
+            <span class="source-badge source-v0">V0</span>
           </div>
           <div class="text-zinc-500 text-xs leading-relaxed">New producer can't afford inputs &rarr; bootstrap failure. Starting capital must cover at least one full production cycle.</div>
         </div>
@@ -146,7 +146,7 @@
         <div class="flex-1">
           <div class="flex items-center gap-2 mb-1">
             <div class="text-sm font-medium text-white">Materials Flow Faster Than Cooldown</div>
-            <span class="source-badge source-core">Core</span>
+            <span class="source-badge source-v0">V0</span>
           </div>
           <div class="text-zinc-500 text-xs leading-relaxed">input_delivery_rate &lt; production_rate &rarr; starvation. If crafters can produce every 3 ticks but materials arrive every 5, they idle 40% of the time.</div>
         </div>
@@ -160,7 +160,7 @@
         <div class="flex-1">
           <div class="flex items-center gap-2 mb-1">
             <div class="text-sm font-medium text-white">Profitability Is Competitive, Not Absolute</div>
-            <span class="source-badge source-core">Core</span>
+            <span class="source-badge source-v0">V0</span>
           </div>
           <div class="text-zinc-500 text-xs leading-relaxed">Profit formulas that ignore population cause stampedes. If one role pays a flat rate regardless of how many participants share it, the entire economy piles in.</div>
         </div>
@@ -174,7 +174,7 @@
         <div class="flex-1">
           <div class="flex items-center gap-2 mb-1">
             <div class="text-sm font-medium text-white">Crowding Multiplier on ALL Roles</div>
-            <span class="source-badge source-core">Core</span>
+            <span class="source-badge source-v0">V0</span>
           </div>
           <div class="text-zinc-500 text-xs leading-relaxed">Any role without inverse-population scaling &rarr; herd vulnerability. One unprotected role becomes the black hole that absorbs the entire economy.</div>
         </div>
@@ -188,7 +188,7 @@
         <div class="flex-1">
           <div class="flex items-center gap-2 mb-1">
             <div class="text-sm font-medium text-white">Non-Specialists Subsidize Specialists</div>
-            <span class="source-badge source-core">Core</span>
+            <span class="source-badge source-v0">V0</span>
           </div>
           <div class="text-zinc-500 text-xs leading-relaxed">Pot &gt;70% specialists &rarr; sustainability risk. The generalist majority funds the specialist minority. Without generalists, the pot starves.</div>
         </div>
@@ -202,7 +202,7 @@
         <div class="flex-1">
           <div class="flex items-center gap-2 mb-1">
             <div class="text-sm font-medium text-white">Regulator Cannot Fight Design</div>
-            <span class="source-badge source-core">Core</span>
+            <span class="source-badge source-v0">V0</span>
           </div>
           <div class="text-zinc-500 text-xs leading-relaxed">Structural dominance treated as bug &rarr; overreach. If the design makes a role dominant, AgentE must not suppress it&mdash;that's fighting the game's own rules.</div>
         </div>
@@ -216,7 +216,7 @@
         <div class="flex-1">
           <div class="flex items-center gap-2 mb-1">
             <div class="text-sm font-medium text-white">Role Switching Needs Friction</div>
-            <span class="source-badge source-core">Core</span>
+            <span class="source-badge source-v0">V0</span>
           </div>
           <div class="text-zinc-500 text-xs leading-relaxed">&gt;5% switch in one period &rarr; herd movement. Without switching costs, agents oscillate between roles and never reach equilibrium.</div>
         </div>
@@ -230,7 +230,7 @@
         <div class="flex-1">
           <div class="flex items-center gap-2 mb-1">
             <div class="text-sm font-medium text-white">Spawn Weighting Uses Inverse Population</div>
-            <span class="source-badge source-core">Core</span>
+            <span class="source-badge source-v0">V0</span>
           </div>
           <div class="text-zinc-500 text-xs leading-relaxed">New agents don't fill least-populated role &rarr; imbalance. Spawn probability must be inversely proportional to current role count.</div>
         </div>
@@ -244,7 +244,7 @@
         <div class="flex-1">
           <div class="flex items-center gap-2 mb-1">
             <div class="text-sm font-medium text-white">Two-Tier Pressure</div>
-            <span class="source-badge source-core">Core</span>
+            <span class="source-badge source-v0">V0</span>
           </div>
           <div class="text-zinc-500 text-xs leading-relaxed">Corrections only at thresholds &rarr; delayed response. Apply light pressure continuously, strong pressure only at critical deviations.</div>
         </div>
@@ -258,7 +258,7 @@
         <div class="flex-1">
           <div class="flex items-center gap-2 mb-1">
             <div class="text-sm font-medium text-white">One Primary Faucet</div>
-            <span class="source-badge source-core">Core</span>
+            <span class="source-badge source-v0">V0</span>
           </div>
           <div class="text-zinc-500 text-xs leading-relaxed">Multiple independent currency sources &rarr; inflation risk. One master dial controls total inflow, just like a central bank's interest rate.</div>
         </div>
@@ -272,7 +272,7 @@
         <div class="flex-1">
           <div class="flex items-center gap-2 mb-1">
             <div class="text-sm font-medium text-white">Pots Self-Regulate</div>
-            <span class="source-badge source-core">Core</span>
+            <span class="source-badge source-v0">V0</span>
           </div>
           <div class="text-zinc-500 text-xs leading-relaxed">winRate &times; multiplier &gt; (1 - houseCut) &rarr; pot drain. Every prize pool must be mathematically sustainable before it's opened.</div>
         </div>
@@ -286,7 +286,7 @@
         <div class="flex-1">
           <div class="flex items-center gap-2 mb-1">
             <div class="text-sm font-medium text-white">Track Actual Injection</div>
-            <span class="source-badge source-core">Core</span>
+            <span class="source-badge source-v0">V0</span>
           </div>
           <div class="text-zinc-500 text-xs leading-relaxed">Resource gathering counted as currency &rarr; accounting error. Distinguish between resource creation (gathering wood) and currency injection (earning gold).</div>
         </div>
@@ -300,7 +300,7 @@
         <div class="flex-1">
           <div class="flex items-center gap-2 mb-1">
             <div class="text-sm font-medium text-white">Pools Need Cap + Decay</div>
-            <span class="source-badge source-core">Core</span>
+            <span class="source-badge source-v0">V0</span>
           </div>
           <div class="text-zinc-500 text-xs leading-relaxed">Any pool &gt;10% of total currency &rarr; liquidity trap. Uncapped pools become gravity wells that absorb all economic activity.</div>
         </div>
@@ -314,7 +314,7 @@
         <div class="flex-1">
           <div class="flex items-center gap-2 mb-1">
             <div class="text-sm font-medium text-white">Withdrawal Penalty Scales</div>
-            <span class="source-badge source-core">Core</span>
+            <span class="source-badge source-v0">V0</span>
           </div>
           <div class="text-zinc-500 text-xs leading-relaxed">Penalty doesn't scale to lock duration &rarr; weak lock. A 1% penalty on a 1000-tick lock is meaningless. Scale penalty with commitment.</div>
         </div>
@@ -328,7 +328,7 @@
         <div class="flex-1">
           <div class="flex items-center gap-2 mb-1">
             <div class="text-sm font-medium text-white">Grace Period Before Intervention</div>
-            <span class="source-badge source-core">Core</span>
+            <span class="source-badge source-v0">V0</span>
           </div>
           <div class="text-zinc-500 text-xs leading-relaxed">Intervention during first N ticks &rarr; premature. Reacting to initial distributions before the economy stabilizes is overreach&mdash;every system needs time to bootstrap.</div>
         </div>
@@ -342,7 +342,7 @@
         <div class="flex-1">
           <div class="flex items-center gap-2 mb-1">
             <div class="text-sm font-medium text-white">First Producer Needs Inventory</div>
-            <span class="source-badge source-core">Core</span>
+            <span class="source-badge source-v0">V0</span>
           </div>
           <div class="text-zinc-500 text-xs leading-relaxed">Can't produce on tick 0 &rarr; bootstrap failure. The first producer needs materials already in the world to create the economy's first product.</div>
         </div>
@@ -356,7 +356,7 @@
         <div class="flex-1">
           <div class="flex items-center gap-2 mb-1">
             <div class="text-sm font-medium text-white">Starting Supply Exceeds Demand</div>
-            <span class="source-badge source-core">Core</span>
+            <span class="source-badge source-v0">V0</span>
           </div>
           <div class="text-zinc-500 text-xs leading-relaxed">Scarce consumables at launch &rarr; cold-start. The world must feel abundant on day one. Scarcity is earned through play, not imposed at birth.</div>
         </div>
@@ -370,7 +370,7 @@
         <div class="flex-1">
           <div class="flex items-center gap-2 mb-1">
             <div class="text-sm font-medium text-white">Decay Prevents Accumulation</div>
-            <span class="source-badge source-core">Core</span>
+            <span class="source-badge source-v0">V0</span>
           </div>
           <div class="text-zinc-500 text-xs leading-relaxed">Resources never decay &rarr; hoarding risk. Without entropy, wealth concentrates exponentially. EVE Online survives because ships explode.</div>
         </div>
@@ -384,7 +384,7 @@
         <div class="flex-1">
           <div class="flex items-center gap-2 mb-1">
             <div class="text-sm font-medium text-white">Price From Global Supply</div>
-            <span class="source-badge source-core">Core</span>
+            <span class="source-badge source-v0">V0</span>
           </div>
           <div class="text-zinc-500 text-xs leading-relaxed">Prices don't reflect total inventory &rarr; disconnect. If 10,000 swords exist but NPC sells at the Day-1 price, the market is lying.</div>
         </div>
@@ -398,7 +398,7 @@
         <div class="flex-1">
           <div class="flex items-center gap-2 mb-1">
             <div class="text-sm font-medium text-white">Market Awareness</div>
-            <span class="source-badge source-core">Core</span>
+            <span class="source-badge source-v0">V0</span>
           </div>
           <div class="text-zinc-500 text-xs leading-relaxed">Producers don't check market &rarr; overproduction. Every production decision should consider current supply, demand, and margin.</div>
         </div>
@@ -412,7 +412,7 @@
         <div class="flex-1">
           <div class="flex items-center gap-2 mb-1">
             <div class="text-sm font-medium text-white">Profitability Factors Feasibility</div>
-            <span class="source-badge source-core">Core</span>
+            <span class="source-badge source-v0">V0</span>
           </div>
           <div class="text-zinc-500 text-xs leading-relaxed">Theoretical profit ignores liquidity &rarr; phantom profit. A trade that yields 100 gold is worthless if there's nobody to buy the output.</div>
         </div>
@@ -426,7 +426,7 @@
         <div class="flex-1">
           <div class="flex items-center gap-2 mb-1">
             <div class="text-sm font-medium text-white">Blocked Agents Decay Faster</div>
-            <span class="source-badge source-core">Core</span>
+            <span class="source-badge source-v0">V0</span>
           </div>
           <div class="text-zinc-500 text-xs leading-relaxed">Waiting agents don't churn &rarr; silent bottleneck. Agents blocked from their primary activity should lose wealth faster, creating urgency to switch or adapt.</div>
         </div>
@@ -440,7 +440,7 @@
         <div class="flex-1">
           <div class="flex items-center gap-2 mb-1">
             <div class="text-sm font-medium text-white">Correct Levers</div>
-            <span class="source-badge source-core">Core</span>
+            <span class="source-badge source-v0">V0</span>
           </div>
           <div class="text-zinc-500 text-xs leading-relaxed">Sink adjustment for inflation &rarr; wrong lever. Match the intervention to the root cause. Inflation is a faucet problem, not a sink problem.</div>
         </div>
@@ -454,7 +454,7 @@
         <div class="flex-1">
           <div class="flex items-center gap-2 mb-1">
             <div class="text-sm font-medium text-white">Continuous &gt; Threshold</div>
-            <span class="source-badge source-core">Core</span>
+            <span class="source-badge source-v0">V0</span>
           </div>
           <div class="text-zinc-500 text-xs leading-relaxed">1% per tick beats 10% once &rarr; smooth adjustments. Gradual pressure is invisible to players. Sudden shocks feel like punishment.</div>
         </div>
@@ -468,7 +468,7 @@
         <div class="flex-1">
           <div class="flex items-center gap-2 mb-1">
             <div class="text-sm font-medium text-white">Adjustments Need Cooldowns</div>
-            <span class="source-badge source-core">Core</span>
+            <span class="source-badge source-v0">V0</span>
           </div>
           <div class="text-zinc-500 text-xs leading-relaxed">Same param adjusted twice in window &rarr; oscillation. Minimum 15-tick cooldown between adjustments to the same parameter.</div>
         </div>
@@ -482,7 +482,7 @@
         <div class="flex-1">
           <div class="flex items-center gap-2 mb-1">
             <div class="text-sm font-medium text-white">Structural &ne; Pathological</div>
-            <span class="source-badge source-core">Core</span>
+            <span class="source-badge source-v0">V0</span>
           </div>
           <div class="text-zinc-500 text-xs leading-relaxed">Designed majority suppressed &rarr; overreach. If the game was designed around a dominant activity, a majority in that role is correct&mdash;not a bug.</div>
         </div>
@@ -919,7 +919,7 @@
   <div class="flex flex-col sm:flex-row items-center justify-between gap-4">
     <div class="flex items-center gap-3">
       <span class="font-mono text-sm text-zinc-600">AgentE</span>
-      <span class="font-mono text-xs text-zinc-800">v1.0.2</span>
+      <span class="font-mono text-xs text-zinc-800">v1.0.3</span>
     </div>
     <p class="font-mono text-xs text-zinc-700">Built by Oka &times; Claude &mdash; AB Labs</p>
     <span class="font-mono text-xs text-zinc-700">54 principles &middot; 130 articles &middot; Zero guesswork</span>
