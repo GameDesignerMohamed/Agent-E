@@ -37,6 +37,10 @@
     .source-badge { font-size: 0.625rem; padding: 2px 6px; border-radius: 4px; font-weight: 500; letter-spacing: 0.03em; }
     .source-v0 { background: rgba(16,185,129,0.12); color: #34d399; }
     .source-v1 { background: rgba(59,130,246,0.12); color: #60a5fa; }
+    @media (prefers-reduced-motion: reduce) {
+      .fade-in { transition: none; opacity: 1; transform: none; }
+      .principle-card { transition: none; }
+    }
   </style>
 </head>
 <body class="font-sans text-zinc-100 antialiased">
@@ -877,10 +881,10 @@
   <div class="flex flex-col sm:flex-row items-center justify-between gap-4">
     <div class="flex items-center gap-3">
       <span class="font-mono text-sm text-zinc-600">AgentE</span>
-      <span class="font-mono text-xs text-zinc-800">v1.0.4</span>
+      <span class="font-mono text-xs text-zinc-800">v1.0.5</span>
     </div>
     <p class="font-mono text-xs text-zinc-700">Built by Oka &times; Claude &mdash; AB Labs</p>
-    <span class="font-mono text-xs text-zinc-700">54 principles &middot; 130 articles &middot; Zero guesswork</span>
+    <span class="font-mono text-xs text-zinc-700">54 principles &middot; Zero guesswork</span>
   </div>
 </footer>
 
@@ -889,92 +893,102 @@
   const THRESHOLDS = {
     'regulator': {
       label: 'Regulator (P26–P27)',
-      code: `maxAdjustmentPercent: 0.15,\ncooldownTicks: 15,`
+      code: 'maxAdjustmentPercent: 0.15,\ncooldownTicks: 15,'
     },
     'statistical': {
       label: 'Statistical (P42–P43)',
-      code: `meanMedianDivergenceMax: 0.30,\nsimulationMinIterations: 100,`
+      code: 'meanMedianDivergenceMax: 0.30,\nsimulationMinIterations: 100,'
     },
     'population': {
       label: 'Population (P46)',
-      code: `personaMonocultureMax: 0.40,\npersonaMinClusters: 3,`
+      code: 'personaMonocultureMax: 0.40,\npersonaMinClusters: 3,'
     },
     'open-economy': {
       label: 'Open Economy (P34, P47–P48)',
-      code: `extractionRatioYellow: 0.50,\nextractionRatioRed: 0.65,\nsmokeTestWarning: 0.30,\nsmokeTestCritical: 0.10,\ncurrencyInsulationMax: 0.50,`
+      code: 'extractionRatioYellow: 0.50,\nextractionRatioRed: 0.65,\nsmokeTestWarning: 0.30,\nsmokeTestCritical: 0.10,\ncurrencyInsulationMax: 0.50,'
     },
     'player-exp': {
       label: 'Player Experience (P45, P50)',
-      code: `timeBudgetRatio: 0.80,\npayPowerRatioMax: 2.0,\npayPowerRatioTarget: 1.5,`
+      code: 'timeBudgetRatio: 0.80,\npayPowerRatioMax: 2.0,\npayPowerRatioTarget: 1.5,'
     },
     'liveops': {
       label: 'LiveOps (P51, P53)',
-      code: `sharkToothPeakDecay: 0.95,\nsharkToothValleyDecay: 0.90,\neventCompletionMin: 0.40,\neventCompletionMax: 0.80,\neventCompletionTarget: [0.60, 0.80],`
+      code: 'sharkToothPeakDecay: 0.95,\nsharkToothValleyDecay: 0.90,\neventCompletionMin: 0.40,\neventCompletionMax: 0.80,\neventCompletionTarget: [0.60, 0.80],'
     },
     'system-design': {
       label: 'System Design (P39, P44)',
-      code: `lagMultiplier: [3, 5],\ncomplexityBudgetMax: 20,\ncomplexityImpactMin: 0.05,`
+      code: 'lagMultiplier: [3, 5],\ncomplexityBudgetMax: 20,\ncomplexityImpactMin: 0.05,'
     },
     'resource': {
       label: 'Resource (P40)',
-      code: `replacementRateMultiplier: 2.0,`
+      code: 'replacementRateMultiplier: 2.0,'
     },
     'dynamics': {
       label: 'Dynamics (P39)',
-      code: `lagMultiplier: [3, 5],`
+      code: 'lagMultiplier: [3, 5],'
     },
   };
 
-  // ── Filter functionality ──
-  const filters = document.getElementById('filters');
-  const cards = document.querySelectorAll('.principle-card');
-  const thresholdsPanel = document.getElementById('thresholds-panel');
-  const thresholdsCategory = document.getElementById('thresholds-category');
-  const thresholdsCode = document.getElementById('thresholds-code');
+  // ── Filter + Thresholds ──
+  (function() {
+    var filters = document.getElementById('filters');
+    var cards = document.querySelectorAll('.principle-card');
+    var panel = document.getElementById('thresholds-panel');
+    var catLabel = document.getElementById('thresholds-category');
+    var codeEl = document.getElementById('thresholds-code');
 
-  filters.addEventListener('click', (e) => {
-    const btn = e.target.closest('.category-pill');
-    if (!btn) return;
+    if (!filters || !panel) return; // safety
 
-    // Update active state
-    filters.querySelectorAll('.category-pill').forEach(b => b.classList.remove('active'));
-    btn.classList.add('active');
+    filters.addEventListener('click', function(e) {
+      var btn = e.target.closest('.category-pill');
+      if (!btn) return;
 
-    const filter = btn.dataset.filter;
+      // Update active pill
+      filters.querySelectorAll('.category-pill').forEach(function(b) {
+        b.classList.remove('active');
+      });
+      btn.classList.add('active');
 
-    // Filter cards
-    cards.forEach(card => {
-      if (filter === 'all' || card.dataset.category === filter) {
-        card.classList.remove('hidden-card');
+      var filter = btn.getAttribute('data-filter');
+
+      // Filter cards
+      cards.forEach(function(card) {
+        if (filter === 'all' || card.getAttribute('data-category') === filter) {
+          card.classList.remove('hidden-card');
+        } else {
+          card.classList.add('hidden-card');
+        }
+      });
+
+      // Show/hide thresholds
+      var t = THRESHOLDS[filter];
+      if (t && filter !== 'all') {
+        catLabel.textContent = t.label;
+        codeEl.textContent = t.code;
+        panel.style.display = 'block';
       } else {
-        card.classList.add('hidden-card');
+        panel.style.display = 'none';
       }
     });
+  })();
 
-    // Show/hide thresholds
-    const t = THRESHOLDS[filter];
-    if (t && filter !== 'all') {
-      thresholdsCategory.textContent = t.label;
-      thresholdsCode.textContent = t.code;
-      thresholdsPanel.style.display = 'block';
-    } else {
-      thresholdsPanel.style.display = 'none';
-    }
-  });
-
-  // Fade-in observer
-  const observer = new IntersectionObserver(
-    (entries) => {
-      for (const entry of entries) {
-        if (entry.isIntersecting) {
-          entry.target.classList.add('visible');
-          observer.unobserve(entry.target);
-        }
-      }
-    },
-    { threshold: 0.1 }
-  );
-  document.querySelectorAll('.fade-in').forEach(el => observer.observe(el));
+  // ── Fade-in observer ──
+  (function() {
+    var observer = new IntersectionObserver(
+      function(entries) {
+        entries.forEach(function(entry) {
+          if (entry.isIntersecting) {
+            entry.target.classList.add('visible');
+            observer.unobserve(entry.target);
+          }
+        });
+      },
+      { threshold: 0.1 }
+    );
+    document.querySelectorAll('.fade-in').forEach(function(el) {
+      observer.observe(el);
+    });
+  })();
 </script>
 
 </body>

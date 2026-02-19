@@ -30,7 +30,7 @@
     html { scroll-behavior: smooth; }
 
     body {
-      background: #000;
+      background: #09090b;
       color: #fafafa;
       font-family: 'Inter', system-ui, sans-serif;
       -webkit-font-smoothing: antialiased;
@@ -41,6 +41,7 @@
       opacity: 0;
       transform: translateY(4px);
       animation: termIn 0.3s ease-out forwards;
+      animation-delay: 0s;
     }
     @keyframes termIn {
       to { opacity: 1; transform: translateY(0); }
@@ -59,25 +60,6 @@
       0%, 100% { opacity: 1; }
       50% { opacity: 0; }
     }
-
-    /* Stagger terminal lines */
-    .term-line:nth-child(1)  { animation-delay: 0.1s; }
-    .term-line:nth-child(2)  { animation-delay: 0.4s; }
-    .term-line:nth-child(3)  { animation-delay: 0.7s; }
-    .term-line:nth-child(4)  { animation-delay: 1.0s; }
-    .term-line:nth-child(5)  { animation-delay: 1.3s; }
-    .term-line:nth-child(6)  { animation-delay: 1.6s; }
-    .term-line:nth-child(7)  { animation-delay: 1.9s; }
-    .term-line:nth-child(8)  { animation-delay: 2.2s; }
-    .term-line:nth-child(9)  { animation-delay: 2.5s; }
-    .term-line:nth-child(10) { animation-delay: 2.8s; }
-    .term-line:nth-child(11) { animation-delay: 3.1s; }
-    .term-line:nth-child(12) { animation-delay: 3.4s; }
-    .term-line:nth-child(13) { animation-delay: 3.7s; }
-    .term-line:nth-child(14) { animation-delay: 4.0s; }
-    .term-line:nth-child(15) { animation-delay: 4.3s; }
-    .term-line:nth-child(16) { animation-delay: 4.6s; }
-    .term-line:nth-child(17) { animation-delay: 4.9s; }
 
     /* Section fade in on scroll */
     .fade-in {
@@ -117,7 +99,7 @@
   <div class="max-w-6xl mx-auto px-6 h-14 flex items-center justify-between">
     <div class="flex items-center gap-3">
       <span class="font-mono text-sm font-medium text-white">AgentE</span>
-      <span class="font-mono text-xs text-zinc-600 bg-zinc-900 px-2 py-0.5 rounded">v1.0.4</span>
+      <span class="font-mono text-xs text-zinc-600 bg-zinc-900 px-2 py-0.5 rounded">v1.0.5</span>
     </div>
     <div class="flex items-center gap-6">
       <a href="#how-it-works" class="text-sm text-zinc-400 hover:text-white transition-colors">Docs</a>
@@ -180,80 +162,8 @@
       <div class="w-3 h-3 rounded-full bg-zinc-700"></div>
       <span class="ml-3 font-mono text-xs text-zinc-600">agentE v1 — live</span>
     </div>
-
-    <!-- Terminal output -->
-    <div class="p-5 font-mono text-sm leading-6 overflow-x-auto">
-      <div class="term-line text-zinc-500">$ npx tsx demo/src/index.ts</div>
-      <div class="term-line text-white mt-1">AgentE V1 — Standalone Demo</div>
-      <div class="term-line text-zinc-500">Connected. Monitoring 180 agents.</div>
-      <div class="term-line mt-2">
-        <span class="text-zinc-600">[Tick  25]</span>
-        <span class="text-zinc-400"> Health: </span><span class="text-accent tabular-nums">85/100</span>
-        <span class="text-zinc-600"> | Satisfaction: </span><span class="text-zinc-300 tabular-nums">80</span>
-        <span class="text-zinc-600"> | Gini: </span><span class="text-zinc-300 tabular-nums">0.45</span>
-        <span class="text-zinc-600"> | Decisions: </span><span class="text-zinc-300 tabular-nums">0</span>
-      </div>
-      <div class="term-line mt-1">
-        <span class="text-zinc-600">  [Tick 50]</span>
-        <span class="text-accent"> ✅ </span>
-        <span class="text-white">[P42] The Median Principle:</span>
-        <span class="text-zinc-400"> auctionFee </span>
-        <span class="text-zinc-300 tabular-nums">1.000</span>
-        <span class="text-zinc-500"> → </span>
-        <span class="text-accent tabular-nums">1.150</span>
-        <span class="text-zinc-600">  severity 5/10, confidence 85%</span>
-      </div>
-      <div class="term-line">
-        <span class="text-zinc-600">[Tick  50]</span>
-        <span class="text-zinc-400"> Health: </span><span class="text-accent tabular-nums">85/100</span>
-        <span class="text-zinc-600"> | Satisfaction: </span><span class="text-zinc-300 tabular-nums">80</span>
-        <span class="text-zinc-600"> | Decisions: </span><span class="text-accent tabular-nums">1</span>
-      </div>
-      <div class="term-line mt-1">
-        <span class="text-zinc-600">  [Tick 65]</span>
-        <span class="text-accent"> ✅ </span>
-        <span class="text-white">[P42] The Median Principle:</span>
-        <span class="text-zinc-400"> auctionFee </span>
-        <span class="text-zinc-300 tabular-nums">1.150</span>
-        <span class="text-zinc-500"> → </span>
-        <span class="text-accent tabular-nums">1.322</span>
-      </div>
-      <div class="term-line">
-        <span class="text-zinc-600">  [Tick 80]</span>
-        <span class="text-accent"> ✅ </span>
-        <span class="text-white">[P5] Profitability Is Competitive:</span>
-        <span class="text-zinc-400"> auctionFee </span>
-        <span class="text-zinc-300 tabular-nums">1.322</span>
-        <span class="text-zinc-500"> → </span>
-        <span class="text-accent tabular-nums">1.521</span>
-        <span class="text-zinc-600">  100 iterations run</span>
-      </div>
-      <div class="term-line">
-        <span class="text-zinc-600">[Tick 100]</span>
-        <span class="text-zinc-400"> Health: </span><span class="text-accent tabular-nums">85/100</span>
-        <span class="text-zinc-600"> | Satisfaction: </span><span class="text-zinc-300 tabular-nums">79</span>
-        <span class="text-zinc-600"> | Gini: </span><span class="text-zinc-300 tabular-nums">0.45</span>
-        <span class="text-zinc-600"> | Decisions: </span><span class="text-accent tabular-nums">2</span>
-      </div>
-      <div class="term-line text-zinc-600">  ···  10 autonomous decisions and counting  ···</div>
-      <div class="term-line">
-        <span class="text-zinc-600">[Tick 200]</span>
-        <span class="text-zinc-400"> Health: </span><span class="text-accent tabular-nums">85/100</span>
-        <span class="text-zinc-600"> | Satisfaction: </span><span class="text-zinc-300 tabular-nums">81</span>
-        <span class="text-zinc-600"> | Gini: </span><span class="text-zinc-300 tabular-nums">0.42</span>
-        <span class="text-zinc-600"> | Decisions: </span><span class="text-accent tabular-nums">10</span>
-      </div>
-      <div class="term-line mt-2 text-zinc-500">── Active Violations ──</div>
-      <div class="term-line">
-        <span class="text-yellow-500">  P2</span><span class="text-zinc-400"> (severity 5): Closed Loops Need Direct Handoff</span>
-      </div>
-      <div class="term-line">
-        <span class="text-yellow-500">  P6</span><span class="text-zinc-400"> (severity 5): Crowding Multiplier Applies to ALL Roles</span>
-      </div>
-      <div class="term-line mt-2">
-        <span class="text-zinc-500">Watching... </span><span class="cursor"></span>
-      </div>
-    </div>
+    <!-- Terminal output — populated by JS -->
+    <div id="terminal" class="p-5 font-mono text-sm leading-6" style="height: min(380px, 50vh); overflow: hidden;"></div>
   </div>
 </section>
 
@@ -513,7 +423,7 @@
   <div class="flex flex-col sm:flex-row items-center justify-between gap-4">
     <div class="flex items-center gap-3">
       <span class="font-mono text-sm text-zinc-600">AgentE</span>
-      <span class="font-mono text-xs text-zinc-800">v1.0.4</span>
+      <span class="font-mono text-xs text-zinc-800">v1.0.5</span>
     </div>
     <p class="font-mono text-xs text-zinc-700">Built by Oka × Claude — AB Labs</p>
     <a href="https://github.com/GameDesignerMohamed/Agent-E" target="_blank" rel="noopener"
@@ -522,6 +432,197 @@
     </a>
   </div>
 </footer>
+
+<script>
+// ── Live Terminal Engine ──
+(function() {
+  var MAX_LINES = 14;
+  var TICK_STEP_MIN = 10;
+  var TICK_STEP_MAX = 30;
+  var BOOT_GAP = 500;
+  var LINE_INTERVAL = 2400;
+
+  // ── Randomization pools ──
+  var PARAMS = [
+    'auctionFee', 'craftingCost', 'miningYield', 'tradeTax',
+    'stakingReward', 'arenaEntryFee', 'questPayout', 'transportFee',
+    'listingFee', 'decayRate', 'spawnBonus', 'lootMultiplier'
+  ];
+
+  var PRINCIPLES = [
+    {id:'P1',  name:'Production Must Match Consumption'},
+    {id:'P5',  name:'Profitability Is Competitive'},
+    {id:'P6',  name:'Crowding Multiplier on ALL Roles'},
+    {id:'P9',  name:'Role Switching Needs Friction'},
+    {id:'P12', name:'One Primary Faucet'},
+    {id:'P15', name:'Pools Need Cap + Decay'},
+    {id:'P20', name:'Decay Prevents Accumulation'},
+    {id:'P26', name:'Continuous > Threshold'},
+    {id:'P33', name:'Fair ≠ Equal'},
+    {id:'P35', name:'Destruction Creates Value'},
+    {id:'P40', name:'Replacement Rate ≥ 2× Consumption'},
+    {id:'P42', name:'The Median Principle'},
+    {id:'P43', name:'Simulation Minimum (100 Iterations)'},
+    {id:'P46', name:'Persona Diversity'},
+    {id:'P48', name:'Currency Insulation'},
+  ];
+
+  // ── Helpers ──
+  function rand(a, b) { return Math.floor(Math.random() * (b - a + 1)) + a; }
+  function pick(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
+  function clamp(v, lo, hi) { return Math.min(hi, Math.max(lo, v)); }
+  function pad(n, w) { return String(n).padStart(w || 4, ' '); }
+  function fmt(n) { return n.toFixed(3); }
+
+  // ── Fresh state per page load ──
+  var tick = 0;
+  var health = rand(76, 92);
+  var satisfaction = rand(70, 86);
+  var gini = (rand(28, 52)) / 100;
+  var decisions = 0;
+  var agentCount = rand(140, 300);
+  var paramState = {};
+  PARAMS.forEach(function(p) { paramState[p] = +(0.5 + Math.random() * 2.5).toFixed(3); });
+
+  var terminal = document.getElementById('terminal');
+  if (!terminal) return;
+
+  // ── Line management ──
+  function addLine(html) {
+    var div = document.createElement('div');
+    div.className = 'term-line';
+    div.innerHTML = html;
+    terminal.appendChild(div);
+
+    // Prune oldest lines
+    while (terminal.children.length > MAX_LINES) {
+      terminal.removeChild(terminal.firstChild);
+    }
+  }
+
+  // ── Line generators ──
+  function mkStatus() {
+    health = clamp(health + rand(-2, 3), 65, 98);
+    satisfaction = clamp(satisfaction + rand(-2, 2), 58, 95);
+    gini = clamp(gini + (Math.random() - 0.48) * 0.02, 0.18, 0.60);
+
+    return '<span class="text-zinc-600">[Tick ' + pad(tick) + ']</span>'
+      + '<span class="text-zinc-400"> Health: </span><span class="text-accent tabular-nums">' + health + '/100</span>'
+      + '<span class="text-zinc-600"> | Satisfaction: </span><span class="text-zinc-300 tabular-nums">' + satisfaction + '</span>'
+      + '<span class="text-zinc-600"> | Gini: </span><span class="text-zinc-300 tabular-nums">' + gini.toFixed(2) + '</span>'
+      + '<span class="text-zinc-600"> | Decisions: </span><span class="text-accent tabular-nums">' + decisions + '</span>';
+  }
+
+  function mkAction() {
+    var p = pick(PRINCIPLES);
+    var param = pick(PARAMS);
+    var oldVal = paramState[param];
+    var newVal = clamp(oldVal * (1 + (Math.random() - 0.35) * 0.3), 0.05, 12);
+    paramState[param] = +newVal.toFixed(3);
+    decisions++;
+
+    var sev = rand(3, 8);
+    var conf = rand(70, 96);
+
+    return '<span class="text-zinc-600">  [Tick ' + pad(tick) + ']</span>'
+      + '<span class="text-accent"> ✅ </span>'
+      + '<span class="text-white">[' + p.id + '] ' + p.name + ':</span>'
+      + '<span class="text-zinc-400"> ' + param + ' </span>'
+      + '<span class="text-zinc-300 tabular-nums">' + fmt(oldVal) + '</span>'
+      + '<span class="text-zinc-500"> → </span>'
+      + '<span class="text-accent tabular-nums">' + fmt(newVal) + '</span>'
+      + '<span class="text-zinc-600">  severity ' + sev + '/10, confidence ' + conf + '%</span>';
+  }
+
+  function mkViolation() {
+    var p = pick(PRINCIPLES);
+    var sev = rand(3, 7);
+    return '<span class="text-yellow-500">  ' + p.id + '</span>'
+      + '<span class="text-zinc-400"> (severity ' + sev + '): ' + p.name + '</span>';
+  }
+
+  // ── Event generator ──
+  function generateEvent() {
+    tick += rand(TICK_STEP_MIN, TICK_STEP_MAX);
+
+    var roll = Math.random();
+
+    if (roll < 0.28) {
+      // Status check
+      addLine(mkStatus());
+    } else if (roll < 0.60) {
+      // Principle fires
+      addLine(mkAction());
+    } else if (roll < 0.78) {
+      // Violations
+      addLine('<span class="text-zinc-500">── Active Violations ──</span>');
+      setTimeout(function() { addLine(mkViolation()); }, 350);
+      if (Math.random() > 0.4) {
+        setTimeout(function() { addLine(mkViolation()); }, 700);
+      }
+    } else if (roll < 0.90) {
+      // Status + running summary
+      addLine(mkStatus());
+      var d = decisions;
+      setTimeout(function() {
+        addLine('<span class="text-zinc-600">  ···  ' + d + ' autonomous decisions and counting  ···</span>');
+      }, 450);
+    } else {
+      // 100-iteration simulation note
+      var p = pick(PRINCIPLES);
+      var param = pick(PARAMS);
+      addLine('<span class="text-zinc-600">  [Tick ' + pad(tick) + ']</span>'
+        + '<span class="text-zinc-500"> simulating ' + param + ' adjustment... 100 iterations</span>');
+      setTimeout(function() {
+        var oldVal = paramState[param];
+        var newVal = clamp(oldVal * (1 + (Math.random() - 0.3) * 0.2), 0.05, 12);
+        paramState[param] = +newVal.toFixed(3);
+        decisions++;
+        addLine('<span class="text-zinc-600">  [Tick ' + pad(tick) + ']</span>'
+          + '<span class="text-accent"> ✅ </span>'
+          + '<span class="text-white">[' + p.id + ']</span>'
+          + '<span class="text-zinc-400"> ' + param + ' </span>'
+          + '<span class="text-zinc-300 tabular-nums">' + fmt(oldVal) + '</span>'
+          + '<span class="text-zinc-500"> → </span>'
+          + '<span class="text-accent tabular-nums">' + fmt(newVal) + '</span>'
+          + '<span class="text-zinc-600">  simulation passed</span>');
+      }, 900);
+    }
+  }
+
+  // ── Boot sequence ──
+  setTimeout(function() {
+    addLine('<span class="text-zinc-500">$ npx agent-e connect</span>');
+  }, 200);
+
+  setTimeout(function() {
+    addLine('<span class="text-white">AgentE V1 — Live Monitor</span>');
+  }, 200 + BOOT_GAP);
+
+  setTimeout(function() {
+    addLine('<span class="text-zinc-500">Connected. Monitoring ' + agentCount + ' agents.</span>');
+  }, 200 + BOOT_GAP * 2);
+
+  setTimeout(function() {
+    tick = rand(1, 15);
+    addLine(mkStatus());
+  }, 200 + BOOT_GAP * 3);
+
+  // ── Start continuous loop (respect reduced motion) ──
+  setTimeout(function() {
+    var prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (!prefersReduced) {
+      setInterval(generateEvent, LINE_INTERVAL);
+    } else {
+      // Show a few static events then stop
+      generateEvent();
+      setTimeout(generateEvent, 600);
+      setTimeout(generateEvent, 1200);
+    }
+  }, 200 + BOOT_GAP * 4);
+
+})();
+</script>
 
 <script>
   // Scroll-triggered fade-ins
