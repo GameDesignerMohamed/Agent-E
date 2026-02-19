@@ -64,7 +64,7 @@
       54 principles.<br><em>Zero guesswork.</em>
     </h1>
     <p class="text-zinc-400 text-lg leading-relaxed text-pretty max-w-xl">
-      Distilled from real economy failures and 130+ articles on game economy design. Every principle is a check AgentE runs autonomously, every tick.
+      The guardrails autonomous economies enforce on themselves.
     </p>
   </div>
 </section>
@@ -854,56 +854,14 @@
     </div>
 
   </div>
-</section>
 
-<!-- Thresholds Reference -->
-<section class="px-6 pb-24 max-w-6xl mx-auto fade-in">
-  <div class="mb-8">
-    <p class="font-mono text-xs text-accent mb-3">REFERENCE</p>
-    <h2 class="font-serif text-3xl md:text-4xl text-balance">Default thresholds</h2>
-    <p class="text-zinc-400 mt-3 max-w-xl text-pretty text-sm">Every threshold is overridable. These are the calibrated defaults AgentE ships with.</p>
-  </div>
-  <div class="bg-zinc-950 border border-zinc-800 rounded-xl p-6 overflow-x-auto">
-    <pre class="font-mono text-xs text-zinc-300 leading-relaxed"><code><span class="text-zinc-500">const</span> <span class="text-white">DEFAULT_THRESHOLDS</span> = {
-  <span class="text-zinc-500">// Statistical (P42-P43)</span>
-  meanMedianDivergenceMax: <span class="text-accent">0.30</span>,
-  simulationMinIterations: <span class="text-accent">100</span>,
-
-  <span class="text-zinc-500">// Population (P46)</span>
-  personaMonocultureMax: <span class="text-accent">0.40</span>,
-  personaMinClusters: <span class="text-accent">3</span>,
-
-  <span class="text-zinc-500">// Open Economy (P34, P47-P48)</span>
-  extractionRatioYellow: <span class="text-accent">0.50</span>,
-  extractionRatioRed: <span class="text-accent">0.65</span>,
-  smokeTestWarning: <span class="text-accent">0.30</span>,
-  smokeTestCritical: <span class="text-accent">0.10</span>,
-  currencyInsulationMax: <span class="text-accent">0.50</span>,
-
-  <span class="text-zinc-500">// Player Experience (P45, P50)</span>
-  timeBudgetRatio: <span class="text-accent">0.80</span>,
-  payPowerRatioMax: <span class="text-accent">2.0</span>,
-  payPowerRatioTarget: <span class="text-accent">1.5</span>,
-
-  <span class="text-zinc-500">// LiveOps (P51, P53)</span>
-  sharkToothPeakDecay: <span class="text-accent">0.95</span>,
-  sharkToothValleyDecay: <span class="text-accent">0.90</span>,
-  eventCompletionMin: <span class="text-accent">0.40</span>,
-  eventCompletionMax: <span class="text-accent">0.80</span>,
-  eventCompletionTarget: [<span class="text-accent">0.60</span>, <span class="text-accent">0.80</span>],
-
-  <span class="text-zinc-500">// System Dynamics (P39, P44)</span>
-  lagMultiplier: [<span class="text-accent">3</span>, <span class="text-accent">5</span>],
-  complexityBudgetMax: <span class="text-accent">20</span>,
-  complexityImpactMin: <span class="text-accent">0.05</span>,
-
-  <span class="text-zinc-500">// Resource (P40)</span>
-  replacementRateMultiplier: <span class="text-accent">2.0</span>,
-
-  <span class="text-zinc-500">// Regulator (P26-P27)</span>
-  maxAdjustmentPercent: <span class="text-accent">0.15</span>,
-  cooldownTicks: <span class="text-accent">15</span>,
-};</code></pre>
+  <!-- Dynamic Thresholds (appears when a category with thresholds is selected) -->
+  <div id="thresholds-panel" class="mt-6 bg-zinc-950 border border-zinc-800 rounded-xl p-6 overflow-x-auto" style="display: none;">
+    <div class="flex items-center gap-3 mb-4">
+      <p class="font-mono text-xs text-accent">THRESHOLDS</p>
+      <span id="thresholds-category" class="font-mono text-xs text-zinc-500"></span>
+    </div>
+    <pre class="font-mono text-xs text-zinc-300 leading-relaxed"><code id="thresholds-code"></code></pre>
   </div>
 </section>
 
@@ -919,7 +877,7 @@
   <div class="flex flex-col sm:flex-row items-center justify-between gap-4">
     <div class="flex items-center gap-3">
       <span class="font-mono text-sm text-zinc-600">AgentE</span>
-      <span class="font-mono text-xs text-zinc-800">v1.0.3</span>
+      <span class="font-mono text-xs text-zinc-800">v1.0.4</span>
     </div>
     <p class="font-mono text-xs text-zinc-700">Built by Oka &times; Claude &mdash; AB Labs</p>
     <span class="font-mono text-xs text-zinc-700">54 principles &middot; 130 articles &middot; Zero guesswork</span>
@@ -927,9 +885,52 @@
 </footer>
 
 <script>
-  // Filter functionality
+  // ── Threshold data keyed by category ──
+  const THRESHOLDS = {
+    'regulator': {
+      label: 'Regulator (P26–P27)',
+      code: `maxAdjustmentPercent: 0.15,\ncooldownTicks: 15,`
+    },
+    'statistical': {
+      label: 'Statistical (P42–P43)',
+      code: `meanMedianDivergenceMax: 0.30,\nsimulationMinIterations: 100,`
+    },
+    'population': {
+      label: 'Population (P46)',
+      code: `personaMonocultureMax: 0.40,\npersonaMinClusters: 3,`
+    },
+    'open-economy': {
+      label: 'Open Economy (P34, P47–P48)',
+      code: `extractionRatioYellow: 0.50,\nextractionRatioRed: 0.65,\nsmokeTestWarning: 0.30,\nsmokeTestCritical: 0.10,\ncurrencyInsulationMax: 0.50,`
+    },
+    'player-exp': {
+      label: 'Player Experience (P45, P50)',
+      code: `timeBudgetRatio: 0.80,\npayPowerRatioMax: 2.0,\npayPowerRatioTarget: 1.5,`
+    },
+    'liveops': {
+      label: 'LiveOps (P51, P53)',
+      code: `sharkToothPeakDecay: 0.95,\nsharkToothValleyDecay: 0.90,\neventCompletionMin: 0.40,\neventCompletionMax: 0.80,\neventCompletionTarget: [0.60, 0.80],`
+    },
+    'system-design': {
+      label: 'System Design (P39, P44)',
+      code: `lagMultiplier: [3, 5],\ncomplexityBudgetMax: 20,\ncomplexityImpactMin: 0.05,`
+    },
+    'resource': {
+      label: 'Resource (P40)',
+      code: `replacementRateMultiplier: 2.0,`
+    },
+    'dynamics': {
+      label: 'Dynamics (P39)',
+      code: `lagMultiplier: [3, 5],`
+    },
+  };
+
+  // ── Filter functionality ──
   const filters = document.getElementById('filters');
   const cards = document.querySelectorAll('.principle-card');
+  const thresholdsPanel = document.getElementById('thresholds-panel');
+  const thresholdsCategory = document.getElementById('thresholds-category');
+  const thresholdsCode = document.getElementById('thresholds-code');
 
   filters.addEventListener('click', (e) => {
     const btn = e.target.closest('.category-pill');
@@ -941,6 +942,7 @@
 
     const filter = btn.dataset.filter;
 
+    // Filter cards
     cards.forEach(card => {
       if (filter === 'all' || card.dataset.category === filter) {
         card.classList.remove('hidden-card');
@@ -948,6 +950,16 @@
         card.classList.add('hidden-card');
       }
     });
+
+    // Show/hide thresholds
+    const t = THRESHOLDS[filter];
+    if (t && filter !== 'all') {
+      thresholdsCategory.textContent = t.label;
+      thresholdsCode.textContent = t.code;
+      thresholdsPanel.style.display = 'block';
+    } else {
+      thresholdsPanel.style.display = 'none';
+    }
   });
 
   // Fade-in observer
