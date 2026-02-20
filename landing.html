@@ -3,6 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="AgentE — the autonomous economic intelligence layer for agentic MMOs and virtual worlds. 54 battle-tested principles, zero manual tuning.">
   <title>AgentE — Economic Intelligence for Agentic Worlds</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -41,7 +42,6 @@
       opacity: 0;
       transform: translateY(4px);
       animation: termIn 0.3s ease-out forwards;
-      animation-delay: 0s;
     }
     @keyframes termIn {
       to { opacity: 1; transform: translateY(0); }
@@ -73,7 +73,7 @@
   <div class="max-w-6xl mx-auto px-6 h-14 flex items-center justify-between">
     <div class="flex items-center gap-3">
       <span class="font-mono text-sm font-medium text-white">AgentE</span>
-      <span class="font-mono text-xs text-zinc-600 bg-zinc-900 px-2 py-0.5 rounded">v1.0.6</span>
+      <span class="font-mono text-xs text-zinc-600 bg-zinc-900 px-2 py-0.5 rounded">v1.0.7</span>
     </div>
     <div class="flex items-center gap-6">
       <a href="#how-it-works" class="text-sm text-zinc-400 hover:text-white transition-colors">Docs</a>
@@ -109,7 +109,9 @@
     <div class="flex flex-col sm:flex-row gap-3">
       <!-- Install command -->
       <div class="flex items-center gap-3 bg-zinc-950 border border-zinc-800 rounded-lg px-4 py-3 font-mono text-sm group cursor-pointer copy-btn"
-           onclick="navigator.clipboard.writeText('npm install @agent-e/core'); this.querySelector('.copy-label').textContent = 'Copied!'; setTimeout(() => this.querySelector('.copy-label').textContent = 'Copy', 2000)">
+           role="button" tabindex="0"
+           onclick="navigator.clipboard.writeText('npm install @agent-e/core'); this.querySelector('.copy-label').textContent = 'Copied!'; setTimeout(() => this.querySelector('.copy-label').textContent = 'Copy', 2000)"
+           onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();this.click();}">
         <span class="text-zinc-500">$</span>
         <span class="text-white">npm install @agent-e/core</span>
         <span class="copy-label ml-auto text-zinc-600 group-hover:text-zinc-400 transition-colors text-xs">Copy</span>
@@ -379,7 +381,9 @@
     </p>
     <div class="flex flex-col sm:flex-row gap-3 justify-center">
       <div class="flex items-center gap-3 bg-zinc-950 border border-zinc-700 rounded-lg px-5 py-3 font-mono text-sm cursor-pointer copy-btn hover:border-zinc-500 transition-colors"
-           onclick="navigator.clipboard.writeText('npm install @agent-e/core'); this.querySelector('.copy-label').textContent = 'Copied!'; setTimeout(() => this.querySelector('.copy-label').textContent = 'Copy', 2000)">
+           role="button" tabindex="0"
+           onclick="navigator.clipboard.writeText('npm install @agent-e/core'); this.querySelector('.copy-label').textContent = 'Copied!'; setTimeout(() => this.querySelector('.copy-label').textContent = 'Copy', 2000)"
+           onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();this.click();}">
         <span class="text-zinc-500">$</span>
         <span class="text-white">npm install @agent-e/core</span>
         <span class="copy-label ml-4 text-zinc-600 text-xs">Copy</span>
@@ -397,7 +401,7 @@
   <div class="flex flex-col sm:flex-row items-center justify-between gap-4">
     <div class="flex items-center gap-3">
       <span class="font-mono text-sm text-zinc-600">AgentE</span>
-      <span class="font-mono text-xs text-zinc-800">v1.0.6</span>
+      <span class="font-mono text-xs text-zinc-800">v1.0.7</span>
     </div>
     <p class="font-mono text-xs text-zinc-700">Built by Oka × Claude — AB Labs</p>
     <a href="https://github.com/GameDesignerMohamed/Agent-E" target="_blank" rel="noopener"
@@ -600,19 +604,22 @@
 
 <script>
   // Scroll-triggered fade-ins
-  const observer = new IntersectionObserver(
-    (entries) => {
-      for (const entry of entries) {
-        if (entry.isIntersecting) {
-          entry.target.classList.add('visible');
-          observer.unobserve(entry.target);
-        }
-      }
-    },
-    { threshold: 0.1 }
-  );
-
-  document.querySelectorAll('.fade-in').forEach(el => observer.observe(el));
+  (function() {
+    var observer = new IntersectionObserver(
+      function(entries) {
+        entries.forEach(function(entry) {
+          if (entry.isIntersecting) {
+            entry.target.classList.add('visible');
+            observer.unobserve(entry.target);
+          }
+        });
+      },
+      { threshold: 0.1 }
+    );
+    document.querySelectorAll('.fade-in').forEach(function(el) {
+      observer.observe(el);
+    });
+  })();
 </script>
 
 </body>
