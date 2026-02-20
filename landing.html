@@ -26,8 +26,6 @@
     }
   </script>
   <style>
-    *, *::before, *::after { box-sizing: border-box; }
-
     html { scroll-behavior: smooth; }
 
     body {
@@ -73,7 +71,7 @@
   <div class="max-w-6xl mx-auto px-6 h-14 flex items-center justify-between">
     <div class="flex items-center gap-3">
       <span class="font-mono text-sm font-medium text-white">AgentE</span>
-      <span class="font-mono text-xs text-zinc-600 bg-zinc-900 px-2 py-0.5 rounded">v1.0.8</span>
+      <span class="font-mono text-xs text-zinc-600 bg-zinc-900 px-2 py-0.5 rounded">v1.0.9</span>
     </div>
     <div class="flex items-center gap-6">
       <a href="#how-it-works" class="text-sm text-zinc-400 hover:text-white transition-colors">Docs</a>
@@ -147,7 +145,7 @@
 <section class="px-6 pb-24 max-w-6xl mx-auto fade-in">
   <div class="grid grid-cols-2 md:grid-cols-4 gap-px bg-zinc-800 border border-zinc-800 rounded-xl overflow-hidden">
     <div class="bg-[#09090b] p-8 text-center">
-      <div class="font-mono text-4xl font-medium text-white tabular-nums">54</div>
+      <div class="font-mono text-4xl font-medium text-white tabular-nums">60</div>
       <div class="text-zinc-500 text-sm mt-2">Principles</div>
     </div>
     <div class="bg-[#09090b] p-8 text-center">
@@ -181,7 +179,7 @@
     <div class="bg-zinc-950 border border-zinc-800 rounded-xl p-6 hover:border-zinc-600 transition-colors">
       <div class="font-mono text-xs text-zinc-600 mb-3">02</div>
       <div class="font-mono text-sm text-accent font-medium mb-3">DIAGNOSE</div>
-      <p class="text-zinc-400 text-sm leading-relaxed">Runs all 54 principles against live metrics every tick. Returns every violation, ranked by severity.</p>
+      <p class="text-zinc-400 text-sm leading-relaxed">Runs all 60 principles against live metrics every tick. Returns every violation, ranked by severity.</p>
     </div>
     <div class="bg-zinc-950 border border-zinc-800 rounded-xl p-6 hover:border-zinc-600 transition-colors">
       <div class="font-mono text-xs text-zinc-600 mb-3">03</div>
@@ -205,7 +203,7 @@
 <section class="px-6 pb-24 max-w-6xl mx-auto fade-in">
   <div class="mb-12">
     <p class="font-mono text-xs text-accent mb-3">THE KNOWLEDGE BASE</p>
-    <h2 class="font-serif text-4xl md:text-5xl text-balance">54 principles.<br><em>Zero guesswork.</em></h2>
+    <h2 class="font-serif text-4xl md:text-5xl text-balance">60 principles.<br><em>Zero guesswork.</em></h2>
     <p class="text-zinc-400 mt-4 max-w-xl text-pretty">Every principle earned its place by preventing a real economy failure.</p>
   </div>
 
@@ -257,7 +255,7 @@
   <div class="mt-6 text-center">
     <a href="principles.html"
        class="text-sm text-zinc-500 hover:text-zinc-300 transition-colors font-mono">
-      View all 54 principles →
+      View all 60 principles →
     </a>
   </div>
 </section>
@@ -323,7 +321,7 @@
     <div>
       <p class="font-mono text-xs text-accent mb-3">EXTENSIBLE</p>
       <h2 class="font-serif text-4xl text-balance mb-4">Add your own<br><em>principles.</em></h2>
-      <p class="text-zinc-400 text-pretty leading-relaxed">The 54 built-in principles are a starting point. Your game has its own invariants. Register them in the same format and they run in the same pipeline.</p>
+      <p class="text-zinc-400 text-pretty leading-relaxed">The 60 built-in principles are a starting point. Your game has its own invariants. Register them in the same format and they run in the same pipeline.</p>
     </div>
     <div class="bg-zinc-950 border border-zinc-800 rounded-xl overflow-hidden">
       <pre class="p-5 text-xs font-mono leading-6 overflow-x-auto"><code><span class="text-white">agentE</span><span class="text-zinc-500">.</span><span class="text-accent">addPrinciple</span><span class="text-zinc-500">({</span>
@@ -401,7 +399,7 @@
   <div class="flex flex-col sm:flex-row items-center justify-between gap-4">
     <div class="flex items-center gap-3">
       <span class="font-mono text-sm text-zinc-600">AgentE</span>
-      <span class="font-mono text-xs text-zinc-800">v1.0.8</span>
+      <span class="font-mono text-xs text-zinc-800">v1.0.9</span>
     </div>
     <p class="font-mono text-xs text-zinc-700">Built by Oka × Claude — AB Labs</p>
     <a href="https://github.com/GameDesignerMohamed/Agent-E" target="_blank" rel="noopener"
@@ -443,6 +441,12 @@
     {id:'P43', name:'Simulation Minimum (100 Iterations)'},
     {id:'P46', name:'Persona Diversity'},
     {id:'P48', name:'Currency Insulation'},
+    {id:'P55', name:'Arbitrage Thermometer'},
+    {id:'P56', name:'Content-Drop Shock'},
+    {id:'P57', name:'Combinatorial Price Space'},
+    {id:'P58', name:'No Natural Numéraire'},
+    {id:'P59', name:'Gift-Economy Noise'},
+    {id:'P60', name:'Surplus Disposal Asymmetry'},
   ];
 
   // ── Helpers ──
@@ -491,6 +495,17 @@
       + '<span class="text-zinc-600"> | Decisions: </span><span class="text-accent tabular-nums">' + decisions + '</span>';
   }
 
+  function mkParamLine(p, param, oldVal, newVal, suffix) {
+    return '<span class="text-zinc-600">  [Tick ' + pad(tick) + ']</span>'
+      + '<span class="text-accent"> ✅ </span>'
+      + '<span class="text-white">[' + p.id + ']' + (p.name ? ' ' + p.name + ':' : '') + '</span>'
+      + '<span class="text-zinc-400"> ' + param + ' </span>'
+      + '<span class="text-zinc-300 tabular-nums">' + fmt(oldVal) + '</span>'
+      + '<span class="text-zinc-500"> → </span>'
+      + '<span class="text-accent tabular-nums">' + fmt(newVal) + '</span>'
+      + (suffix || '');
+  }
+
   function mkAction() {
     var p = pick(PRINCIPLES);
     var param = pick(PARAMS);
@@ -502,14 +517,8 @@
     var sev = rand(3, 8);
     var conf = rand(70, 96);
 
-    return '<span class="text-zinc-600">  [Tick ' + pad(tick) + ']</span>'
-      + '<span class="text-accent"> ✅ </span>'
-      + '<span class="text-white">[' + p.id + '] ' + p.name + ':</span>'
-      + '<span class="text-zinc-400"> ' + param + ' </span>'
-      + '<span class="text-zinc-300 tabular-nums">' + fmt(oldVal) + '</span>'
-      + '<span class="text-zinc-500"> → </span>'
-      + '<span class="text-accent tabular-nums">' + fmt(newVal) + '</span>'
-      + '<span class="text-zinc-600">  severity ' + sev + '/10, confidence ' + conf + '%</span>';
+    return mkParamLine(p, param, oldVal, newVal,
+      '<span class="text-zinc-600">  severity ' + sev + '/10, confidence ' + conf + '%</span>');
   }
 
   function mkViolation() {
@@ -556,14 +565,8 @@
         var newVal = clamp(oldVal * (1 + (Math.random() - 0.3) * 0.2), 0.05, 12);
         paramState[param] = +newVal.toFixed(3);
         decisions++;
-        addLine('<span class="text-zinc-600">  [Tick ' + pad(tick) + ']</span>'
-          + '<span class="text-accent"> ✅ </span>'
-          + '<span class="text-white">[' + p.id + ']</span>'
-          + '<span class="text-zinc-400"> ' + param + ' </span>'
-          + '<span class="text-zinc-300 tabular-nums">' + fmt(oldVal) + '</span>'
-          + '<span class="text-zinc-500"> → </span>'
-          + '<span class="text-accent tabular-nums">' + fmt(newVal) + '</span>'
-          + '<span class="text-zinc-600">  simulation passed</span>');
+        addLine(mkParamLine(p, param, oldVal, newVal,
+          '<span class="text-zinc-600">  simulation passed</span>'));
       }, 900);
     }
   }

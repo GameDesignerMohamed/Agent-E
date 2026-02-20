@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="description" content="The 60 principles autonomous economies enforce on themselves — from supply-chain balance to LiveOps decay curves.">
-  <title>AgentE — 54 Principles</title>
+  <title>AgentE — 60 Principles</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -968,7 +968,7 @@
   <div class="flex flex-col sm:flex-row items-center justify-between gap-4">
     <div class="flex items-center gap-3">
       <span class="font-mono text-sm text-zinc-600">AgentE</span>
-      <span class="font-mono text-xs text-zinc-800">v1.0.8</span>
+      <span class="font-mono text-xs text-zinc-800">v1.0.9</span>
     </div>
     <p class="font-mono text-xs text-zinc-700">Built by Oka &times; Claude &mdash; AB Labs</p>
     <span class="font-mono text-xs text-zinc-700">60 principles &middot; Zero guesswork</span>
@@ -1023,7 +1023,7 @@
       code: 'sharkToothPeakDecay: 0.95,\nsharkToothValleyDecay: 0.90,\neventCompletionMin: 0.40,\neventCompletionMax: 0.80,\neventCompletionTarget: [0.60, 0.80],\ncontentDropCooldownTicks: 30,\npostDropArbitrageMax: 0.45,'
     },
     'system-design': {
-      label: 'System Design (P39, P44)',
+      label: 'System Design / Dynamics (P39, P44)',
       code: 'lagMultiplier: [3, 5],\ncomplexityBudgetMax: 20,\ncomplexityImpactMin: 0.05,'
     },
     'resource': {
@@ -1035,8 +1035,8 @@
       code: 'relativePriceConvergenceTarget: 0.85,\npriceDiscoveryWindowTicks: 20,'
     },
     'dynamics': {
-      label: 'Dynamics (P39)',
-      code: 'lagMultiplier: [3, 5],'
+      label: 'Dynamics / System Design (P39, P44)',
+      code: 'lagMultiplier: [3, 5],\ncomplexityBudgetMax: 20,\ncomplexityImpactMin: 0.05,'
     },
   };
 
