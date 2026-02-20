@@ -881,7 +881,7 @@
   <div class="flex flex-col sm:flex-row items-center justify-between gap-4">
     <div class="flex items-center gap-3">
       <span class="font-mono text-sm text-zinc-600">AgentE</span>
-      <span class="font-mono text-xs text-zinc-800">v1.0.5</span>
+      <span class="font-mono text-xs text-zinc-800">v1.0.6</span>
     </div>
     <p class="font-mono text-xs text-zinc-700">Built by Oka &times; Claude &mdash; AB Labs</p>
     <span class="font-mono text-xs text-zinc-700">54 principles &middot; Zero guesswork</span>
@@ -891,17 +891,37 @@
 <script>
   // ── Threshold data keyed by category ──
   const THRESHOLDS = {
+    'supply-chain': {
+      label: 'Supply Chain (P1, P4)',
+      code: 'consumptionProductionRatio: 1.0,\ndeliveryRateMin: 1.0,'
+    },
+    'incentive': {
+      label: 'Incentive (P7)',
+      code: 'specialistShareMax: 0.70,'
+    },
+    'population': {
+      label: 'Population (P9, P46)',
+      code: 'roleSwitchRateMax: 0.05,\npersonaMonocultureMax: 0.40,\npersonaMinClusters: 3,'
+    },
+    'currency': {
+      label: 'Currency (P15)',
+      code: 'poolCapPercent: 0.10,'
+    },
+    'bootstrap': {
+      label: 'Bootstrap (P17)',
+      code: 'gracePeriodTicks: 50,'
+    },
     'regulator': {
       label: 'Regulator (P26–P27)',
       code: 'maxAdjustmentPercent: 0.15,\ncooldownTicks: 15,'
     },
+    'measurement': {
+      label: 'Measurement (P31)',
+      code: 'anchorDriftMax: 0.20,'
+    },
     'statistical': {
       label: 'Statistical (P42–P43)',
       code: 'meanMedianDivergenceMax: 0.30,\nsimulationMinIterations: 100,'
-    },
-    'population': {
-      label: 'Population (P46)',
-      code: 'personaMonocultureMax: 0.40,\npersonaMinClusters: 3,'
     },
     'open-economy': {
       label: 'Open Economy (P34, P47–P48)',

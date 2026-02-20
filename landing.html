@@ -47,20 +47,6 @@
       to { opacity: 1; transform: translateY(0); }
     }
 
-    /* Cursor blink */
-    .cursor {
-      display: inline-block;
-      width: 8px;
-      height: 14px;
-      background: #22c55e;
-      vertical-align: middle;
-      animation: blink 1s step-end infinite;
-    }
-    @keyframes blink {
-      0%, 100% { opacity: 1; }
-      50% { opacity: 0; }
-    }
-
     /* Section fade in on scroll */
     .fade-in {
       opacity: 0;
@@ -75,31 +61,19 @@
     /* Copy button */
     .copy-btn:active { transform: scale(0.96); }
 
-    /* Pipeline connector */
-    .pipeline-arrow::after {
-      content: '→';
-      color: #3f3f46;
-      font-size: 1.25rem;
-      position: absolute;
-      right: -18px;
-      top: 50%;
-      transform: translateY(-50%);
-    }
-
     @media (prefers-reduced-motion: reduce) {
       .term-line, .fade-in { animation: none; opacity: 1; transform: none; transition: none; }
-      .cursor { animation: none; }
     }
   </style>
 </head>
 <body>
 
 <!-- ── Nav ─────────────────────────────────────────────────────────────────── -->
-<nav class="fixed top-0 left-0 right-0 z-50 border-b border-zinc-900 bg-black/90 backdrop-blur-sm" style="padding: env(safe-area-inset-top) env(safe-area-inset-right) 0 env(safe-area-inset-left);">
+<nav class="fixed top-0 left-0 right-0 z-50 border-b border-zinc-900 bg-[#09090b]/90 backdrop-blur-sm" style="padding: env(safe-area-inset-top) env(safe-area-inset-right) 0 env(safe-area-inset-left);">
   <div class="max-w-6xl mx-auto px-6 h-14 flex items-center justify-between">
     <div class="flex items-center gap-3">
       <span class="font-mono text-sm font-medium text-white">AgentE</span>
-      <span class="font-mono text-xs text-zinc-600 bg-zinc-900 px-2 py-0.5 rounded">v1.0.5</span>
+      <span class="font-mono text-xs text-zinc-600 bg-zinc-900 px-2 py-0.5 rounded">v1.0.6</span>
     </div>
     <div class="flex items-center gap-6">
       <a href="#how-it-works" class="text-sm text-zinc-400 hover:text-white transition-colors">Docs</a>
@@ -170,19 +144,19 @@
 <!-- ── Stats ──────────────────────────────────────────────────────────────── -->
 <section class="px-6 pb-24 max-w-6xl mx-auto fade-in">
   <div class="grid grid-cols-2 md:grid-cols-4 gap-px bg-zinc-800 border border-zinc-800 rounded-xl overflow-hidden">
-    <div class="bg-black p-8 text-center">
+    <div class="bg-[#09090b] p-8 text-center">
       <div class="font-mono text-4xl font-medium text-white tabular-nums">54</div>
       <div class="text-zinc-500 text-sm mt-2">Principles</div>
     </div>
-    <div class="bg-black p-8 text-center">
+    <div class="bg-[#09090b] p-8 text-center">
       <div class="font-mono text-4xl font-medium text-white tabular-nums">5</div>
       <div class="text-zinc-500 text-sm mt-2">Pipeline Stages</div>
     </div>
-    <div class="bg-black p-8 text-center">
+    <div class="bg-[#09090b] p-8 text-center">
       <div class="font-mono text-4xl font-medium text-white tabular-nums">100+</div>
       <div class="text-zinc-500 text-sm mt-2">Monte Carlo Runs</div>
     </div>
-    <div class="bg-black p-8 text-center">
+    <div class="bg-[#09090b] p-8 text-center">
       <div class="font-mono text-4xl font-medium text-accent tabular-nums">3</div>
       <div class="text-zinc-500 text-sm mt-2">Lines to Integrate</div>
     </div>
@@ -423,7 +397,7 @@
   <div class="flex flex-col sm:flex-row items-center justify-between gap-4">
     <div class="flex items-center gap-3">
       <span class="font-mono text-sm text-zinc-600">AgentE</span>
-      <span class="font-mono text-xs text-zinc-800">v1.0.5</span>
+      <span class="font-mono text-xs text-zinc-800">v1.0.6</span>
     </div>
     <p class="font-mono text-xs text-zinc-700">Built by Oka × Claude — AB Labs</p>
     <a href="https://github.com/GameDesignerMohamed/Agent-E" target="_blank" rel="noopener"
