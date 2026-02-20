@@ -47,7 +47,7 @@
 <body class="font-sans text-zinc-100 antialiased">
 
 <!-- Nav -->
-<nav class="fixed top-0 w-full backdrop-blur-sm bg-[#09090b]/90 border-b border-zinc-900 z-50 px-6 py-3">
+<nav class="fixed top-0 left-0 right-0 backdrop-blur-sm bg-[#09090b]/90 border-b border-zinc-900 z-50 px-6 py-3" style="padding-top: env(safe-area-inset-top); padding-left: max(1.5rem, env(safe-area-inset-left)); padding-right: max(1.5rem, env(safe-area-inset-right));">
   <div class="max-w-6xl mx-auto flex items-center justify-between">
     <div class="flex items-center gap-3">
       <a href="landing.html" class="font-mono text-sm text-zinc-400 hover:text-white transition-colors">AgentE</a>
@@ -75,7 +75,7 @@
 </section>
 
 <!-- Filter bar -->
-<section class="px-6 pb-6 max-w-6xl mx-auto sticky top-[57px] z-40 bg-[#09090b] pt-4">
+<section class="px-6 pb-6 max-w-6xl mx-auto sticky top-[57px] z-40 bg-[#09090b] pt-4 border-b border-zinc-900/50">
   <div class="flex flex-wrap gap-2" id="filters">
     <button class="category-pill active font-mono text-xs border border-zinc-800 rounded-full px-3 py-1.5 text-zinc-400" data-filter="all">All (60)</button>
     <button class="category-pill font-mono text-xs border border-zinc-800 rounded-full px-3 py-1.5 text-zinc-400" data-filter="supply-chain">Supply Chain (5)</button>
@@ -858,7 +858,7 @@
       </div>
     </div>
 
-    <!-- ═══ V1.0.8 — Digital Economy Research (Varoufakis / Valve 2012) ═══ -->
+    <!-- ═══ V1.0.8 — Digital Economy Research ═══ -->
 
     <!-- P55 -->
     <div class="principle-card bg-zinc-950 border border-zinc-800 rounded-xl p-5 hover:border-zinc-700 transition-colors" data-category="measurement" data-source="v1">
@@ -968,7 +968,7 @@
   <div class="flex flex-col sm:flex-row items-center justify-between gap-4">
     <div class="flex items-center gap-3">
       <span class="font-mono text-sm text-zinc-600">AgentE</span>
-      <span class="font-mono text-xs text-zinc-800">v1.0.9</span>
+      <span class="font-mono text-xs text-zinc-800">v1.0.10</span>
     </div>
     <p class="font-mono text-xs text-zinc-700">Built by Oka &times; Claude &mdash; AB Labs</p>
     <span class="font-mono text-xs text-zinc-700">60 principles &middot; Zero guesswork</span>
@@ -976,8 +976,10 @@
 </footer>
 
 <script>
+  // ── Filter + Thresholds ──
+  (function() {
   // ── Threshold data keyed by category ──
-  const THRESHOLDS = {
+  var THRESHOLDS = {
     'supply-chain': {
       label: 'Supply Chain (P1, P4)',
       code: 'consumptionProductionRatio: 1.0,\ndeliveryRateMin: 1.0,'
@@ -1023,25 +1025,31 @@
       code: 'sharkToothPeakDecay: 0.95,\nsharkToothValleyDecay: 0.90,\neventCompletionMin: 0.40,\neventCompletionMax: 0.80,\neventCompletionTarget: [0.60, 0.80],\ncontentDropCooldownTicks: 30,\npostDropArbitrageMax: 0.45,'
     },
     'system-design': {
-      label: 'System Design / Dynamics (P39, P44)',
-      code: 'lagMultiplier: [3, 5],\ncomplexityBudgetMax: 20,\ncomplexityImpactMin: 0.05,'
+      label: 'System Design (P44)',
+      code: 'complexityBudgetMax: 20,\ncomplexityImpactMin: 0.05,'
     },
     'resource': {
       label: 'Resource (P40)',
       code: 'replacementRateMultiplier: 2.0,'
+    },
+    'feedback': {
+      label: 'Feedback (P20, P22)',
+      code: 'decayRateFloor: 0.01,\nmarketAwarenessLag: 3,'
+    },
+    'wealth': {
+      label: 'Wealth (P33)',
+      code: 'giniMax: 0.60,\nginiTarget: [0.25, 0.45],'
     },
     'market': {
       label: 'Market (P57)',
       code: 'relativePriceConvergenceTarget: 0.85,\npriceDiscoveryWindowTicks: 20,'
     },
     'dynamics': {
-      label: 'Dynamics / System Design (P39, P44)',
-      code: 'lagMultiplier: [3, 5],\ncomplexityBudgetMax: 20,\ncomplexityImpactMin: 0.05,'
+      label: 'Dynamics (P39)',
+      code: 'lagMultiplier: [3, 5],'
     },
   };
 
-  // ── Filter + Thresholds ──
-  (function() {
     var filters = document.getElementById('filters');
     var cards = document.querySelectorAll('.principle-card');
     var panel = document.getElementById('thresholds-panel');
