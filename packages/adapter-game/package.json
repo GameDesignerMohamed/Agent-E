@@ -1,7 +1,13 @@
 {
   "name": "@agent-e/adapter-game",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "AgentE adapter for game economies",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/AE-Vault/AgentE-v0.git",
+    "directory": "packages/adapter-game"
+  },
   "main": "./dist/index.cjs",
   "module": "./dist/index.js",
   "types": "./dist/index.d.ts",
@@ -16,6 +22,16 @@
   "scripts": {
     "build": "tsup",
     "dev": "tsup --watch"
+  },
+  "keywords": [
+    "economy",
+    "balancer",
+    "game-economy",
+    "adapter",
+    "simulation"
+  ],
+  "publishConfig": {
+    "access": "public"
   },
   "dependencies": {
     "@agent-e/core": "*"

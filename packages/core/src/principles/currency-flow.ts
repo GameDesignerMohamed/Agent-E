@@ -241,6 +241,59 @@ export const P32_VelocityAboveSupply: Principle = {
   },
 };
 
+export const P58_NoNaturalNumeraire: Principle = {
+  id: 'P58',
+  name: 'No Natural Numéraire',
+  category: 'currency',
+  description:
+    'No single commodity naturally stabilizes as currency in barter-heavy economies. ' +
+    'Multiple items rotate as de facto units of account, but none locks in. ' +
+    'If a numéraire is needed, design and enforce it — emergence alone will not produce one.',
+  check(metrics, _thresholds): PrincipleResult {
+    const { prices, velocity, totalSupply } = metrics;
+
+    // Detect barter-dominant economy: high trade velocity but most resources
+    // have prices close to each other (no clear numéraire emerging)
+    const priceValues = Object.values(prices).filter(p => p > 0);
+    if (priceValues.length < 3) return { violated: false };
+
+    const mean = priceValues.reduce((s, p) => s + p, 0) / priceValues.length;
+    const coeffOfVariation = mean > 0
+      ? Math.sqrt(
+          priceValues.reduce((s, p) => s + (p - mean) ** 2, 0) / priceValues.length
+        ) / mean
+      : 0;
+
+    // Low CoV = all items priced similarly = no emergent numéraire
+    // Combined with high velocity = active barter economy
+    if (coeffOfVariation < 0.25 && velocity > 5 && totalSupply > 100) {
+      return {
+        violated: true,
+        severity: 3,
+        evidence: {
+          coeffOfVariation,
+          velocity,
+          numResources: priceValues.length,
+          meanPrice: mean,
+        },
+        suggestedAction: {
+          parameter: 'craftingCost',
+          direction: 'increase',
+          magnitude: 0.10,
+          reasoning:
+            `Price coefficient of variation ${coeffOfVariation.toFixed(2)} with velocity ${velocity.toFixed(1)}. ` +
+            'All items priced similarly in an active economy — no natural numéraire emerging. ' +
+            'If a designated currency exists, increase its sink demand to differentiate it.',
+        },
+        confidence: 0.50,
+        estimatedLag: 20,
+      };
+    }
+
+    return { violated: false };
+  },
+};
+
 export const CURRENCY_FLOW_PRINCIPLES: Principle[] = [
   P12_OnePrimaryFaucet,
   P13_PotsAreZeroSumAndSelfRegulate,
@@ -248,4 +301,5 @@ export const CURRENCY_FLOW_PRINCIPLES: Principle[] = [
   P15_PoolsNeedCapAndDecay,
   P16_WithdrawalPenaltyScales,
   P32_VelocityAboveSupply,
+  P58_NoNaturalNumeraire,
 ];

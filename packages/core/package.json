@@ -1,7 +1,13 @@
 {
   "name": "@agent-e/core",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Autonomous economic balancer — observe, diagnose, simulate, plan, execute",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/AE-Vault/AgentE-v0.git",
+    "directory": "packages/core"
+  },
   "main": "./dist/index.cjs",
   "module": "./dist/index.js",
   "types": "./dist/index.d.ts",
@@ -16,6 +22,18 @@
   "scripts": {
     "build": "tsup",
     "dev": "tsup --watch"
+  },
+  "keywords": [
+    "economy",
+    "balancer",
+    "game-economy",
+    "defi",
+    "marketplace",
+    "autonomous",
+    "simulation"
+  ],
+  "publishConfig": {
+    "access": "public"
   },
   "devDependencies": {
     "tsup": "*",

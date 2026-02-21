@@ -148,6 +148,67 @@ export class Observer {
           : 0;
     }
 
+    // ── V1.1 Metrics ──
+
+    // arbitrageIndex: average pairwise price divergence across all resources
+    // For N resources with prices, compute all (N-1)*N/2 relative price ratios
+    // and measure how far they deviate from 1.0 (perfect equilibrium)
+    let arbitrageIndex = 0;
+    const priceKeys = Object.keys(prices).filter(k => prices[k]! > 0);
+    if (priceKeys.length >= 2) {
+      let pairCount = 0;
+      let totalDivergence = 0;
+      for (let i = 0; i < priceKeys.length; i++) {
+        for (let j = i + 1; j < priceKeys.length; j++) {
+          const pA = prices[priceKeys[i]!]!;
+          const pB = prices[priceKeys[j]!]!;
+          const ratio = pA / pB;
+          // Divergence from 1.0: |ln(ratio)| gives symmetric measure
+          totalDivergence += Math.abs(Math.log(ratio));
+          pairCount++;
+        }
+      }
+      arbitrageIndex = pairCount > 0 ? Math.min(1, totalDivergence / pairCount) : 0;
+    }
+
+    // contentDropAge: ticks since last 'produce' event with metadata.contentDrop === true
+    // Falls back to 0 if no content drops tracked
+    const contentDropEvents = recentEvents.filter(
+      e => e.metadata?.['contentDrop'] === true
+    );
+    const contentDropAge = contentDropEvents.length > 0
+      ? tick - Math.max(...contentDropEvents.map(e => e.timestamp))
+      : (this.previousMetrics?.contentDropAge ?? 0) + 1;
+
+    // giftTradeRatio: fraction of trades where price is 0 or significantly below market
+    let giftTrades = 0;
+    if (tradeEvents.length > 0) {
+      for (const e of tradeEvents) {
+        const marketPrice = prices[e.resource ?? ''] ?? 0;
+        const tradePrice = e.price ?? 0;
+        if (tradePrice === 0 || (marketPrice > 0 && tradePrice < marketPrice * 0.3)) {
+          giftTrades++;
+        }
+      }
+    }
+    const giftTradeRatio = tradeEvents.length > 0 ? giftTrades / tradeEvents.length : 0;
+
+    // disposalTradeRatio: fraction of trades classified as surplus liquidation
+    // Heuristic: trade where seller has >3× average inventory of that resource
+    let disposalTrades = 0;
+    if (tradeEvents.length > 0) {
+      for (const e of tradeEvents) {
+        if (e.from && e.resource) {
+          const sellerInv = state.agentInventories[e.from]?.[e.resource] ?? 0;
+          const avgInv = (supplyByResource[e.resource] ?? 0) / Math.max(1, totalAgents);
+          if (sellerInv > avgInv * 3) {
+            disposalTrades++;
+          }
+        }
+      }
+    }
+    const disposalTradeRatio = tradeEvents.length > 0 ? disposalTrades / tradeEvents.length : 0;
+
     // ── Custom metrics ──
     const custom: Record<string, number> = {};
     for (const [name, fn] of Object.entries(this.customMetricFns)) {
@@ -199,6 +260,10 @@ export class Observer {
       sharkToothPeaks: this.previousMetrics?.sharkToothPeaks ?? [],
       sharkToothValleys: this.previousMetrics?.sharkToothValleys ?? [],
       eventCompletionRate: NaN,
+      arbitrageIndex,
+      contentDropAge,
+      giftTradeRatio,
+      disposalTradeRatio,
       custom,
     };
 

@@ -196,9 +196,50 @@ export const P4_MaterialsFlowFasterThanCooldown: Principle = {
   },
 };
 
+export const P60_SurplusDisposalAsymmetry: Principle = {
+  id: 'P60',
+  name: 'Surplus Disposal Asymmetry',
+  category: 'supply_chain',
+  description:
+    'Most trades liquidate unwanted surplus, not deliberate production. ' +
+    'Price signals from disposal trades are weaker demand indicators than ' +
+    'production-for-sale trades — weight them accordingly.',
+  check(metrics, thresholds): PrincipleResult {
+    const { disposalTradeRatio } = metrics;
+
+    // If majority of trades are disposal, price signals are unreliable
+    if (disposalTradeRatio > 0.60) {
+      return {
+        violated: true,
+        severity: 5,
+        evidence: {
+          disposalTradeRatio,
+          discount: thresholds.disposalTradeWeightDiscount,
+        },
+        suggestedAction: {
+          parameter: 'craftingCost',
+          direction: 'decrease',
+          magnitude: 0.10,
+          reasoning:
+            `${(disposalTradeRatio * 100).toFixed(0)}% of trades are surplus disposal. ` +
+            'Price signals unreliable as demand indicators. ' +
+            'Lower production costs to shift balance toward deliberate production-for-sale. ' +
+            `ADVISORY: Weight disposal-trade prices at ${thresholds.disposalTradeWeightDiscount}× ` +
+            'in index calculations.',
+        },
+        confidence: 0.65,
+        estimatedLag: 15,
+      };
+    }
+
+    return { violated: false };
+  },
+};
+
 export const SUPPLY_CHAIN_PRINCIPLES: Principle[] = [
   P1_ProductionMatchesConsumption,
   P2_ClosedLoopsNeedDirectHandoff,
   P3_BootstrapCapitalCoversFirstTransaction,
   P4_MaterialsFlowFasterThanCooldown,
+  P60_SurplusDisposalAsymmetry,
 ];

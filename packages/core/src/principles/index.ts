@@ -31,21 +31,21 @@ export * from './player-experience.js';
 export * from './open-economy.js';
 export * from './liveops.js';
 
-/** All 54 built-in principles in priority order (supply chain → liveops) */
+/** All 60 built-in principles in priority order (supply chain → liveops) */
 export const ALL_PRINCIPLES: Principle[] = [
-  ...SUPPLY_CHAIN_PRINCIPLES,      // P1-P4
+  ...SUPPLY_CHAIN_PRINCIPLES,      // P1-P4, P60
   ...INCENTIVE_PRINCIPLES,         // P5-P8
   ...POPULATION_PRINCIPLES,        // P9-P11, P46
-  ...CURRENCY_FLOW_PRINCIPLES,     // P12-P16, P32
+  ...CURRENCY_FLOW_PRINCIPLES,     // P12-P16, P32, P58
   ...BOOTSTRAP_PRINCIPLES,         // P17-P19
   ...FEEDBACK_LOOP_PRINCIPLES,     // P20-P24
   ...REGULATOR_PRINCIPLES,         // P25-P28, P38
-  ...MARKET_DYNAMICS_PRINCIPLES,   // P29-P30
-  ...MEASUREMENT_PRINCIPLES,       // P31, P41
+  ...MARKET_DYNAMICS_PRINCIPLES,   // P29-P30, P57
+  ...MEASUREMENT_PRINCIPLES,       // P31, P41, P55, P59
   ...STATISTICAL_PRINCIPLES,       // P42-P43
   ...SYSTEM_DYNAMICS_PRINCIPLES,   // P39, P44
   ...RESOURCE_MGMT_PRINCIPLES,     // P35, P40, P49
-  ...PLAYER_EXPERIENCE_PRINCIPLES, // P33, P37, P45, P50
+  ...PLAYER_EXPERIENCE_PRINCIPLES, // P33, P36, P37, P45, P50
   ...OPEN_ECONOMY_PRINCIPLES,      // P34, P47-P48
-  ...LIVEOPS_PRINCIPLES,           // P51-P54
+  ...LIVEOPS_PRINCIPLES,           // P51-P54, P56
 ];

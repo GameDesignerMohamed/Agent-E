@@ -98,7 +98,69 @@ export const P30_MovingPinchPoint: Principle = {
   },
 };
 
+export const P57_CombinatorialPriceSpace: Principle = {
+  id: 'P57',
+  name: 'Combinatorial Price Space',
+  category: 'market_dynamics',
+  description:
+    'N tradeable items generate (N−1)N/2 relative prices. With thousands of items ' +
+    'no single agent can track them all. Design for distributed self-organization, ' +
+    'not centralized pricing.',
+  check(metrics, thresholds): PrincipleResult {
+    const { prices, priceVolatility } = metrics;
+
+    const priceKeys = Object.keys(prices);
+    const n = priceKeys.length;
+    const relativePriceCount = (n * (n - 1)) / 2;
+
+    if (n < 2) return { violated: false };
+
+    // Count how many relative prices have converged (low volatility on both sides)
+    let convergedPairs = 0;
+    for (let i = 0; i < priceKeys.length; i++) {
+      for (let j = i + 1; j < priceKeys.length; j++) {
+        const volA = priceVolatility[priceKeys[i]!] ?? 0;
+        const volB = priceVolatility[priceKeys[j]!] ?? 0;
+        // Both items stable = pair converged
+        if (volA < 0.20 && volB < 0.20) {
+          convergedPairs++;
+        }
+      }
+    }
+
+    const convergenceRate = convergedPairs / Math.max(1, relativePriceCount);
+
+    if (convergenceRate < thresholds.relativePriceConvergenceTarget && n >= 4) {
+      return {
+        violated: true,
+        severity: 4,
+        evidence: {
+          totalItems: n,
+          relativePriceCount,
+          convergedPairs,
+          convergenceRate,
+          target: thresholds.relativePriceConvergenceTarget,
+        },
+        suggestedAction: {
+          parameter: 'auctionFee',
+          direction: 'decrease',
+          magnitude: 0.10,
+          reasoning:
+            `Only ${(convergenceRate * 100).toFixed(0)}% of ${relativePriceCount} relative prices ` +
+            `have converged (target: ${(thresholds.relativePriceConvergenceTarget * 100).toFixed(0)}%). ` +
+            'Price space too complex for distributed discovery. Lower friction to help.',
+        },
+        confidence: 0.60,
+        estimatedLag: thresholds.priceDiscoveryWindowTicks,
+      };
+    }
+
+    return { violated: false };
+  },
+};
+
 export const MARKET_DYNAMICS_PRINCIPLES: Principle[] = [
   P29_PinchPoint,
   P30_MovingPinchPoint,
+  P57_CombinatorialPriceSpace,
 ];

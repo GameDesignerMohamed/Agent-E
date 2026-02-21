@@ -74,7 +74,107 @@ export const P41_MultiResolutionMonitoring: Principle = {
   },
 };
 
+export const P55_ArbitrageThermometer: Principle = {
+  id: 'P55',
+  name: 'Arbitrage Thermometer',
+  category: 'measurement',
+  description:
+    'A virtual economy is never in true equilibrium — it oscillates around it. ' +
+    'The aggregate arbitrage window across relative prices is a live health metric: ' +
+    'rising arbitrage signals destabilization, falling signals recovery.',
+  check(metrics, thresholds): PrincipleResult {
+    const { arbitrageIndex } = metrics;
+
+    if (arbitrageIndex > thresholds.arbitrageIndexCritical) {
+      return {
+        violated: true,
+        severity: 7,
+        evidence: {
+          arbitrageIndex,
+          warning: thresholds.arbitrageIndexWarning,
+          critical: thresholds.arbitrageIndexCritical,
+        },
+        suggestedAction: {
+          parameter: 'auctionFee',
+          direction: 'decrease',
+          magnitude: 0.15,
+          reasoning:
+            `Arbitrage index ${arbitrageIndex.toFixed(2)} exceeds critical threshold ` +
+            `(${thresholds.arbitrageIndexCritical}). Relative prices are diverging — ` +
+            'economy destabilizing. Lower trading friction to accelerate price convergence.',
+        },
+        confidence: 0.80,
+        estimatedLag: 8,
+      };
+    }
+
+    if (arbitrageIndex > thresholds.arbitrageIndexWarning) {
+      return {
+        violated: true,
+        severity: 4,
+        evidence: {
+          arbitrageIndex,
+          warning: thresholds.arbitrageIndexWarning,
+        },
+        suggestedAction: {
+          parameter: 'auctionFee',
+          direction: 'decrease',
+          magnitude: 0.08,
+          reasoning:
+            `Arbitrage index ${arbitrageIndex.toFixed(2)} above warning threshold ` +
+            `(${thresholds.arbitrageIndexWarning}). Early sign of price divergence. ` +
+            'Gently reduce friction to support self-correction.',
+        },
+        confidence: 0.65,
+        estimatedLag: 12,
+      };
+    }
+
+    return { violated: false };
+  },
+};
+
+export const P59_GiftEconomyNoise: Principle = {
+  id: 'P59',
+  name: 'Gift-Economy Noise',
+  category: 'measurement',
+  description:
+    'Non-market exchanges — gifts, charity trades, social signaling — contaminate ' +
+    'price signals. Filter gift-like and below-market transactions before computing ' +
+    'economic indicators.',
+  check(metrics, thresholds): PrincipleResult {
+    const { giftTradeRatio } = metrics;
+
+    if (giftTradeRatio > thresholds.giftTradeFilterRatio) {
+      return {
+        violated: true,
+        severity: 4,
+        evidence: {
+          giftTradeRatio,
+          threshold: thresholds.giftTradeFilterRatio,
+        },
+        suggestedAction: {
+          parameter: 'auctionFee',
+          direction: 'increase',
+          magnitude: 0.05,
+          reasoning:
+            `${(giftTradeRatio * 100).toFixed(0)}% of trades are gift-like (price = 0 or <30% market). ` +
+            `Exceeds filter threshold (${(thresholds.giftTradeFilterRatio * 100).toFixed(0)}%). ` +
+            'Price signals contaminated. Slightly raise trading fees to discourage zero-value listings. ' +
+            'ADVISORY: Consider filtering sub-market trades from price index computation.',
+        },
+        confidence: 0.70,
+        estimatedLag: 5,
+      };
+    }
+
+    return { violated: false };
+  },
+};
+
 export const MEASUREMENT_PRINCIPLES: Principle[] = [
   P31_AnchorValueTracking,
   P41_MultiResolutionMonitoring,
+  P55_ArbitrageThermometer,
+  P59_GiftEconomyNoise,
 ];

@@ -199,9 +199,52 @@ export const P54_LiveOpsCadence: Principle = {
   },
 };
 
+export const P56_ContentDropShock: Principle = {
+  id: 'P56',
+  name: 'Content-Drop Shock',
+  category: 'liveops',
+  description:
+    'Every new-item injection shatters existing price equilibria — arbitrage spikes ' +
+    'as participants re-price. Build cooldown windows for price discovery before ' +
+    'measuring post-drop economic health.',
+  check(metrics, thresholds): PrincipleResult {
+    const { contentDropAge, arbitrageIndex } = metrics;
+
+    // Only fires during the cooldown window after a content drop
+    if (contentDropAge > 0 && contentDropAge <= thresholds.contentDropCooldownTicks) {
+      if (arbitrageIndex > thresholds.postDropArbitrageMax) {
+        return {
+          violated: true,
+          severity: 5,
+          evidence: {
+            contentDropAge,
+            arbitrageIndex,
+            cooldownTicks: thresholds.contentDropCooldownTicks,
+            postDropMax: thresholds.postDropArbitrageMax,
+          },
+          suggestedAction: {
+            parameter: 'auctionFee',
+            direction: 'decrease',
+            magnitude: 0.10,
+            reasoning:
+              `Content drop ${contentDropAge} ticks ago — arbitrage at ${arbitrageIndex.toFixed(2)} ` +
+              `exceeds post-drop max (${thresholds.postDropArbitrageMax}). ` +
+              'Price discovery struggling. Lower trading friction temporarily.',
+          },
+          confidence: 0.70,
+          estimatedLag: 5,
+        };
+      }
+    }
+
+    return { violated: false };
+  },
+};
+
 export const LIVEOPS_PRINCIPLES: Principle[] = [
   P51_SharkTooth,
   P52_EndowmentEffect,
   P53_EventCompletionRate,
   P54_LiveOpsCadence,
+  P56_ContentDropShock,
 ];

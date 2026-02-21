@@ -65,6 +65,16 @@ export const DEFAULT_THRESHOLDS: Thresholds = {
 
   // Net flow (P12)
   netFlowWarnThreshold: 10,
+
+  // V1.1 (P55-P60)
+  arbitrageIndexWarning: 0.35,
+  arbitrageIndexCritical: 0.55,
+  contentDropCooldownTicks: 30,
+  postDropArbitrageMax: 0.45,
+  relativePriceConvergenceTarget: 0.85,
+  priceDiscoveryWindowTicks: 20,
+  giftTradeFilterRatio: 0.15,
+  disposalTradeWeightDiscount: 0.5,
 };
 
 export const PERSONA_HEALTHY_RANGES: Record<string, { min: number; max: number }> = {

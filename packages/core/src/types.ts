@@ -92,6 +92,12 @@ export interface EconomyMetrics {
   sharkToothValleys: number[];
   eventCompletionRate: number;
 
+  // ── V1.1 Metrics (P55-P60) ──
+  arbitrageIndex: number;          // 0–1, aggregate arbitrage opportunity across all relative prices
+  contentDropAge: number;          // ticks since last content/item injection event
+  giftTradeRatio: number;          // fraction of recent trades classified as gifts/below-market
+  disposalTradeRatio: number;      // fraction of recent trades that are surplus liquidation, not production-for-sale
+
   // ── Custom metrics registered by developer ──
   custom: Record<string, number>;
 }
@@ -139,6 +145,10 @@ export function emptyMetrics(tick = 0): EconomyMetrics {
     sharkToothPeaks: [],
     sharkToothValleys: [],
     eventCompletionRate: NaN,
+    arbitrageIndex: 0,
+    contentDropAge: 0,
+    giftTradeRatio: 0,
+    disposalTradeRatio: 0,
     custom: {},
   };
 }
@@ -361,6 +371,16 @@ export interface Thresholds {
 
   // Net flow (P12)
   netFlowWarnThreshold: number;
+
+  // V1.1 Thresholds (P55-P60)
+  arbitrageIndexWarning: number;          // P55: yellow alert
+  arbitrageIndexCritical: number;         // P55: red alert
+  contentDropCooldownTicks: number;       // P56: ticks to wait after drop before measuring
+  postDropArbitrageMax: number;           // P56: max acceptable arbitrage during cooldown
+  relativePriceConvergenceTarget: number; // P57: fraction of relative prices within ±20% of equilibrium
+  priceDiscoveryWindowTicks: number;      // P57: ticks to allow for distributed price discovery
+  giftTradeFilterRatio: number;           // P59: max gift-trade fraction before filtering kicks in
+  disposalTradeWeightDiscount: number;    // P60: multiplier applied to disposal-trade price signals (0–1)
 }
 
 // ── AgentE Config ─────────────────────────────────────────────────────────────

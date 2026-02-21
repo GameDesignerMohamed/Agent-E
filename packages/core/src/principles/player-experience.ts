@@ -71,6 +71,45 @@ export const P33_FairNotEqual: Principle = {
   },
 };
 
+export const P36_MechanicFrictionDetector: Principle = {
+  id: 'P36',
+  name: 'Mechanic Friction Detector',
+  category: 'player_experience',
+  description:
+    'Deterministic + probabilistic systems → expectation mismatch. ' +
+    'When crafting is guaranteed but combat is random, players feel betrayed by ' +
+    'the random side. Mix mechanics carefully or segregate them entirely.',
+  check(metrics, _thresholds): PrincipleResult {
+    const { avgSatisfaction, churnRate, velocity } = metrics;
+
+    // Proxy: High churn despite reasonable economic activity suggests
+    // frustration with mechanic mismatch rather than economic problems
+    // (Activity exists but players leave anyway = not economic, likely mechanic friction)
+    if (churnRate > 0.10 && avgSatisfaction < 50 && velocity > 3) {
+      return {
+        violated: true,
+        severity: 5,
+        evidence: { churnRate, avgSatisfaction, velocity },
+        suggestedAction: {
+          parameter: 'arenaReward',
+          direction: 'increase',
+          magnitude: 0.15,
+          reasoning:
+            `Churn ${(churnRate * 100).toFixed(1)}% with satisfaction ${avgSatisfaction.toFixed(0)} ` +
+            'despite active economy (velocity ' + velocity.toFixed(1) + '). ' +
+            'Suggests mechanic friction (deterministic vs random systems). ' +
+            'Increase rewards to compensate for perceived unfairness. ' +
+            'ADVISORY: Review if mixing guaranteed and probabilistic mechanics.',
+        },
+        confidence: 0.55,
+        estimatedLag: 15,
+      };
+    }
+
+    return { violated: false };
+  },
+};
+
 export const P37_LatecommerProblem: Principle = {
   id: 'P37',
   name: 'Latecomer Problem',
@@ -188,6 +227,7 @@ export const P50_PayPowerRatio: Principle = {
 
 export const PLAYER_EXPERIENCE_PRINCIPLES: Principle[] = [
   P33_FairNotEqual,
+  P36_MechanicFrictionDetector,
   P37_LatecommerProblem,
   P45_TimeBudget,
   P50_PayPowerRatio,
