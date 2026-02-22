@@ -19,21 +19,44 @@ export class Observer {
     const roles = Object.values(state.agentRoles);
     const totalAgents = balances.length;
 
+    // ── Event classification (single pass) ──
+    let faucetVolume = 0;
+    let sinkVolume = 0;
+    const tradeEvents: EconomicEvent[] = [];
+    const roleChangeEvents: EconomicEvent[] = [];
+    let churnCount = 0;
+
+    for (const e of recentEvents) {
+      switch (e.type) {
+        case 'mint':
+        case 'spawn':
+          faucetVolume += e.amount ?? 0;
+          break;
+        case 'burn':
+        case 'consume':
+          sinkVolume += e.amount ?? 0;
+          break;
+        case 'trade':
+          tradeEvents.push(e);
+          break;
+        case 'churn':
+          churnCount++;
+          roleChangeEvents.push(e);
+          break;
+        case 'role_change':
+          roleChangeEvents.push(e);
+          break;
+      }
+    }
+
     // ── Currency ──
     const totalSupply = balances.reduce((s, b) => s + b, 0);
-    const faucetVolume = recentEvents
-      .filter(e => e.type === 'mint' || e.type === 'spawn')
-      .reduce((s, e) => s + (e.amount ?? 0), 0);
-    const sinkVolume = recentEvents
-      .filter(e => e.type === 'burn' || e.type === 'consume')
-      .reduce((s, e) => s + (e.amount ?? 0), 0);
     const netFlow = faucetVolume - sinkVolume;
     const tapSinkRatio = sinkVolume > 0 ? faucetVolume / sinkVolume : faucetVolume > 0 ? Infinity : 1;
 
     const prevSupply = this.previousMetrics?.totalSupply ?? totalSupply;
     const inflationRate = prevSupply > 0 ? (totalSupply - prevSupply) / prevSupply : 0;
 
-    const tradeEvents = recentEvents.filter(e => e.type === 'trade');
     const velocity = totalSupply > 0 ? tradeEvents.length / totalSupply : 0;
 
     // ── Wealth distribution ──
@@ -58,12 +81,10 @@ export class Observer {
     }
 
     const churnByRole: Record<string, number> = {};
-    const roleChanges = recentEvents.filter(e => e.type === 'churn' || e.type === 'role_change');
-    for (const e of roleChanges) {
+    for (const e of roleChangeEvents) {
       const role = e.role ?? 'unknown';
       churnByRole[role] = (churnByRole[role] ?? 0) + 1;
     }
-    const churnCount = recentEvents.filter(e => e.type === 'churn').length;
     const churnRate = churnCount / Math.max(1, totalAgents);
 
     // ── Market ──
@@ -162,7 +183,9 @@ export class Observer {
         for (let j = i + 1; j < priceKeys.length; j++) {
           const pA = prices[priceKeys[i]!]!;
           const pB = prices[priceKeys[j]!]!;
-          const ratio = pA / pB;
+          let ratio = pA / pB;
+          // Clamp ratio to prevent Math.log(0) or Math.log(Infinity)
+          ratio = Math.max(0.001, Math.min(1000, ratio));
           // Divergence from 1.0: |ln(ratio)| gives symmetric measure
           totalDivergence += Math.abs(Math.log(ratio));
           pairCount++;

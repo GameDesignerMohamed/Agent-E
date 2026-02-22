@@ -103,7 +103,7 @@ export const P55_ArbitrageThermometer: Principle = {
             `(${thresholds.arbitrageIndexCritical}). Relative prices are diverging — ` +
             'economy destabilizing. Lower trading friction to accelerate price convergence.',
         },
-        confidence: 0.80,
+        confidence: 0.75,
         estimatedLag: 8,
       };
     }

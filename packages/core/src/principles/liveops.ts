@@ -231,7 +231,7 @@ export const P56_ContentDropShock: Principle = {
               `exceeds post-drop max (${thresholds.postDropArbitrageMax}). ` +
               'Price discovery struggling. Lower trading friction temporarily.',
           },
-          confidence: 0.70,
+          confidence: 0.60,
           estimatedLag: 5,
         };
       }

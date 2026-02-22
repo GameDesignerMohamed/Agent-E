@@ -14,6 +14,7 @@ import { ALL_PRINCIPLES } from './principles/index.js';
 
 export class Simulator {
   private diagnoser = new Diagnoser(ALL_PRINCIPLES);
+  private beforeViolationsCache = new Map<number, Set<string>>();
 
   /**
    * Simulate the effect of applying `action` to the current economy forward `forwardTicks`.
@@ -49,9 +50,15 @@ export class Simulator {
     const netImprovement = this.checkImprovement(currentMetrics, p50, action);
 
     // Validate: does the action create new principle violations not present before?
-    const beforeViolations = new Set(
-      this.diagnoser.diagnose(currentMetrics, thresholds).map(d => d.principle.id),
-    );
+    // Cache beforeViolations per tick to avoid redundant diagnose() calls
+    const tick = currentMetrics.tick;
+    let beforeViolations = this.beforeViolationsCache.get(tick);
+    if (!beforeViolations) {
+      beforeViolations = new Set(
+        this.diagnoser.diagnose(currentMetrics, thresholds).map(d => d.principle.id),
+      );
+      this.beforeViolationsCache.set(tick, beforeViolations);
+    }
     const afterViolations = new Set(
       this.diagnoser.diagnose(p50, thresholds).map(d => d.principle.id),
     );

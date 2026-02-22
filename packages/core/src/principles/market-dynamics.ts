@@ -150,7 +150,7 @@ export const P57_CombinatorialPriceSpace: Principle = {
             `have converged (target: ${(thresholds.relativePriceConvergenceTarget * 100).toFixed(0)}%). ` +
             'Price space too complex for distributed discovery. Lower friction to help.',
         },
-        confidence: 0.60,
+        confidence: 0.55,
         estimatedLag: thresholds.priceDiscoveryWindowTicks,
       };
     }
