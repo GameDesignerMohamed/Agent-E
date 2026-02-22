@@ -1,11 +1,11 @@
 {
   "name": "@agent-e/adapter-game",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "description": "AgentE adapter for game economies",
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/AE-Vault/AgentE-v0.git",
+    "url": "git+https://github.com/AE-Vault/AgentE-v0.git",
     "directory": "packages/adapter-game"
   },
   "main": "./dist/index.cjs",
@@ -18,7 +18,9 @@
       "types": "./dist/index.d.ts"
     }
   },
-  "files": ["dist"],
+  "files": [
+    "dist"
+  ],
   "scripts": {
     "build": "tsup",
     "dev": "tsup --watch"
