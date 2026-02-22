@@ -36,6 +36,12 @@ await agent.tick();
 Your Economy → Observer → Diagnoser → Simulator → Planner → Executor → Your Economy
 ```
 
+1. **Observer** — computes 30+ metrics at 3 time resolutions (fine/medium/coarse)
+2. **Diagnoser** — runs all 60 principles, returns violations sorted by severity
+3. **Simulator** — Monte Carlo forward projection (≥100 iterations) before any action
+4. **Planner** — lag-aware, cooldown-aware action planning with rollback conditions
+5. **Executor** — applies actions, monitors for rollback triggers
+
 ## Modes
 
 | Mode | What happens |
