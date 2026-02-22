@@ -34,13 +34,7 @@ await agent.tick();
 
 ```
 Your Economy → Observer → Diagnoser → Simulator → Planner → Executor → Your Economy
-                  ↓           ↓            ↓           ↓          ↓
-              40+ metrics   60 principles  Monte Carlo  Cooldowns  Rollback
-              3 resolutions  sorted by     ≥100 runs    + locks    monitoring
-                             severity      P10/P50/P90  + vetos
 ```
-
-The **adapter** is the only thing you write — an object with `getState()` and `setParam()`. Everything else runs inside `@agent-e/core`.
 
 ## Modes
 
