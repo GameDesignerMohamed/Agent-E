@@ -2,8 +2,7 @@
   "name": "@agent-e/monorepo",
   "private": true,
   "workspaces": [
-    "packages/*",
-    "demo"
+    "packages/core"
   ],
   "scripts": {
     "build": "npm run build --workspaces --if-present",
