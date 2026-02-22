@@ -43,16 +43,17 @@ OBSERVE → DIAGNOSE → SIMULATE → PLAN → EXECUTE
 ```
 
 1. **Observer** — computes 30+ metrics at 3 time resolutions (fine/medium/coarse)
-2. **Diagnoser** — runs all 54 principles, returns violations sorted by severity
+2. **Diagnoser** — runs all 60 principles, returns violations sorted by severity
 3. **Simulator** — Monte Carlo forward projection (≥100 iterations) before any action
 4. **Planner** — lag-aware, cooldown-aware action planning with rollback conditions
 5. **Executor** — applies actions, monitors for rollback triggers
 
-## The 54 Principles
+## The 60 Principles
 
 Built-in knowledge base extracted from:
 - **P1-P28**: V0.0-V0.4.6 development failures (supply chain, incentives, population, currency, bootstrap, feedback loops, regulator behavior)
 - **P29-P54**: ~130 articles across Machinations.io and Naavik.co (market dynamics, measurement, statistical balancing, system dynamics, open economy, LiveOps)
+- **P55-P60**: V1.1.0 additions — arbitrage thermometer, content drop shock, combinatorial price space, natural numeraire, gift economy noise, surplus disposal asymmetry
 
 ```typescript
 // Add your own principles
@@ -173,7 +174,7 @@ cd demo && npm start
 |-------|-------|--------|
 | Phase 1 | Core engine + Simulator | ✅ **Done** |
 | Phase 2 | GameAdapter + V0 demo | ✅ **Done** |
-| Phase 3 | Best practices extraction (Sessions 2-3) | 🔜 Next |
+| Phase 3 | Best practices extraction (P29-P60, 60 total) | ✅ **Done** |
 | Phase 4 | DeFi + Marketplace adapters | Pending |
 | Phase 5 | Dashboard + CLI | Pending |
 | Phase 6 | npm publish + public beta | Pending |
