@@ -13,25 +13,30 @@ npm install @agent-e/core
 ```typescript
 import { AgentE } from '@agent-e/core';
 
-const agent = new AgentE({
-  adapter: {
-    getState: () => ({
-      tick: currentTick,
-      agentBalances: { /* id → balance */ },
-      agentRoles: { /* id → role */ },
-      agentInventories: { /* id → { resource → qty } */ },
-      marketPrices: { /* resource → price */ },
-      agentSatisfaction: { /* id → 0-100 */ },
-      poolSizes: { /* pool → amount */ },
-    }),
-    setParam: async (param, value) => {
-      // Apply parameter change to your economy
-    },
+const adapter = {
+  getState: () => ({
+    tick: currentTick,
+    agentBalances: { /* id → balance */ },
+    agentRoles: { /* id → role */ },
+    agentInventories: { /* id → { resource → qty } */ },
+    marketPrices: { /* resource → price */ },
+    agentSatisfaction: { /* id → 0-100 */ },
+    poolSizes: { /* pool → amount */ },
+    roles: ['consumer', 'producer'],       // all possible roles
+    resources: ['goodA', 'goodB'],         // all possible resources
+    currency: 'credits',                   // currency name
+  }),
+  setParam: async (param, value) => {
+    // Apply parameter change to your economy
   },
+};
+
+const agent = new AgentE({
+  adapter,
   mode: 'advisor', // or 'autonomous'
 });
 
-agent.connect(agent.adapter).start();
+agent.connect(adapter).start();
 
 // Call once per tick in your loop:
 await agent.tick();

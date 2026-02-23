@@ -48,30 +48,25 @@ export const P18_FirstProducerNeedsStartingInventory: Principle = {
   check(metrics, _thresholds): PrincipleResult {
     if (metrics.tick > 20) return { violated: false }; // bootstrap window over
 
-    // Check all resources: if ANY resource has zero supply while its producers exist
+    // Check all resources: if ANY resource has zero supply while agents exist
+    const hasAgents = metrics.totalAgents > 0;
     for (const [resource, supply] of Object.entries(metrics.supplyByResource)) {
-      if (supply === 0) {
-        // Find roles that produce this resource (heuristic: check if role population exists)
-        for (const [role, population] of Object.entries(metrics.populationByRole)) {
-          if (population > 0) {
-            // Bootstrap failure detected
-            return {
-              violated: true,
-              severity: 8,
-              evidence: { tick: metrics.tick, resource, supply, role, population },
-              suggestedAction: {
-                parameter: 'productionCost',
-                direction: 'decrease',
-                magnitude: 0.50,
-                reasoning:
-                  `Bootstrap failure: ${role} exists but ${resource} supply is 0 on tick 1-20. ` +
-                  'Drastically reduce production cost to allow immediate output.',
-              },
-              confidence: 0.90,
-              estimatedLag: 2,
-            };
-          }
-        }
+      if (supply === 0 && hasAgents) {
+        return {
+          violated: true,
+          severity: 8,
+          evidence: { tick: metrics.tick, resource, supply, totalAgents: metrics.totalAgents },
+          suggestedAction: {
+            parameter: 'productionCost',
+            direction: 'decrease',
+            magnitude: 0.50,
+            reasoning:
+              `Bootstrap failure: ${resource} supply is 0 at tick ${metrics.tick} with ${metrics.totalAgents} agents. ` +
+              'Drastically reduce production cost to allow immediate output.',
+          },
+          confidence: 0.90,
+          estimatedLag: 2,
+        };
       }
     }
 

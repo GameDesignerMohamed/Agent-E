@@ -31,7 +31,7 @@ export const P42_TheMedianPrinciple: Principle = {
             `Mean/median divergence ${(meanMedianDivergence * 100).toFixed(0)}% ` +
             `(threshold: ${(thresholds.meanMedianDivergenceMax * 100).toFixed(0)}%). ` +
             'Economy has outliers skewing metrics. Use median for decisions. ' +
-            'Raise auction fees to redistribute wealth.',
+            'Raise transaction fees to redistribute wealth.',
         },
         confidence: 0.85,
         estimatedLag: 15,

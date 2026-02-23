@@ -1,5 +1,5 @@
 // P5-P8: Incentive Alignment Principles
-// Source: 97-Trader stampede (V0.4.6), regulator killing bootstrap (V0.4.4)
+// Source: Incentive failure patterns — population stampedes, regulator suppressing bootstrap
 
 import type { Principle, PrincipleResult } from '../types.js';
 

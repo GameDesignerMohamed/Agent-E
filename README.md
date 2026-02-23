@@ -15,16 +15,18 @@ npm install @agent-e/core
 ```typescript
 import { AgentE } from '@agent-e/core';
 
+const adapter = {
+  getState: () => yourEconomyState,
+  setParam: (param, value) => applyToYourEconomy(param, value),
+};
+
 const agent = new AgentE({
-  adapter: {
-    getState: () => yourEconomyState,
-    setParam: (param, value) => applyToYourEconomy(param, value),
-  },
+  adapter,
   mode: 'advisor',
   onDecision: (d) => console.log(d),
 });
 
-agent.connect(agent.adapter).start();
+agent.connect(adapter).start();
 
 // In your loop:
 await agent.tick();

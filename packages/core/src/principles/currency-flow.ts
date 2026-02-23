@@ -7,8 +7,8 @@ export const P12_OnePrimaryFaucet: Principle = {
   name: 'One Primary Faucet',
   category: 'currency',
   description:
-    'Multiple independent currency sources (gathering + crafting + quests) each ' +
-    'creating gold causes uncontrolled inflation. One clear primary faucet ' +
+    'Multiple independent currency sources (gathering + production + quests) each ' +
+    'creating currency causes uncontrolled inflation. One clear primary faucet ' +
     'makes the economy predictable and auditable.',
   check(metrics, thresholds): PrincipleResult {
     const { netFlow, faucetVolume, sinkVolume } = metrics;
@@ -23,8 +23,8 @@ export const P12_OnePrimaryFaucet: Principle = {
           direction: 'increase',
           magnitude: 0.15,
           reasoning:
-            `Net flow +${netFlow.toFixed(1)} g/t. Inflationary. ` +
-            'Increase crafting cost (primary sink) to balance faucet output.',
+            `Net flow +${netFlow.toFixed(1)}/tick. Inflationary. ` +
+            'Increase production cost (primary sink) to balance faucet output.',
         },
         confidence: 0.80,
         estimatedLag: 8,
@@ -41,8 +41,8 @@ export const P12_OnePrimaryFaucet: Principle = {
           direction: 'decrease',
           magnitude: 0.15,
           reasoning:
-            `Net flow ${netFlow.toFixed(1)} g/t. Deflationary. ` +
-            'Decrease crafting cost to ease sink pressure.',
+            `Net flow ${netFlow.toFixed(1)}/tick. Deflationary. ` +
+            'Decrease production cost to ease sink pressure.',
         },
         confidence: 0.80,
         estimatedLag: 8,
@@ -125,7 +125,7 @@ export const P14_TrackActualInjection: Principle = {
           magnitude: 0.10,
           reasoning:
             `Supply growing at ${(supplyGrowthRate * 100).toFixed(1)}%/tick. ` +
-            'Verify gold injection tracking. Resources should not create gold directly.',
+            'Verify currency injection tracking. Resources should not create currency directly.',
         },
         confidence: 0.55,
         estimatedLag: 5,
@@ -142,7 +142,7 @@ export const P15_PoolsNeedCapAndDecay: Principle = {
   category: 'currency',
   description:
     'Any pool (bank, reward pool) without a cap accumulates infinitely. ' +
-    'Bank pool at 42% of gold supply means 42% of the economy is frozen. ' +
+    'A pool at 42% of total supply means 42% of the economy is frozen. ' +
     'Cap at 5%, decay at 2%/tick.',
   check(metrics, thresholds): PrincipleResult {
     const { poolSizes, totalSupply } = metrics;
@@ -161,7 +161,7 @@ export const P15_PoolsNeedCapAndDecay: Principle = {
             magnitude: 0.10,
             reasoning:
               `${pool} pool at ${(shareOfSupply * 100).toFixed(1)}% of supply ` +
-              `(cap: ${(poolCapPercent * 100).toFixed(0)}%). Gold frozen. ` +
+              `(cap: ${(poolCapPercent * 100).toFixed(0)}%). Currency frozen. ` +
               'Lower fees to encourage circulation over accumulation.',
           },
           confidence: 0.85,
@@ -224,7 +224,7 @@ export const P32_VelocityAboveSupply: Principle = {
     const { velocity, totalSupply, supplyByResource } = metrics;
     const totalResources = Object.values(supplyByResource).reduce((s, v) => s + v, 0);
 
-    // Stagnation: resources exist, gold exists, but nobody is trading
+    // Stagnation: resources exist, currency exists, but nobody is trading
     if (velocity < 3 && totalSupply > 100 && totalResources > 20) {
       return {
         violated: true,

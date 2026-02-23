@@ -1,5 +1,5 @@
 // P1-P4: Supply Chain Principles
-// Source: V0.0-V0.4.6 development failures — ore piling at Forge, hand-off blockage
+// Source: Supply-chain failure patterns — resource accumulation at bottlenecks, hand-off blockage
 
 import type { Principle, PrincipleResult } from '../types.js';
 

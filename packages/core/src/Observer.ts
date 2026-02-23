@@ -32,6 +32,8 @@ export class Observer {
     const roleChangeEvents: EconomicEvent[] = [];
     let churnCount = 0;
 
+    let productionAmount = 0;
+
     for (const e of recentEvents) {
       switch (e.type) {
         case 'mint':
@@ -41,6 +43,9 @@ export class Observer {
         case 'burn':
         case 'consume':
           sinkVolume += e.amount ?? 0;
+          break;
+        case 'produce':
+          productionAmount += e.amount ?? 1;
           break;
         case 'trade':
           tradeEvents.push(e);
@@ -137,9 +142,7 @@ export class Observer {
       }
     }
 
-    const productionIndex = recentEvents
-      .filter(e => e.type === 'produce')
-      .reduce((s, e) => s + (e.amount ?? 1), 0);
+    const productionIndex = productionAmount;
 
     const maxPossibleProduction = productionIndex + sinkVolume;
     const capacityUsage =
