@@ -18,7 +18,7 @@ export class Executor {
     currentParams: Record<string, number>,
   ): Promise<void> {
     const originalValue = currentParams[plan.parameter] ?? plan.currentValue;
-    await adapter.setParam(plan.parameter, plan.targetValue, plan.diagnosis.violation.suggestedAction.currency);
+    await adapter.setParam(plan.parameter, plan.targetValue, plan.currency);
     plan.appliedAt = plan.diagnosis.tick;
 
     this.activePlans.push({ plan, originalValue });
@@ -55,7 +55,7 @@ export class Executor {
 
       if (shouldRollback) {
         // Undo the adjustment
-        await adapter.setParam(plan.parameter, originalValue, plan.diagnosis.violation.suggestedAction.currency);
+        await adapter.setParam(plan.parameter, originalValue, plan.currency);
         rolledBack.push(plan);
         // Don't push to remaining — remove from tracking
       } else {
