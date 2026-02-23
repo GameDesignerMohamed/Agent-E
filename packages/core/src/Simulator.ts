@@ -14,6 +14,10 @@ import { ALL_PRINCIPLES } from './principles/index.js';
 
 export class Simulator {
   private diagnoser = new Diagnoser(ALL_PRINCIPLES);
+  // Cache beforeViolations for the *current* tick only (one entry max).
+  // Using a Map here is intentional but the cache must be bounded — we only
+  // care about the tick that is currently being evaluated, so we evict any
+  // entries whose key differs from the incoming tick.
   private beforeViolationsCache = new Map<number, Set<string>>();
 
   /**
@@ -50,8 +54,13 @@ export class Simulator {
     const netImprovement = this.checkImprovement(currentMetrics, p50, action);
 
     // Validate: does the action create new principle violations not present before?
-    // Cache beforeViolations per tick to avoid redundant diagnose() calls
+    // Cache beforeViolations per tick to avoid redundant diagnose() calls when
+    // evaluating multiple candidate actions at the same tick.
+    // IMPORTANT: evict stale entries so the cache stays bounded to 1 entry.
     const tick = currentMetrics.tick;
+    if (this.beforeViolationsCache.size > 0 && !this.beforeViolationsCache.has(tick)) {
+      this.beforeViolationsCache.clear();
+    }
     let beforeViolations = this.beforeViolationsCache.get(tick);
     if (!beforeViolations) {
       beforeViolations = new Set(
