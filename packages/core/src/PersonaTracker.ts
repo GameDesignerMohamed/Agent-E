@@ -5,7 +5,7 @@ import type { EconomyState, PersonaType } from './types.js';
 
 interface AgentSignals {
   transactionCount: number;
-  netExtraction: number;     // gold out - gold in
+  netExtraction: number;     // currency out - currency in
   uniqueItemsHeld: number;
   holdingDuration: number;   // ticks holding items
   spendAmount: number;

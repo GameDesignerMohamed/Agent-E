@@ -22,8 +22,9 @@ export interface EconomicEvent {
   actor: string;              // agent/user/wallet ID
   role?: string;              // actor's role in the economy
   resource?: string;          // what resource is involved
+  currency?: string;          // which currency this event affects (defaults to first in currencies[])
   amount?: number;            // quantity
-  price?: number;             // per-unit price
+  price?: number;             // per-unit price (in the event's currency)
   from?: string;              // source (for transfers)
   to?: string;                // destination
   metadata?: Record<string, unknown>;
@@ -37,66 +38,100 @@ export interface EconomyMetrics {
   // ── Snapshot info ──
   tick: number;
   timestamp: number;
+  currencies: string[];                              // all tracked currencies this tick
 
-  // ── Currency health ──
+  // ── Currency health (per-currency) ──
+  totalSupplyByCurrency: Record<string, number>;     // currency → total supply
+  netFlowByCurrency: Record<string, number>;         // currency → faucets minus sinks
+  velocityByCurrency: Record<string, number>;        // currency → transactions / supply
+  inflationRateByCurrency: Record<string, number>;   // currency → % change per period
+  faucetVolumeByCurrency: Record<string, number>;    // currency → inflow volume
+  sinkVolumeByCurrency: Record<string, number>;      // currency → outflow volume
+  tapSinkRatioByCurrency: Record<string, number>;    // currency → faucet / sink ratio
+  anchorRatioDriftByCurrency: Record<string, number>;// currency → anchor drift
+
+  // ── Currency health (aggregate convenience — sum/avg of all currencies) ──
   totalSupply: number;
-  netFlow: number;               // faucets minus sinks per period
-  velocity: number;              // transactions per period / total supply
-  inflationRate: number;         // % change in price index per period
+  netFlow: number;
+  velocity: number;
+  inflationRate: number;
+  faucetVolume: number;
+  sinkVolume: number;
+  tapSinkRatio: number;
+  anchorRatioDrift: number;
 
-  // ── Population health ──
+  // ── Wealth distribution (per-currency) ──
+  giniCoefficientByCurrency: Record<string, number>;
+  medianBalanceByCurrency: Record<string, number>;
+  meanBalanceByCurrency: Record<string, number>;
+  top10PctShareByCurrency: Record<string, number>;
+  meanMedianDivergenceByCurrency: Record<string, number>;
+
+  // ── Wealth distribution (aggregate convenience) ──
+  giniCoefficient: number;
+  medianBalance: number;
+  meanBalance: number;
+  top10PctShare: number;
+  meanMedianDivergence: number;
+
+  // ── Population health (unchanged — not currency-specific) ──
   populationByRole: Record<string, number>;
-  roleShares: Record<string, number>;        // each role as fraction of total
+  roleShares: Record<string, number>;
   totalAgents: number;
-  churnRate: number;                         // fraction lost per period
+  churnRate: number;
   churnByRole: Record<string, number>;
   personaDistribution: Record<string, number>;
 
-  // ── Wealth distribution ──
-  giniCoefficient: number;       // 0 = perfect equality, 1 = one agent has everything
-  medianBalance: number;
-  meanBalance: number;
-  top10PctShare: number;         // fraction of wealth held by top 10%
-  meanMedianDivergence: number;  // (mean - median) / median
+  // ── Market health (per-currency prices) ──
+  priceIndexByCurrency: Record<string, number>;      // currency → equal-weight price basket
+  pricesByCurrency: Record<string, Record<string, number>>;  // currency → resource → price
+  priceVolatilityByCurrency: Record<string, Record<string, number>>; // currency → resource → volatility
 
-  // ── Market health ──
+  // ── Market health (aggregate convenience) ──
   priceIndex: number;
+  prices: Record<string, number>;                    // first currency's prices (backward compat)
+  priceVolatility: Record<string, number>;           // first currency's volatility
+
+  // ── Market health (unchanged — resource-keyed, not currency-specific) ──
   productionIndex: number;
   capacityUsage: number;
-  prices: Record<string, number>;
-  priceVolatility: Record<string, number>;
   supplyByResource: Record<string, number>;
   demandSignals: Record<string, number>;
   pinchPoints: Record<string, PinchPointStatus>;
 
-  // ── Satisfaction / Engagement ──
+  // ── Satisfaction / Engagement (unchanged) ──
   avgSatisfaction: number;
   blockedAgentCount: number;
   timeToValue: number;
 
-  // ── Flow tracking ──
-  faucetVolume: number;
-  sinkVolume: number;
-  tapSinkRatio: number;
-  poolSizes: Record<string, number>;
-  anchorRatioDrift: number;
+  // ── Pools (per-currency) ──
+  poolSizesByCurrency: Record<string, Record<string, number>>; // pool → currency → amount
+  poolSizes: Record<string, number>;                 // aggregate: pool → sum of all currencies
 
-  // ── Open economy (optional, NaN if not tracked) ──
+  // ── Open economy (per-currency) ──
+  extractionRatioByCurrency: Record<string, number>;
+  newUserDependencyByCurrency: Record<string, number>;
+  currencyInsulationByCurrency: Record<string, number>;
+
+  // ── Open economy (aggregate convenience) ──
   extractionRatio: number;
   newUserDependency: number;
   smokeTestRatio: number;
   currencyInsulation: number;
 
-  // ── LiveOps (optional, empty arrays if not tracked) ──
+  // ── LiveOps (unchanged) ──
   sharkToothPeaks: number[];
   sharkToothValleys: number[];
   eventCompletionRate: number;
 
-  // ── V1.1 Metrics (P55-P60) ──
-  arbitrageIndex: number;          // 0–1, aggregate arbitrage opportunity across all relative prices
-  contentDropAge: number;          // ticks since last content/item injection event
-  giftTradeRatio: number;          // fraction of recent trades classified as gifts/below-market
-  disposalTradeRatio: number;      // fraction of recent trades that are surplus liquidation, not production-for-sale
+  // ── V1.1 Metrics (per-currency where applicable) ──
+  arbitrageIndexByCurrency: Record<string, number>;  // per-currency cross-resource arbitrage
+  arbitrageIndex: number;                            // aggregate
+  contentDropAge: number;                            // unchanged (not currency-specific)
+  giftTradeRatioByCurrency: Record<string, number>;
+  giftTradeRatio: number;
+  disposalTradeRatioByCurrency: Record<string, number>;
+  disposalTradeRatio: number;
 
   // ── Custom metrics registered by developer ──
   custom: Record<string, number>;
@@ -107,48 +142,78 @@ export function emptyMetrics(tick = 0): EconomyMetrics {
   return {
     tick,
     timestamp: Date.now(),
+    currencies: [],
+
+    // Per-currency
+    totalSupplyByCurrency: {},
+    netFlowByCurrency: {},
+    velocityByCurrency: {},
+    inflationRateByCurrency: {},
+    faucetVolumeByCurrency: {},
+    sinkVolumeByCurrency: {},
+    tapSinkRatioByCurrency: {},
+    anchorRatioDriftByCurrency: {},
+    giniCoefficientByCurrency: {},
+    medianBalanceByCurrency: {},
+    meanBalanceByCurrency: {},
+    top10PctShareByCurrency: {},
+    meanMedianDivergenceByCurrency: {},
+    priceIndexByCurrency: {},
+    pricesByCurrency: {},
+    priceVolatilityByCurrency: {},
+    poolSizesByCurrency: {},
+    extractionRatioByCurrency: {},
+    newUserDependencyByCurrency: {},
+    currencyInsulationByCurrency: {},
+    arbitrageIndexByCurrency: {},
+    giftTradeRatioByCurrency: {},
+    disposalTradeRatioByCurrency: {},
+
+    // Aggregates
     totalSupply: 0,
     netFlow: 0,
     velocity: 0,
     inflationRate: 0,
-    populationByRole: {},
-    roleShares: {},
-    totalAgents: 0,
-    churnRate: 0,
-    churnByRole: {},
-    personaDistribution: {},
+    faucetVolume: 0,
+    sinkVolume: 0,
+    tapSinkRatio: 1,
+    anchorRatioDrift: 0,
     giniCoefficient: 0,
     medianBalance: 0,
     meanBalance: 0,
     top10PctShare: 0,
     meanMedianDivergence: 0,
     priceIndex: 0,
-    productionIndex: 0,
-    capacityUsage: 0,
     prices: {},
     priceVolatility: {},
+    poolSizes: {},
+    extractionRatio: NaN,
+    newUserDependency: NaN,
+    smokeTestRatio: NaN,
+    currencyInsulation: NaN,
+    arbitrageIndex: 0,
+    giftTradeRatio: 0,
+    disposalTradeRatio: 0,
+
+    // Unchanged
+    populationByRole: {},
+    roleShares: {},
+    totalAgents: 0,
+    churnRate: 0,
+    churnByRole: {},
+    personaDistribution: {},
+    productionIndex: 0,
+    capacityUsage: 0,
     supplyByResource: {},
     demandSignals: {},
     pinchPoints: {},
     avgSatisfaction: 100,
     blockedAgentCount: 0,
     timeToValue: 0,
-    faucetVolume: 0,
-    sinkVolume: 0,
-    tapSinkRatio: 1,
-    poolSizes: {},
-    anchorRatioDrift: 0,
-    extractionRatio: NaN,
-    newUserDependency: NaN,
-    smokeTestRatio: NaN,
-    currencyInsulation: NaN,
     sharkToothPeaks: [],
     sharkToothValleys: [],
     eventCompletionRate: NaN,
-    arbitrageIndex: 0,
     contentDropAge: 0,
-    giftTradeRatio: 0,
-    disposalTradeRatio: 0,
     custom: {},
   };
 }
@@ -204,6 +269,7 @@ export interface SuggestedAction {
   direction: 'increase' | 'decrease' | 'set';
   magnitude?: number;               // fractional (0.15 = 15%)
   absoluteValue?: number;
+  currency?: string;                // which currency this action targets (undefined = all/global)
   reasoning: string;
 }
 
@@ -211,6 +277,7 @@ export interface ActionPlan {
   id: string;
   diagnosis: Diagnosis;
   parameter: string;
+  currency?: string;             // which currency this action targets
   currentValue: number;
   targetValue: number;
   maxChangePercent: number;
@@ -284,14 +351,14 @@ export interface EconomyState {
   tick: number;
   roles: string[];
   resources: string[];
-  currency: string;
-  agentBalances: Record<string, number>;
+  currencies: string[];                                      // e.g. ['gold', 'gems', 'stakingToken']
+  agentBalances: Record<string, Record<string, number>>;     // agentId → { currencyName → balance }
   agentRoles: Record<string, string>;
   agentInventories: Record<string, Record<string, number>>;
   agentSatisfaction?: Record<string, number>;
-  marketPrices: Record<string, number>;
+  marketPrices: Record<string, Record<string, number>>;      // currencyName → { resource → price }
   recentTransactions: EconomicEvent[];
-  poolSizes?: Record<string, number>;
+  poolSizes?: Record<string, Record<string, number>>;        // poolName → { currencyName → amount }
   customData?: Record<string, unknown>;
 }
 
@@ -299,7 +366,7 @@ export interface EconomyAdapter {
   /** Return current full state snapshot */
   getState(): EconomyState | Promise<EconomyState>;
   /** Apply a parameter change to the host system */
-  setParam(key: string, value: number): void | Promise<void>;
+  setParam(key: string, value: number, currency?: string): void | Promise<void>;
   /** Optional: adapter pushes events as they happen */
   onEvent?: (handler: (event: EconomicEvent) => void) => void;
 }

@@ -5,6 +5,19 @@ import type { EconomyMetrics, MetricResolution, MetricQuery, MetricQueryResult, 
 import { emptyMetrics } from './types.js';
 import { DEFAULT_TICK_CONFIG } from './defaults.js';
 
+function getNestedValue(obj: Record<string, unknown>, path: string): number {
+  const parts = path.split('.');
+  let val: unknown = obj;
+  for (const part of parts) {
+    if (val !== null && typeof val === 'object') {
+      val = (val as Record<string, unknown>)[part];
+    } else {
+      return NaN;
+    }
+  }
+  return typeof val === 'number' ? val : NaN;
+}
+
 class RingBuffer<T> {
   private buf: T[];
   private head = 0;
@@ -99,13 +112,12 @@ export class MetricStore {
       return true;
     });
 
-    const metricKey = q.metric as keyof EconomyMetrics;
     const points = filtered.map(m => ({
       tick: m.tick,
-      value: typeof m[metricKey] === 'number' ? (m[metricKey] as number) : NaN,
+      value: getNestedValue(m as unknown as Record<string, unknown>, q.metric as string),
     }));
 
-    return { metric: q.metric, resolution, points };
+    return { metric: q.metric as string, resolution, points };
   }
 
   /** Check if fine and coarse resolution metrics diverge significantly */
@@ -133,6 +145,24 @@ export class MetricStore {
       return vals.length > 0 ? vals.reduce((a, b) => a + b, 0) / vals.length : 0;
     };
 
+    const avgRecord = (key: keyof EconomyMetrics): Record<string, number> => {
+      const allKeys = new Set<string>();
+      for (const s of snapshots) {
+        const rec = s[key];
+        if (rec && typeof rec === 'object' && !Array.isArray(rec)) {
+          Object.keys(rec as Record<string, unknown>).forEach(k => allKeys.add(k));
+        }
+      }
+      const result: Record<string, number> = {};
+      for (const k of allKeys) {
+        const vals = snapshots
+          .map(s => (s[key] as Record<string, number>)?.[k])
+          .filter((v): v is number => typeof v === 'number' && !isNaN(v));
+        result[k] = vals.length > 0 ? vals.reduce((a, b) => a + b, 0) / vals.length : 0;
+      }
+      return result;
+    };
+
     return {
       ...last,
       totalSupply: avg('totalSupply'),
@@ -153,6 +183,20 @@ export class MetricStore {
       productionIndex: avg('productionIndex'),
       capacityUsage: avg('capacityUsage'),
       anchorRatioDrift: avg('anchorRatioDrift'),
+      // Per-currency averages
+      totalSupplyByCurrency: avgRecord('totalSupplyByCurrency'),
+      netFlowByCurrency: avgRecord('netFlowByCurrency'),
+      velocityByCurrency: avgRecord('velocityByCurrency'),
+      inflationRateByCurrency: avgRecord('inflationRateByCurrency'),
+      faucetVolumeByCurrency: avgRecord('faucetVolumeByCurrency'),
+      sinkVolumeByCurrency: avgRecord('sinkVolumeByCurrency'),
+      tapSinkRatioByCurrency: avgRecord('tapSinkRatioByCurrency'),
+      anchorRatioDriftByCurrency: avgRecord('anchorRatioDriftByCurrency'),
+      giniCoefficientByCurrency: avgRecord('giniCoefficientByCurrency'),
+      medianBalanceByCurrency: avgRecord('medianBalanceByCurrency'),
+      meanBalanceByCurrency: avgRecord('meanBalanceByCurrency'),
+      top10PctShareByCurrency: avgRecord('top10PctShareByCurrency'),
+      meanMedianDivergenceByCurrency: avgRecord('meanMedianDivergenceByCurrency'),
     };
   }
 }

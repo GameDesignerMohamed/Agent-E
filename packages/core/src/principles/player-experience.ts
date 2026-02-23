@@ -11,60 +11,65 @@ export const P33_FairNotEqual: Principle = {
     'Healthy inequality from skill/effort is fine. Inequality from money (pay-to-win) ' +
     'is toxic. Target Gini 0.3-0.45: meaningful spread, not oligarchy.',
   check(metrics, thresholds): PrincipleResult {
-    const { giniCoefficient } = metrics;
+    for (const curr of metrics.currencies) {
+      const giniCoefficient = metrics.giniCoefficientByCurrency[curr] ?? 0;
 
-    if (giniCoefficient < 0.10) {
-      return {
-        violated: true,
-        severity: 3,
-        evidence: { giniCoefficient },
-        suggestedAction: {
-          parameter: 'rewardRate',
-          direction: 'increase',
-          magnitude: 0.10,
-          reasoning:
-            `Gini ${giniCoefficient.toFixed(2)} — near-perfect equality. Economy lacks stakes. ` +
-            'Increase winner rewards to create meaningful spread.',
-        },
-        confidence: 0.60,
-        estimatedLag: 20,
-      };
-    }
+      if (giniCoefficient < 0.10) {
+        return {
+          violated: true,
+          severity: 3,
+          evidence: { currency: curr, giniCoefficient },
+          suggestedAction: {
+            parameter: 'rewardRate',
+            direction: 'increase',
+            currency: curr,
+            magnitude: 0.10,
+            reasoning:
+              `[${curr}] Gini ${giniCoefficient.toFixed(2)} — near-perfect equality. Economy lacks stakes. ` +
+              'Increase winner rewards to create meaningful spread.',
+          },
+          confidence: 0.60,
+          estimatedLag: 20,
+        };
+      }
 
-    if (giniCoefficient > thresholds.giniRedThreshold) {
-      return {
-        violated: true,
-        severity: 7,
-        evidence: { giniCoefficient },
-        suggestedAction: {
-          parameter: 'transactionFee',
-          direction: 'increase',
-          magnitude: 0.20,
-          reasoning:
-            `Gini ${giniCoefficient.toFixed(2)} — oligarchy level. Toxic inequality. ` +
-            'Raise transaction fees to redistribute wealth from rich to pool.',
-        },
-        confidence: 0.85,
-        estimatedLag: 10,
-      };
-    }
+      if (giniCoefficient > thresholds.giniRedThreshold) {
+        return {
+          violated: true,
+          severity: 7,
+          evidence: { currency: curr, giniCoefficient },
+          suggestedAction: {
+            parameter: 'transactionFee',
+            direction: 'increase',
+            currency: curr,
+            magnitude: 0.20,
+            reasoning:
+              `[${curr}] Gini ${giniCoefficient.toFixed(2)} — oligarchy level. Toxic inequality. ` +
+              'Raise transaction fees to redistribute wealth from rich to pool.',
+          },
+          confidence: 0.85,
+          estimatedLag: 10,
+        };
+      }
 
-    if (giniCoefficient > thresholds.giniWarnThreshold) {
-      return {
-        violated: true,
-        severity: 4,
-        evidence: { giniCoefficient },
-        suggestedAction: {
-          parameter: 'transactionFee',
-          direction: 'increase',
-          magnitude: 0.10,
-          reasoning:
-            `Gini ${giniCoefficient.toFixed(2)} — high inequality warning. ` +
-            'Gently raise fees to slow wealth concentration.',
-        },
-        confidence: 0.75,
-        estimatedLag: 15,
-      };
+      if (giniCoefficient > thresholds.giniWarnThreshold) {
+        return {
+          violated: true,
+          severity: 4,
+          evidence: { currency: curr, giniCoefficient },
+          suggestedAction: {
+            parameter: 'transactionFee',
+            direction: 'increase',
+            currency: curr,
+            magnitude: 0.10,
+            reasoning:
+              `[${curr}] Gini ${giniCoefficient.toFixed(2)} — high inequality warning. ` +
+              'Gently raise fees to slow wealth concentration.',
+          },
+          confidence: 0.75,
+          estimatedLag: 15,
+        };
+      }
     }
 
     return { violated: false };

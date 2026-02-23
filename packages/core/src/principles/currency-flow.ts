@@ -11,42 +11,48 @@ export const P12_OnePrimaryFaucet: Principle = {
     'creating currency causes uncontrolled inflation. One clear primary faucet ' +
     'makes the economy predictable and auditable.',
   check(metrics, thresholds): PrincipleResult {
-    const { netFlow, faucetVolume, sinkVolume } = metrics;
+    for (const curr of metrics.currencies) {
+      const netFlow = metrics.netFlowByCurrency[curr] ?? 0;
+      const faucetVolume = metrics.faucetVolumeByCurrency[curr] ?? 0;
+      const sinkVolume = metrics.sinkVolumeByCurrency[curr] ?? 0;
 
-    if (netFlow > thresholds.netFlowWarnThreshold) {
-      return {
-        violated: true,
-        severity: 5,
-        evidence: { netFlow, faucetVolume, sinkVolume },
-        suggestedAction: {
-          parameter: 'productionCost',
-          direction: 'increase',
-          magnitude: 0.15,
-          reasoning:
-            `Net flow +${netFlow.toFixed(1)}/tick. Inflationary. ` +
-            'Increase production cost (primary sink) to balance faucet output.',
-        },
-        confidence: 0.80,
-        estimatedLag: 8,
-      };
-    }
+      if (netFlow > thresholds.netFlowWarnThreshold) {
+        return {
+          violated: true,
+          severity: 5,
+          evidence: { currency: curr, netFlow, faucetVolume, sinkVolume },
+          suggestedAction: {
+            parameter: 'productionCost',
+            direction: 'increase',
+            currency: curr,
+            magnitude: 0.15,
+            reasoning:
+              `[${curr}] Net flow +${netFlow.toFixed(1)}/tick. Inflationary. ` +
+              'Increase production cost (primary sink) to balance faucet output.',
+          },
+          confidence: 0.80,
+          estimatedLag: 8,
+        };
+      }
 
-    if (netFlow < -thresholds.netFlowWarnThreshold) {
-      return {
-        violated: true,
-        severity: 4,
-        evidence: { netFlow, faucetVolume, sinkVolume },
-        suggestedAction: {
-          parameter: 'productionCost',
-          direction: 'decrease',
-          magnitude: 0.15,
-          reasoning:
-            `Net flow ${netFlow.toFixed(1)}/tick. Deflationary. ` +
-            'Decrease production cost to ease sink pressure.',
-        },
-        confidence: 0.80,
-        estimatedLag: 8,
-      };
+      if (netFlow < -thresholds.netFlowWarnThreshold) {
+        return {
+          violated: true,
+          severity: 4,
+          evidence: { currency: curr, netFlow, faucetVolume, sinkVolume },
+          suggestedAction: {
+            parameter: 'productionCost',
+            direction: 'decrease',
+            currency: curr,
+            magnitude: 0.15,
+            reasoning:
+              `[${curr}] Net flow ${netFlow.toFixed(1)}/tick. Deflationary. ` +
+              'Decrease production cost to ease sink pressure.',
+          },
+          confidence: 0.80,
+          estimatedLag: 8,
+        };
+      }
     }
 
     return { violated: false };
@@ -61,37 +67,37 @@ export const P13_PotsAreZeroSumAndSelfRegulate: Principle = {
     'Competitive pot math: winRate × multiplier > (1 - houseCut) drains the pot. ' +
     'At 65% win rate, multiplier must be ≤ 1.38. We use 1.5 for slight surplus buffer.',
   check(metrics, thresholds): PrincipleResult {
-    const { poolSizes, populationByRole } = metrics;
-    const totalAgents = metrics.totalAgents;
+    const { populationByRole } = metrics;
 
-    // Check all pools - find the largest population (likely participants in competitive pools)
     const roleEntries = Object.entries(populationByRole).sort((a, b) => b[1] - a[1]);
-    const dominantRole = roleEntries[0]?.[0];
     const dominantCount = roleEntries[0]?.[1] ?? 0;
 
-    // For each pool, check if it's draining despite activity
-    for (const [poolName, poolSize] of Object.entries(poolSizes)) {
-      if (dominantCount > 5 && poolSize < 50) {
-        // Estimate if the multiplier math is sustainable
-        const { poolWinRate, poolHouseCut } = thresholds;
-        const maxSustainableMultiplier = (1 - poolHouseCut) / poolWinRate;
+    for (const [poolName, currencyAmounts] of Object.entries(metrics.poolSizesByCurrency)) {
+      for (const curr of metrics.currencies) {
+        const poolSize = currencyAmounts[curr] ?? 0;
 
-        return {
-          violated: true,
-          severity: 7,
-          evidence: { pool: poolName, poolSize, participants: dominantCount, maxSustainableMultiplier },
-          suggestedAction: {
-            parameter: 'rewardRate',
-            direction: 'decrease',
-            magnitude: 0.15,
-            reasoning:
-              `${poolName} pool at ${poolSize.toFixed(0)} currency with ${dominantCount} active participants. ` +
-              `Sustainable multiplier ≤ ${maxSustainableMultiplier.toFixed(2)}. ` +
-              'Reduce reward multiplier to prevent pool drain.',
-          },
-          confidence: 0.85,
-          estimatedLag: 3,
-        };
+        if (dominantCount > 5 && poolSize < 50) {
+          const { poolWinRate, poolHouseCut } = thresholds;
+          const maxSustainableMultiplier = (1 - poolHouseCut) / poolWinRate;
+
+          return {
+            violated: true,
+            severity: 7,
+            evidence: { currency: curr, pool: poolName, poolSize, participants: dominantCount, maxSustainableMultiplier },
+            suggestedAction: {
+              parameter: 'rewardRate',
+              direction: 'decrease',
+              currency: curr,
+              magnitude: 0.15,
+              reasoning:
+                `[${curr}] ${poolName} pool at ${poolSize.toFixed(0)} currency with ${dominantCount} active participants. ` +
+                `Sustainable multiplier ≤ ${maxSustainableMultiplier.toFixed(2)}. ` +
+                'Reduce reward multiplier to prevent pool drain.',
+            },
+            confidence: 0.85,
+            estimatedLag: 3,
+          };
+        }
       }
     }
 
@@ -108,28 +114,31 @@ export const P14_TrackActualInjection: Principle = {
     'Currency enters through faucet mechanisms (spawning, rewards). ' +
     'Fake metrics break every downstream decision.',
   check(metrics, _thresholds): PrincipleResult {
-    const { faucetVolume, netFlow, totalSupply } = metrics;
+    for (const curr of metrics.currencies) {
+      const faucetVolume = metrics.faucetVolumeByCurrency[curr] ?? 0;
+      const netFlow = metrics.netFlowByCurrency[curr] ?? 0;
+      const totalSupply = metrics.totalSupplyByCurrency[curr] ?? 0;
 
-    // If faucetVolume is suspiciously large relative to any real injection mechanism
-    // (spawning), flag for audit. Proxy: if supply grows faster than expected.
-    const supplyGrowthRate = Math.abs(netFlow) / Math.max(1, totalSupply);
+      const supplyGrowthRate = Math.abs(netFlow) / Math.max(1, totalSupply);
 
-    if (supplyGrowthRate > 0.10) {
-      return {
-        violated: true,
-        severity: 4,
-        evidence: { faucetVolume, netFlow, supplyGrowthRate },
-        suggestedAction: {
-          parameter: 'yieldRate',
-          direction: 'decrease',
-          magnitude: 0.10,
-          reasoning:
-            `Supply growing at ${(supplyGrowthRate * 100).toFixed(1)}%/tick. ` +
-            'Verify currency injection tracking. Resources should not create currency directly.',
-        },
-        confidence: 0.55,
-        estimatedLag: 5,
-      };
+      if (supplyGrowthRate > 0.10) {
+        return {
+          violated: true,
+          severity: 4,
+          evidence: { currency: curr, faucetVolume, netFlow, supplyGrowthRate },
+          suggestedAction: {
+            parameter: 'yieldRate',
+            direction: 'decrease',
+            currency: curr,
+            magnitude: 0.10,
+            reasoning:
+              `[${curr}] Supply growing at ${(supplyGrowthRate * 100).toFixed(1)}%/tick. ` +
+              'Verify currency injection tracking. Resources should not create currency directly.',
+          },
+          confidence: 0.55,
+          estimatedLag: 5,
+        };
+      }
     }
 
     return { violated: false };
@@ -145,28 +154,33 @@ export const P15_PoolsNeedCapAndDecay: Principle = {
     'A pool at 42% of total supply means 42% of the economy is frozen. ' +
     'Cap at 5%, decay at 2%/tick.',
   check(metrics, thresholds): PrincipleResult {
-    const { poolSizes, totalSupply } = metrics;
     const { poolCapPercent } = thresholds;
 
-    for (const [pool, size] of Object.entries(poolSizes)) {
-      const shareOfSupply = size / Math.max(1, totalSupply);
-      if (shareOfSupply > poolCapPercent * 2) { // trigger at 2× cap
-        return {
-          violated: true,
-          severity: 6,
-          evidence: { pool, size, shareOfSupply, cap: poolCapPercent },
-          suggestedAction: {
-            parameter: 'transactionFee',
-            direction: 'decrease',
-            magnitude: 0.10,
-            reasoning:
-              `${pool} pool at ${(shareOfSupply * 100).toFixed(1)}% of supply ` +
-              `(cap: ${(poolCapPercent * 100).toFixed(0)}%). Currency frozen. ` +
-              'Lower fees to encourage circulation over accumulation.',
-          },
-          confidence: 0.85,
-          estimatedLag: 5,
-        };
+    for (const [pool, currencyAmounts] of Object.entries(metrics.poolSizesByCurrency)) {
+      for (const curr of metrics.currencies) {
+        const size = currencyAmounts[curr] ?? 0;
+        const totalSupply = metrics.totalSupplyByCurrency[curr] ?? 0;
+        const shareOfSupply = size / Math.max(1, totalSupply);
+
+        if (shareOfSupply > poolCapPercent * 2) {
+          return {
+            violated: true,
+            severity: 6,
+            evidence: { currency: curr, pool, size, shareOfSupply, cap: poolCapPercent },
+            suggestedAction: {
+              parameter: 'transactionFee',
+              direction: 'decrease',
+              currency: curr,
+              magnitude: 0.10,
+              reasoning:
+                `[${curr}] ${pool} pool at ${(shareOfSupply * 100).toFixed(1)}% of supply ` +
+                `(cap: ${(poolCapPercent * 100).toFixed(0)}%). Currency frozen. ` +
+                'Lower fees to encourage circulation over accumulation.',
+            },
+            confidence: 0.85,
+            estimatedLag: 5,
+          };
+        }
       }
     }
 
@@ -183,29 +197,31 @@ export const P16_WithdrawalPenaltyScales: Principle = {
     'exit after 1 tick and keep 99% of accrued yield. ' +
     'Penalty must scale linearly: (1 - ticksStaked/lockDuration) × yield.',
   check(metrics, _thresholds): PrincipleResult {
-    const { poolSizes, totalSupply } = metrics;
+    for (const [poolName, currencyAmounts] of Object.entries(metrics.poolSizesByCurrency)) {
+      for (const curr of metrics.currencies) {
+        const poolSize = currencyAmounts[curr] ?? 0;
+        const totalSupply = metrics.totalSupplyByCurrency[curr] ?? 0;
+        const stakedEstimate = totalSupply * 0.15;
 
-    // Check all pools - if any pool is small but locked capital is large, withdrawal penalty is weak
-    const stakedEstimate = totalSupply * 0.15; // rough: if 15% staked is healthy
-
-    for (const [poolName, poolSize] of Object.entries(poolSizes)) {
-      if (poolSize < 10 && stakedEstimate > 100) {
-        return {
-          violated: true,
-          severity: 3,
-          evidence: { pool: poolName, poolSize, estimatedStaked: stakedEstimate },
-          suggestedAction: {
-            parameter: 'transactionFee',
-            direction: 'increase',
-            magnitude: 0.05,
-            reasoning:
-              `${poolName} pool depleted while significant currency should be locked. ` +
-              'Early withdrawals may be draining the pool. ' +
-              'Ensure withdrawal penalty scales with lock duration.',
-          },
-          confidence: 0.45,
-          estimatedLag: 10,
-        };
+        if (poolSize < 10 && stakedEstimate > 100) {
+          return {
+            violated: true,
+            severity: 3,
+            evidence: { currency: curr, pool: poolName, poolSize, estimatedStaked: stakedEstimate },
+            suggestedAction: {
+              parameter: 'transactionFee',
+              direction: 'increase',
+              currency: curr,
+              magnitude: 0.05,
+              reasoning:
+                `[${curr}] ${poolName} pool depleted while significant currency should be locked. ` +
+                'Early withdrawals may be draining the pool. ' +
+                'Ensure withdrawal penalty scales with lock duration.',
+            },
+            confidence: 0.45,
+            estimatedLag: 10,
+          };
+        }
       }
     }
 
@@ -221,26 +237,31 @@ export const P32_VelocityAboveSupply: Principle = {
     'Low transactions despite adequate supply means liquidity is trapped. ' +
     'High supply with low velocity = stagnation, not abundance.',
   check(metrics, _thresholds): PrincipleResult {
-    const { velocity, totalSupply, supplyByResource } = metrics;
+    const { supplyByResource } = metrics;
     const totalResources = Object.values(supplyByResource).reduce((s, v) => s + v, 0);
 
-    // Stagnation: resources exist, currency exists, but nobody is trading
-    if (velocity < 3 && totalSupply > 100 && totalResources > 20) {
-      return {
-        violated: true,
-        severity: 4,
-        evidence: { velocity, totalSupply, totalResources },
-        suggestedAction: {
-          parameter: 'transactionFee',
-          direction: 'decrease',
-          magnitude: 0.20,
-          reasoning:
-            `Velocity ${velocity}/t with ${totalResources} resources in system. ` +
-            'Economy stagnant despite available supply. Lower trading friction.',
-        },
-        confidence: 0.75,
-        estimatedLag: 5,
-      };
+    for (const curr of metrics.currencies) {
+      const velocity = metrics.velocityByCurrency[curr] ?? 0;
+      const totalSupply = metrics.totalSupplyByCurrency[curr] ?? 0;
+
+      if (velocity < 3 && totalSupply > 100 && totalResources > 20) {
+        return {
+          violated: true,
+          severity: 4,
+          evidence: { currency: curr, velocity, totalSupply, totalResources },
+          suggestedAction: {
+            parameter: 'transactionFee',
+            direction: 'decrease',
+            currency: curr,
+            magnitude: 0.20,
+            reasoning:
+              `[${curr}] Velocity ${velocity}/t with ${totalResources} resources in system. ` +
+              'Economy stagnant despite available supply. Lower trading friction.',
+          },
+          confidence: 0.75,
+          estimatedLag: 5,
+        };
+      }
     }
 
     return { violated: false };
@@ -256,44 +277,46 @@ export const P58_NoNaturalNumeraire: Principle = {
     'Multiple items rotate as de facto units of account, but none locks in. ' +
     'If a numéraire is needed, design and enforce it — emergence alone will not produce one.',
   check(metrics, _thresholds): PrincipleResult {
-    const { prices, velocity, totalSupply } = metrics;
+    for (const curr of metrics.currencies) {
+      const currPrices = metrics.pricesByCurrency[curr] ?? {};
+      const velocity = metrics.velocityByCurrency[curr] ?? 0;
+      const totalSupply = metrics.totalSupplyByCurrency[curr] ?? 0;
 
-    // Detect barter-dominant economy: high trade velocity but most resources
-    // have prices close to each other (no clear numéraire emerging)
-    const priceValues = Object.values(prices).filter(p => p > 0);
-    if (priceValues.length < 3) return { violated: false };
+      const priceValues = Object.values(currPrices).filter(p => p > 0);
+      if (priceValues.length < 3) continue;
 
-    const mean = priceValues.reduce((s, p) => s + p, 0) / priceValues.length;
-    const coeffOfVariation = mean > 0
-      ? Math.sqrt(
-          priceValues.reduce((s, p) => s + (p - mean) ** 2, 0) / priceValues.length
-        ) / mean
-      : 0;
+      const mean = priceValues.reduce((s, p) => s + p, 0) / priceValues.length;
+      const coeffOfVariation = mean > 0
+        ? Math.sqrt(
+            priceValues.reduce((s, p) => s + (p - mean) ** 2, 0) / priceValues.length
+          ) / mean
+        : 0;
 
-    // Low CoV = all items priced similarly = no emergent numéraire
-    // Combined with high velocity = active barter economy
-    if (coeffOfVariation < 0.25 && velocity > 5 && totalSupply > 100) {
-      return {
-        violated: true,
-        severity: 3,
-        evidence: {
-          coeffOfVariation,
-          velocity,
-          numResources: priceValues.length,
-          meanPrice: mean,
-        },
-        suggestedAction: {
-          parameter: 'productionCost',
-          direction: 'increase',
-          magnitude: 0.10,
-          reasoning:
-            `Price coefficient of variation ${coeffOfVariation.toFixed(2)} with velocity ${velocity.toFixed(1)}. ` +
-            'All items priced similarly in an active economy — no natural numéraire emerging. ' +
-            'If a designated currency exists, increase its sink demand to differentiate it.',
-        },
-        confidence: 0.50,
-        estimatedLag: 20,
-      };
+      if (coeffOfVariation < 0.25 && velocity > 5 && totalSupply > 100) {
+        return {
+          violated: true,
+          severity: 3,
+          evidence: {
+            currency: curr,
+            coeffOfVariation,
+            velocity,
+            numResources: priceValues.length,
+            meanPrice: mean,
+          },
+          suggestedAction: {
+            parameter: 'productionCost',
+            direction: 'increase',
+            currency: curr,
+            magnitude: 0.10,
+            reasoning:
+              `[${curr}] Price coefficient of variation ${coeffOfVariation.toFixed(2)} with velocity ${velocity.toFixed(1)}. ` +
+              'All items priced similarly in an active economy — no natural numéraire emerging. ' +
+              'If a designated currency exists, increase its sink demand to differentiate it.',
+          },
+          confidence: 0.50,
+          estimatedLag: 20,
+        };
+      }
     }
 
     return { violated: false };

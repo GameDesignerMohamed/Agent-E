@@ -11,31 +11,38 @@ export const P42_TheMedianPrinciple: Principle = {
     'A few high-balance agents raise the mean while most agents have low balances. ' +
     'Always balance to median when divergence exceeds 30%.',
   check(metrics, thresholds): PrincipleResult {
-    const { meanMedianDivergence, giniCoefficient } = metrics;
+    for (const curr of metrics.currencies) {
+      const meanMedianDivergence = metrics.meanMedianDivergenceByCurrency[curr] ?? 0;
+      const giniCoefficient = metrics.giniCoefficientByCurrency[curr] ?? 0;
+      const meanBalance = metrics.meanBalanceByCurrency[curr] ?? 0;
+      const medianBalance = metrics.medianBalanceByCurrency[curr] ?? 0;
 
-    if (meanMedianDivergence > thresholds.meanMedianDivergenceMax) {
-      return {
-        violated: true,
-        severity: 5,
-        evidence: {
-          meanMedianDivergence,
-          giniCoefficient,
-          meanBalance: metrics.meanBalance,
-          medianBalance: metrics.medianBalance,
-        },
-        suggestedAction: {
-          parameter: 'transactionFee',
-          direction: 'increase',
-          magnitude: 0.15,
-          reasoning:
-            `Mean/median divergence ${(meanMedianDivergence * 100).toFixed(0)}% ` +
-            `(threshold: ${(thresholds.meanMedianDivergenceMax * 100).toFixed(0)}%). ` +
-            'Economy has outliers skewing metrics. Use median for decisions. ' +
-            'Raise transaction fees to redistribute wealth.',
-        },
-        confidence: 0.85,
-        estimatedLag: 15,
-      };
+      if (meanMedianDivergence > thresholds.meanMedianDivergenceMax) {
+        return {
+          violated: true,
+          severity: 5,
+          evidence: {
+            currency: curr,
+            meanMedianDivergence,
+            giniCoefficient,
+            meanBalance,
+            medianBalance,
+          },
+          suggestedAction: {
+            parameter: 'transactionFee',
+            direction: 'increase',
+            currency: curr,
+            magnitude: 0.15,
+            reasoning:
+              `[${curr}] Mean/median divergence ${(meanMedianDivergence * 100).toFixed(0)}% ` +
+              `(threshold: ${(thresholds.meanMedianDivergenceMax * 100).toFixed(0)}%). ` +
+              'Economy has outliers skewing metrics. Use median for decisions. ' +
+              'Raise transaction fees to redistribute wealth.',
+          },
+          confidence: 0.85,
+          estimatedLag: 15,
+        };
+      }
     }
 
     return { violated: false };

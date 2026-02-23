@@ -114,6 +114,11 @@ describe('P58 — No Natural Numéraire', () => {
   it('fires when all items priced similarly in active barter economy', () => {
     const m = {
       ...emptyMetrics(100),
+      currencies: ['credits'],
+      pricesByCurrency: { credits: { iron: 10, wood: 11, cloth: 9, gems: 10.5 } },
+      velocityByCurrency: { credits: 8 },
+      totalSupplyByCurrency: { credits: 500 },
+      // Keep aggregate for backward compat
       prices: { iron: 10, wood: 11, cloth: 9, gems: 10.5 },
       velocity: 8,
       totalSupply: 500,
@@ -125,6 +130,10 @@ describe('P58 — No Natural Numéraire', () => {
   it('does not fire when prices vary (numéraire likely exists)', () => {
     const m = {
       ...emptyMetrics(100),
+      currencies: ['credits'],
+      pricesByCurrency: { credits: { iron: 10, wood: 50, gems: 200 } },
+      velocityByCurrency: { credits: 8 },
+      totalSupplyByCurrency: { credits: 500 },
       prices: { iron: 10, wood: 50, gems: 200 },
       velocity: 8,
       totalSupply: 500,
@@ -136,6 +145,10 @@ describe('P58 — No Natural Numéraire', () => {
   it('does not fire with low velocity (not barter-heavy)', () => {
     const m = {
       ...emptyMetrics(100),
+      currencies: ['credits'],
+      pricesByCurrency: { credits: { iron: 10, wood: 11, cloth: 9 } },
+      velocityByCurrency: { credits: 2 },
+      totalSupplyByCurrency: { credits: 500 },
       prices: { iron: 10, wood: 11, cloth: 9 },
       velocity: 2,
       totalSupply: 500,

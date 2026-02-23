@@ -87,6 +87,7 @@ export class Planner {
       id: `plan_${metrics.tick}_${param}`,
       diagnosis,
       parameter: param,
+      ...(action.currency !== undefined ? { currency: action.currency } : {}),
       currentValue,
       targetValue,
       maxChangePercent: thresholds.maxAdjustmentPercent,

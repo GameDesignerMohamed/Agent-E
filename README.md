@@ -16,8 +16,27 @@ npm install @agent-e/core
 import { AgentE } from '@agent-e/core';
 
 const adapter = {
-  getState: () => yourEconomyState,
-  setParam: (param, value) => applyToYourEconomy(param, value),
+  getState: () => ({
+    tick: currentTick,
+    currencies: ['gold', 'gems'],
+    agentBalances: {
+      player1: { gold: 100, gems: 50 },
+      player2: { gold: 200, gems: 10 },
+    },
+    agentRoles: { /* id → role */ },
+    agentInventories: { /* id → { resource → qty } */ },
+    marketPrices: {
+      gold: { sword: 10, potion: 5 },
+      gems: { sword: 2, potion: 1 },
+    },
+    roles: ['warrior', 'mage'],
+    resources: ['sword', 'potion'],
+    recentTransactions: [],
+  }),
+  setParam: async (param, value, currency) => {
+    // currency tells you which economy to adjust
+    applyToYourEconomy(param, value, currency);
+  },
 };
 
 const agent = new AgentE({
@@ -43,6 +62,17 @@ Your Economy → Observer → Diagnoser → Simulator → Planner → Executor �
 3. **Simulator** — Monte Carlo forward projection (≥100 iterations) before any action
 4. **Planner** — lag-aware, cooldown-aware action planning with rollback conditions
 5. **Executor** — applies actions, monitors for rollback triggers
+
+## Multi-Currency Support
+
+AgentE tracks each currency independently. Every currency gets its own:
+- Supply, net flow, velocity, inflation rate
+- Gini coefficient, median/mean balance, wealth distribution
+- Faucet/sink volumes, pool sizes
+- Price index, arbitrage index
+
+When a principle detects an issue, the violation tells you which currency
+is unhealthy and the suggested action is scoped to that currency.
 
 ## Modes
 

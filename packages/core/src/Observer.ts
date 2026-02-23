@@ -6,9 +6,9 @@ import { DEFAULT_TICK_CONFIG } from './defaults.js';
 
 export class Observer {
   private previousMetrics: EconomyMetrics | null = null;
-  private previousPrices: Record<string, number> = {};
+  private previousPricesByCurrency: Record<string, Record<string, number>> = {};
   private customMetricFns: Record<string, (state: EconomyState) => number> = {};
-  private anchorBaseline: { currencyPerPeriod: number; itemsPerCurrency: number } | null = null;
+  private anchorBaselineByCurrency: Record<string, { currencyPerPeriod: number; itemsPerCurrency: number }> = {};
   private tickConfig: TickConfig;
 
   constructor(tickConfig?: Partial<TickConfig>) {
@@ -21,28 +21,28 @@ export class Observer {
 
   compute(state: EconomyState, recentEvents: EconomicEvent[]): EconomyMetrics {
     const tick = state.tick;
-    const balances = Object.values(state.agentBalances);
     const roles = Object.values(state.agentRoles);
-    const totalAgents = balances.length;
+    const totalAgents = Object.keys(state.agentBalances).length;
 
-    // ── Event classification (single pass) ──
-    let faucetVolume = 0;
-    let sinkVolume = 0;
+    // ── Event classification (single pass, per-currency) ──
+    let productionAmount = 0;
+    const faucetVolumeByCurrency: Record<string, number> = {};
+    const sinkVolumeByCurrency: Record<string, number> = {};
     const tradeEvents: EconomicEvent[] = [];
     const roleChangeEvents: EconomicEvent[] = [];
     let churnCount = 0;
-
-    let productionAmount = 0;
+    const defaultCurrency = state.currencies[0] ?? 'default';
 
     for (const e of recentEvents) {
+      const curr = e.currency ?? defaultCurrency;
       switch (e.type) {
         case 'mint':
         case 'spawn':
-          faucetVolume += e.amount ?? 0;
+          faucetVolumeByCurrency[curr] = (faucetVolumeByCurrency[curr] ?? 0) + (e.amount ?? 0);
           break;
         case 'burn':
         case 'consume':
-          sinkVolume += e.amount ?? 0;
+          sinkVolumeByCurrency[curr] = (sinkVolumeByCurrency[curr] ?? 0) + (e.amount ?? 0);
           break;
         case 'produce':
           productionAmount += e.amount ?? 1;
@@ -60,26 +60,87 @@ export class Observer {
       }
     }
 
-    // ── Currency ──
-    const totalSupply = balances.reduce((s, b) => s + b, 0);
+    const currencies = state.currencies;
+
+    // ── Per-currency supply ──
+    const totalSupplyByCurrency: Record<string, number> = {};
+    const balancesByCurrency: Record<string, number[]> = {};
+
+    for (const [_agentId, balances] of Object.entries(state.agentBalances)) {
+      for (const [curr, bal] of Object.entries(balances)) {
+        totalSupplyByCurrency[curr] = (totalSupplyByCurrency[curr] ?? 0) + bal;
+        if (!balancesByCurrency[curr]) balancesByCurrency[curr] = [];
+        balancesByCurrency[curr]!.push(bal);
+      }
+    }
+
+    // ── Per-currency flow ──
+    const netFlowByCurrency: Record<string, number> = {};
+    const tapSinkRatioByCurrency: Record<string, number> = {};
+    const inflationRateByCurrency: Record<string, number> = {};
+    const velocityByCurrency: Record<string, number> = {};
+
+    for (const curr of currencies) {
+      const faucet = faucetVolumeByCurrency[curr] ?? 0;
+      const sink = sinkVolumeByCurrency[curr] ?? 0;
+      netFlowByCurrency[curr] = faucet - sink;
+      tapSinkRatioByCurrency[curr] = sink > 0 ? faucet / sink : faucet > 0 ? Infinity : 1;
+
+      const prevSupply = this.previousMetrics?.totalSupplyByCurrency?.[curr] ?? totalSupplyByCurrency[curr] ?? 0;
+      const currSupply = totalSupplyByCurrency[curr] ?? 0;
+      inflationRateByCurrency[curr] = prevSupply > 0 ? (currSupply - prevSupply) / prevSupply : 0;
+
+      // Velocity: trades involving this currency / supply
+      const currTrades = tradeEvents.filter(e => (e.currency ?? defaultCurrency) === curr);
+      velocityByCurrency[curr] = currSupply > 0 ? currTrades.length / currSupply : 0;
+    }
+
+    // ── Per-currency wealth distribution ──
+    const giniCoefficientByCurrency: Record<string, number> = {};
+    const medianBalanceByCurrency: Record<string, number> = {};
+    const meanBalanceByCurrency: Record<string, number> = {};
+    const top10PctShareByCurrency: Record<string, number> = {};
+    const meanMedianDivergenceByCurrency: Record<string, number> = {};
+
+    for (const curr of currencies) {
+      const bals = balancesByCurrency[curr] ?? [];
+      const sorted = [...bals].sort((a, b) => a - b);
+      const supply = totalSupplyByCurrency[curr] ?? 0;
+      const count = sorted.length;
+
+      const median = computeMedian(sorted);
+      const mean = count > 0 ? supply / count : 0;
+      const top10Idx = Math.floor(count * 0.9);
+      const top10Sum = sorted.slice(top10Idx).reduce((s, b) => s + b, 0);
+
+      giniCoefficientByCurrency[curr] = computeGini(sorted);
+      medianBalanceByCurrency[curr] = median;
+      meanBalanceByCurrency[curr] = mean;
+      top10PctShareByCurrency[curr] = supply > 0 ? top10Sum / supply : 0;
+      meanMedianDivergenceByCurrency[curr] = median > 0 ? Math.abs(mean - median) / median : 0;
+    }
+
+    // ── Aggregates (sum/avg across all currencies) ──
+    const avgOf = (rec: Record<string, number>): number => {
+      const vals = Object.values(rec);
+      return vals.length > 0 ? vals.reduce((s, v) => s + v, 0) / vals.length : 0;
+    };
+
+    const totalSupply = Object.values(totalSupplyByCurrency).reduce((s, v) => s + v, 0);
+    const faucetVolume = Object.values(faucetVolumeByCurrency).reduce((s, v) => s + v, 0);
+    const sinkVolume = Object.values(sinkVolumeByCurrency).reduce((s, v) => s + v, 0);
     const netFlow = faucetVolume - sinkVolume;
     const tapSinkRatio = sinkVolume > 0 ? faucetVolume / sinkVolume : faucetVolume > 0 ? Infinity : 1;
-
-    const prevSupply = this.previousMetrics?.totalSupply ?? totalSupply;
-    const inflationRate = prevSupply > 0 ? (totalSupply - prevSupply) / prevSupply : 0;
-
     const velocity = totalSupply > 0 ? tradeEvents.length / totalSupply : 0;
+    const prevTotalSupply = this.previousMetrics?.totalSupply ?? totalSupply;
+    const inflationRate = prevTotalSupply > 0 ? (totalSupply - prevTotalSupply) / prevTotalSupply : 0;
 
-    // ── Wealth distribution ──
-    const sortedBalances = [...balances].sort((a, b) => a - b);
+    // Aggregate wealth: average across currencies
+    const giniCoefficient = avgOf(giniCoefficientByCurrency);
+    const medianBalance = avgOf(medianBalanceByCurrency);
     const meanBalance = totalAgents > 0 ? totalSupply / totalAgents : 0;
-    const medianBalance = computeMedian(sortedBalances);
-    const top10Idx = Math.floor(totalAgents * 0.9);
-    const top10Sum = sortedBalances.slice(top10Idx).reduce((s, b) => s + b, 0);
-    const top10PctShare = totalSupply > 0 ? top10Sum / totalSupply : 0;
-    const giniCoefficient = computeGini(sortedBalances);
-    const meanMedianDivergence =
-      medianBalance > 0 ? Math.abs(meanBalance - medianBalance) / medianBalance : 0;
+    const top10PctShare = avgOf(top10PctShareByCurrency);
+    const meanMedianDivergence = avgOf(meanMedianDivergenceByCurrency);
 
     // ── Population ──
     const populationByRole: Record<string, number> = {};
@@ -98,19 +159,30 @@ export class Observer {
     }
     const churnRate = churnCount / Math.max(1, totalAgents);
 
-    // ── Market ──
-    const prices: Record<string, number> = { ...state.marketPrices };
-    const priceVolatility: Record<string, number> = {};
-    for (const [resource, price] of Object.entries(prices)) {
-      const prev = this.previousPrices[resource] ?? price;
-      priceVolatility[resource] = prev > 0 ? Math.abs(price - prev) / prev : 0;
-    }
-    this.previousPrices = { ...prices };
+    // ── Per-currency prices ──
+    const pricesByCurrency: Record<string, Record<string, number>> = {};
+    const priceVolatilityByCurrency: Record<string, Record<string, number>> = {};
+    const priceIndexByCurrency: Record<string, number> = {};
 
-    // Compute price index (equal-weight basket)
-    const priceValues = Object.values(prices);
-    const priceIndex =
-      priceValues.length > 0 ? priceValues.reduce((s, p) => s + p, 0) / priceValues.length : 0;
+    for (const [curr, resourcePrices] of Object.entries(state.marketPrices)) {
+      pricesByCurrency[curr] = { ...resourcePrices };
+      const pricePrev = this.previousPricesByCurrency?.[curr] ?? {};
+      const volMap: Record<string, number> = {};
+      for (const [resource, price] of Object.entries(resourcePrices)) {
+        const prev = pricePrev[resource] ?? price;
+        volMap[resource] = prev > 0 ? Math.abs(price - prev) / prev : 0;
+      }
+      priceVolatilityByCurrency[curr] = volMap;
+
+      const pVals = Object.values(resourcePrices);
+      priceIndexByCurrency[curr] = pVals.length > 0 ? pVals.reduce((s, p) => s + p, 0) / pVals.length : 0;
+    }
+    this.previousPricesByCurrency = JSON.parse(JSON.stringify(pricesByCurrency));
+
+    // Aggregate prices: use first currency as default
+    const prices = pricesByCurrency[defaultCurrency] ?? {};
+    const priceVolatility = priceVolatilityByCurrency[defaultCurrency] ?? {};
+    const priceIndex = priceIndexByCurrency[defaultCurrency] ?? 0;
 
     // Supply from agent inventories
     const supplyByResource: Record<string, number> = {};
@@ -156,56 +228,73 @@ export class Observer {
         : 80;
 
     const blockedAgentCount = satisfactions.filter(s => s < 20).length;
-    // Time-to-value: ratio of blocked agents to total. Lower = healthier.
     const timeToValue = totalAgents > 0 ? blockedAgentCount / totalAgents * 100 : 0;
 
-    // ── Pools ──
-    const poolSizes: Record<string, number> = { ...(state.poolSizes ?? {}) };
+    // ── Per-currency pools ──
+    const poolSizesByCurrency: Record<string, Record<string, number>> = {};
+    const poolSizesAggregate: Record<string, number> = {};
 
-    // ── Anchor ratio ──
-    if (!this.anchorBaseline && tick === 1 && totalSupply > 0) {
-      this.anchorBaseline = {
-        currencyPerPeriod: totalSupply / Math.max(1, totalAgents),
-        itemsPerCurrency: priceIndex > 0 ? 1 / priceIndex : 0,
-      };
+    if (state.poolSizes) {
+      for (const [pool, currencyAmounts] of Object.entries(state.poolSizes)) {
+        poolSizesByCurrency[pool] = { ...currencyAmounts };
+        poolSizesAggregate[pool] = Object.values(currencyAmounts).reduce((s, v) => s + v, 0);
+      }
     }
-    let anchorRatioDrift = 0;
-    if (this.anchorBaseline && totalAgents > 0) {
-      const currentCurrencyPerPeriod = totalSupply / totalAgents;
-      anchorRatioDrift =
-        this.anchorBaseline.currencyPerPeriod > 0
-          ? (currentCurrencyPerPeriod - this.anchorBaseline.currencyPerPeriod) /
-            this.anchorBaseline.currencyPerPeriod
+
+    // ── Per-currency anchor baseline ──
+    const anchorRatioDriftByCurrency: Record<string, number> = {};
+    if (tick === 1) {
+      for (const curr of currencies) {
+        const supply = totalSupplyByCurrency[curr] ?? 0;
+        if (supply > 0) {
+          this.anchorBaselineByCurrency[curr] = {
+            currencyPerPeriod: supply / Math.max(1, totalAgents),
+            itemsPerCurrency: (priceIndexByCurrency[curr] ?? 0) > 0 ? 1 / priceIndexByCurrency[curr]! : 0,
+          };
+        }
+      }
+    }
+    for (const curr of currencies) {
+      const baseline = this.anchorBaselineByCurrency[curr];
+      if (baseline && totalAgents > 0) {
+        const currentCPP = (totalSupplyByCurrency[curr] ?? 0) / totalAgents;
+        anchorRatioDriftByCurrency[curr] = baseline.currencyPerPeriod > 0
+          ? (currentCPP - baseline.currencyPerPeriod) / baseline.currencyPerPeriod
           : 0;
+      } else {
+        anchorRatioDriftByCurrency[curr] = 0;
+      }
     }
+    const anchorRatioDrift = avgOf(anchorRatioDriftByCurrency);
 
     // ── V1.1 Metrics ──
 
-    // arbitrageIndex: average pairwise price divergence across all resources
-    // For N resources with prices, compute all (N-1)*N/2 relative price ratios
-    // and measure how far they deviate from 1.0 (perfect equilibrium)
-    let arbitrageIndex = 0;
-    const priceKeys = Object.keys(prices).filter(k => prices[k]! > 0);
-    if (priceKeys.length >= 2) {
-      let pairCount = 0;
-      let totalDivergence = 0;
-      for (let i = 0; i < priceKeys.length; i++) {
-        for (let j = i + 1; j < priceKeys.length; j++) {
-          const pA = prices[priceKeys[i]!]!;
-          const pB = prices[priceKeys[j]!]!;
-          let ratio = pA / pB;
-          // Clamp ratio to prevent Math.log(0) or Math.log(Infinity)
-          ratio = Math.max(0.001, Math.min(1000, ratio));
-          // Divergence from 1.0: |ln(ratio)| gives symmetric measure
-          totalDivergence += Math.abs(Math.log(ratio));
-          pairCount++;
+    // ── Per-currency arbitrage index ──
+    const arbitrageIndexByCurrency: Record<string, number> = {};
+    for (const curr of currencies) {
+      const cPrices = pricesByCurrency[curr] ?? {};
+      const priceKeys = Object.keys(cPrices).filter(k => cPrices[k]! > 0);
+      if (priceKeys.length >= 2) {
+        let pairCount = 0;
+        let totalDivergence = 0;
+        for (let i = 0; i < priceKeys.length; i++) {
+          for (let j = i + 1; j < priceKeys.length; j++) {
+            const pA = cPrices[priceKeys[i]!]!;
+            const pB = cPrices[priceKeys[j]!]!;
+            let ratio = pA / pB;
+            ratio = Math.max(0.001, Math.min(1000, ratio));
+            totalDivergence += Math.abs(Math.log(ratio));
+            pairCount++;
+          }
         }
+        arbitrageIndexByCurrency[curr] = pairCount > 0 ? Math.min(1, totalDivergence / pairCount) : 0;
+      } else {
+        arbitrageIndexByCurrency[curr] = 0;
       }
-      arbitrageIndex = pairCount > 0 ? Math.min(1, totalDivergence / pairCount) : 0;
     }
+    const arbitrageIndex = avgOf(arbitrageIndexByCurrency);
 
     // contentDropAge: ticks since last 'produce' event with metadata.contentDrop === true
-    // Falls back to 0 if no content drops tracked
     const contentDropEvents = recentEvents.filter(
       e => e.metadata?.['contentDrop'] === true
     );
@@ -213,34 +302,29 @@ export class Observer {
       ? tick - Math.max(...contentDropEvents.map(e => e.timestamp))
       : (this.previousMetrics?.contentDropAge ?? 0) + 1;
 
-    // giftTradeRatio: fraction of trades where price is 0 or significantly below market
-    let giftTrades = 0;
-    if (tradeEvents.length > 0) {
-      for (const e of tradeEvents) {
-        const marketPrice = prices[e.resource ?? ''] ?? 0;
+    // ── Per-currency gift/disposal trade ratios ──
+    const giftTradeRatioByCurrency: Record<string, number> = {};
+    const disposalTradeRatioByCurrency: Record<string, number> = {};
+    for (const curr of currencies) {
+      const currTrades = tradeEvents.filter(e => (e.currency ?? defaultCurrency) === curr);
+      const cPrices = pricesByCurrency[curr] ?? {};
+      let gifts = 0;
+      let disposals = 0;
+      for (const e of currTrades) {
+        const marketPrice = cPrices[e.resource ?? ''] ?? 0;
         const tradePrice = e.price ?? 0;
-        if (tradePrice === 0 || (marketPrice > 0 && tradePrice < marketPrice * 0.3)) {
-          giftTrades++;
-        }
-      }
-    }
-    const giftTradeRatio = tradeEvents.length > 0 ? giftTrades / tradeEvents.length : 0;
-
-    // disposalTradeRatio: fraction of trades classified as surplus liquidation
-    // Heuristic: trade where seller has >3× average inventory of that resource
-    let disposalTrades = 0;
-    if (tradeEvents.length > 0) {
-      for (const e of tradeEvents) {
+        if (tradePrice === 0 || (marketPrice > 0 && tradePrice < marketPrice * 0.3)) gifts++;
         if (e.from && e.resource) {
           const sellerInv = state.agentInventories[e.from]?.[e.resource] ?? 0;
           const avgInv = (supplyByResource[e.resource] ?? 0) / Math.max(1, totalAgents);
-          if (sellerInv > avgInv * 3) {
-            disposalTrades++;
-          }
+          if (sellerInv > avgInv * 3) disposals++;
         }
       }
+      giftTradeRatioByCurrency[curr] = currTrades.length > 0 ? gifts / currTrades.length : 0;
+      disposalTradeRatioByCurrency[curr] = currTrades.length > 0 ? disposals / currTrades.length : 0;
     }
-    const disposalTradeRatio = tradeEvents.length > 0 ? disposalTrades / tradeEvents.length : 0;
+    const giftTradeRatio = avgOf(giftTradeRatioByCurrency);
+    const disposalTradeRatio = avgOf(disposalTradeRatioByCurrency);
 
     // ── Custom metrics ──
     const custom: Record<string, number> = {};
@@ -255,48 +339,78 @@ export class Observer {
     const metrics: EconomyMetrics = {
       tick,
       timestamp: Date.now(),
+      currencies,
+
+      // Per-currency
+      totalSupplyByCurrency,
+      netFlowByCurrency,
+      velocityByCurrency,
+      inflationRateByCurrency,
+      faucetVolumeByCurrency,
+      sinkVolumeByCurrency,
+      tapSinkRatioByCurrency,
+      anchorRatioDriftByCurrency,
+      giniCoefficientByCurrency,
+      medianBalanceByCurrency,
+      meanBalanceByCurrency,
+      top10PctShareByCurrency,
+      meanMedianDivergenceByCurrency,
+      priceIndexByCurrency,
+      pricesByCurrency,
+      priceVolatilityByCurrency,
+      poolSizesByCurrency,
+      extractionRatioByCurrency: {},
+      newUserDependencyByCurrency: {},
+      currencyInsulationByCurrency: {},
+      arbitrageIndexByCurrency,
+      giftTradeRatioByCurrency,
+      disposalTradeRatioByCurrency,
+
+      // Aggregates
       totalSupply,
       netFlow,
       velocity,
       inflationRate,
-      populationByRole,
-      roleShares,
-      totalAgents,
-      churnRate,
-      churnByRole,
-      personaDistribution: {}, // populated by PersonaTracker
+      faucetVolume,
+      sinkVolume,
+      tapSinkRatio,
+      anchorRatioDrift,
       giniCoefficient,
       medianBalance,
       meanBalance,
       top10PctShare,
       meanMedianDivergence,
       priceIndex,
-      productionIndex,
-      capacityUsage,
       prices,
       priceVolatility,
+      poolSizes: poolSizesAggregate,
+      extractionRatio: NaN,
+      newUserDependency: NaN,
+      smokeTestRatio: NaN,
+      currencyInsulation: NaN,
+      arbitrageIndex,
+      giftTradeRatio,
+      disposalTradeRatio,
+
+      // Unchanged
+      populationByRole,
+      roleShares,
+      totalAgents,
+      churnRate,
+      churnByRole,
+      personaDistribution: {}, // populated by PersonaTracker
+      productionIndex,
+      capacityUsage,
       supplyByResource,
       demandSignals,
       pinchPoints,
       avgSatisfaction,
       blockedAgentCount,
       timeToValue,
-      faucetVolume,
-      sinkVolume,
-      tapSinkRatio,
-      poolSizes,
-      anchorRatioDrift,
-      extractionRatio: NaN,
-      newUserDependency: NaN,
-      smokeTestRatio: NaN,
-      currencyInsulation: NaN,
       sharkToothPeaks: this.previousMetrics?.sharkToothPeaks ?? [],
       sharkToothValleys: this.previousMetrics?.sharkToothValleys ?? [],
       eventCompletionRate: NaN,
-      arbitrageIndex,
       contentDropAge,
-      giftTradeRatio,
-      disposalTradeRatio,
       custom,
     };
 

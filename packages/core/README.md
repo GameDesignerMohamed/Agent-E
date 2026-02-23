@@ -16,18 +16,26 @@ import { AgentE } from '@agent-e/core';
 const adapter = {
   getState: () => ({
     tick: currentTick,
-    agentBalances: { /* id → balance */ },
+    currencies: ['gold', 'gems'],
+    agentBalances: {
+      player1: { gold: 100, gems: 50 },
+      player2: { gold: 200, gems: 10 },
+    },
     agentRoles: { /* id → role */ },
     agentInventories: { /* id → { resource → qty } */ },
-    marketPrices: { /* resource → price */ },
+    marketPrices: {
+      gold: { sword: 10, potion: 5 },
+      gems: { sword: 2, potion: 1 },
+    },
     agentSatisfaction: { /* id → 0-100 */ },
-    poolSizes: { /* pool → amount */ },
-    roles: ['consumer', 'producer'],       // all possible roles
-    resources: ['goodA', 'goodB'],         // all possible resources
-    currency: 'credits',                   // currency name
+    poolSizes: { rewardPool: { gold: 500, gems: 100 } },
+    roles: ['warrior', 'mage'],
+    resources: ['sword', 'potion'],
+    recentTransactions: [],
   }),
-  setParam: async (param, value) => {
-    // Apply parameter change to your economy
+  setParam: async (param, value, currency) => {
+    // currency tells you which economy to adjust
+    applyToYourEconomy(param, value, currency);
   },
 };
 
@@ -49,6 +57,17 @@ await agent.tick();
 3. **Simulator** — Monte Carlo forward projection (≥100 iterations) before any action
 4. **Planner** — Lag-aware, cooldown-aware planning with rollback conditions
 5. **Executor** — Applies actions and monitors for rollback triggers
+
+## Multi-Currency Support
+
+AgentE tracks each currency independently. Every currency gets its own:
+- Supply, net flow, velocity, inflation rate
+- Gini coefficient, median/mean balance, wealth distribution
+- Faucet/sink volumes, pool sizes
+- Price index, arbitrage index
+
+When a principle detects an issue, the violation tells you which currency
+is unhealthy and the suggested action is scoped to that currency.
 
 ## Modes
 
@@ -81,7 +100,8 @@ const agent = new AgentE({
 
 ```typescript
 // Lock a parameter from automated adjustment
-agent.lock('productionCost');
+agent.lock('productionCost');          // lock for ALL currencies
+// Future: agent.lock('productionCost', 'gems');  // lock for specific currency
 agent.unlock('productionCost');
 
 // Constrain a parameter to a range

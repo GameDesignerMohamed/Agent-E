@@ -115,52 +115,59 @@ export class Simulator {
     ticks: number,
     _thresholds: Thresholds,
   ): EconomyMetrics {
-    // Apply the action effect as a multiplier on the relevant metric
     const multiplier = this.actionMultiplier(action);
-
-    // Add stochastic noise (Monte Carlo element)
     const noise = () => 1 + (Math.random() - 0.5) * 0.1;
+    const currencies = metrics.currencies;
+    const targetCurrency = action.currency; // may be undefined (= all)
 
-    let supply = metrics.totalSupply;
+    // Per-currency state
+    const supplies: Record<string, number> = { ...metrics.totalSupplyByCurrency };
+    const netFlows: Record<string, number> = { ...metrics.netFlowByCurrency };
+    const ginis: Record<string, number> = { ...metrics.giniCoefficientByCurrency };
+    const velocities: Record<string, number> = { ...metrics.velocityByCurrency };
     let satisfaction = metrics.avgSatisfaction;
-    let gini = metrics.giniCoefficient;
-    let velocity = metrics.velocity;
-    let netFlow = metrics.netFlow;
-    const churnRate = metrics.churnRate;
 
     for (let t = 0; t < ticks; t++) {
-      // Apply action effect on net flow (most actions affect flow)
-      const effectOnFlow = this.flowEffect(action, metrics) * multiplier * noise();
-      netFlow = netFlow * 0.9 + effectOnFlow * 0.1; // smooth convergence
+      for (const curr of currencies) {
+        // Only apply action effect to the targeted currency (or all if unscoped)
+        const isTarget = !targetCurrency || targetCurrency === curr;
+        const effectOnFlow = isTarget
+          ? this.flowEffect(action, metrics, curr) * multiplier * noise()
+          : 0;
 
-      // Supply drifts with net flow
-      supply += netFlow * noise();
-      supply = Math.max(0, supply);
+        netFlows[curr] = (netFlows[curr] ?? 0) * 0.9 + effectOnFlow * 0.1;
+        supplies[curr] = Math.max(0, (supplies[curr] ?? 0) + (netFlows[curr] ?? 0) * noise());
+        ginis[curr] = (ginis[curr] ?? 0) * 0.99 + 0.35 * 0.01 * noise();
+        velocities[curr] = ((supplies[curr] ?? 0) / Math.max(1, metrics.totalAgents)) * 0.01 * noise();
+      }
 
-      // Satisfaction improves when net flow is balanced and supply is stable
-      const satDelta = netFlow > 0 && netFlow < 20 ? 0.5 : netFlow < 0 ? -1 : 0;
+      const avgNetFlow = currencies.length > 0
+        ? Object.values(netFlows).reduce((s, v) => s + v, 0) / currencies.length
+        : 0;
+      const satDelta = avgNetFlow > 0 && avgNetFlow < 20 ? 0.5 : avgNetFlow < 0 ? -1 : 0;
       satisfaction = Math.min(100, Math.max(0, satisfaction + satDelta * noise()));
-
-      // Gini slowly reverts (market pressure)
-      gini = gini * 0.99 + 0.35 * 0.01 * noise(); // drift toward 0.35
-
-      // Velocity follows supply (more money = more trading)
-      velocity = (supply / Math.max(1, metrics.totalAgents)) * 0.01 * noise();
-
-      // Agent churn reduces population over time
-      const agentLoss = metrics.totalAgents * churnRate * noise();
-      void agentLoss; // tracked but not used in simplified model
     }
 
+    // Build projected metrics
+    const totalSupply = Object.values(supplies).reduce((s, v) => s + v, 0);
     const projected: EconomyMetrics = {
       ...metrics,
       tick: metrics.tick + ticks,
-      totalSupply: supply,
-      netFlow,
-      velocity,
-      giniCoefficient: Math.max(0, Math.min(1, gini)),
+      currencies,
+      totalSupplyByCurrency: supplies,
+      netFlowByCurrency: netFlows,
+      velocityByCurrency: velocities,
+      giniCoefficientByCurrency: ginis,
+      totalSupply,
+      netFlow: Object.values(netFlows).reduce((s, v) => s + v, 0),
+      velocity: totalSupply > 0 && currencies.length > 0
+        ? Object.values(velocities).reduce((s, v) => s + v, 0) / currencies.length
+        : 0,
+      giniCoefficient: currencies.length > 0
+        ? Object.values(ginis).reduce((s, v) => s + v, 0) / currencies.length
+        : 0,
       avgSatisfaction: satisfaction,
-      inflationRate: metrics.totalSupply > 0 ? (supply - metrics.totalSupply) / metrics.totalSupply : 0,
+      inflationRate: metrics.totalSupply > 0 ? (totalSupply - metrics.totalSupply) / metrics.totalSupply : 0,
     };
 
     return projected;
@@ -171,20 +178,18 @@ export class Simulator {
     return action.direction === 'increase' ? 1 + base : 1 - base;
   }
 
-  private flowEffect(action: SuggestedAction, metrics: EconomyMetrics): number {
-    // Rough model: which parameters affect net flow, and in which direction?
+  private flowEffect(action: SuggestedAction, metrics: EconomyMetrics, currency: string): number {
     const { parameter, direction } = action;
-    const sign = direction === 'increase' ? -1 : 1; // increase cost = reduce flow
+    const sign = direction === 'increase' ? -1 : 1;
 
-    // Get dominant role population (highest count)
     const roleEntries = Object.entries(metrics.populationByRole).sort((a, b) => b[1] - a[1]);
     const dominantRoleCount = roleEntries[0]?.[1] ?? 0;
 
     if (parameter === 'productionCost') {
-      return sign * metrics.netFlow * 0.2;
+      return sign * (metrics.netFlowByCurrency[currency] ?? 0) * 0.2;
     }
     if (parameter === 'transactionFee') {
-      return sign * metrics.velocity * 10 * 0.1;
+      return sign * (metrics.velocityByCurrency[currency] ?? 0) * 10 * 0.1;
     }
     if (parameter === 'entryFee') {
       return sign * dominantRoleCount * 0.5;
@@ -193,9 +198,9 @@ export class Simulator {
       return -sign * dominantRoleCount * 0.3;
     }
     if (parameter === 'yieldRate') {
-      return sign * metrics.faucetVolume * 0.15;
+      return sign * (metrics.faucetVolumeByCurrency[currency] ?? 0) * 0.15;
     }
-    return sign * metrics.netFlow * 0.1;
+    return sign * (metrics.netFlowByCurrency[currency] ?? 0) * 0.1;
   }
 
   private checkImprovement(
@@ -203,21 +208,52 @@ export class Simulator {
     after: EconomyMetrics,
     action: SuggestedAction,
   ): boolean {
-    // Net improvement: key metrics should be trending better
     const satisfactionImproved = after.avgSatisfaction >= before.avgSatisfaction - 2;
-    const flowMoreBalanced = Math.abs(after.netFlow) <= Math.abs(before.netFlow) * 1.2;
-    const notWorseGini = after.giniCoefficient <= before.giniCoefficient + 0.05;
-    void action; // could be used for targeted checks
+
+    // Check net flow improvement across all currencies
+    const flowMoreBalanced = before.currencies.every(curr => {
+      const afterFlow = Math.abs(after.netFlowByCurrency[curr] ?? 0);
+      const beforeFlow = Math.abs(before.netFlowByCurrency[curr] ?? 0);
+      return afterFlow <= beforeFlow * 1.2 || afterFlow < 1;
+    });
+
+    const notWorseGini = before.currencies.every(curr => {
+      const afterGini = after.giniCoefficientByCurrency[curr] ?? 0;
+      const beforeGini = before.giniCoefficientByCurrency[curr] ?? 0;
+      return afterGini <= beforeGini + 0.05;
+    });
+
+    void action;
     return satisfactionImproved && flowMoreBalanced && notWorseGini;
   }
 
   private averageMetrics(outcomes: EconomyMetrics[]): EconomyMetrics {
     if (outcomes.length === 0) return emptyMetrics();
     const base = { ...outcomes[0]! };
-    const avg = (key: keyof EconomyMetrics) => {
+
+    const avg = (key: keyof EconomyMetrics): number => {
       const vals = outcomes.map(o => o[key] as number).filter(v => typeof v === 'number' && !isNaN(v));
       return vals.length > 0 ? vals.reduce((a, b) => a + b, 0) / vals.length : 0;
     };
+
+    const avgRecord = (key: keyof EconomyMetrics): Record<string, number> => {
+      const allKeys = new Set<string>();
+      for (const o of outcomes) {
+        const rec = o[key];
+        if (rec && typeof rec === 'object' && !Array.isArray(rec)) {
+          Object.keys(rec as Record<string, unknown>).forEach(k => allKeys.add(k));
+        }
+      }
+      const result: Record<string, number> = {};
+      for (const k of allKeys) {
+        const vals = outcomes
+          .map(o => (o[key] as Record<string, number>)?.[k])
+          .filter((v): v is number => typeof v === 'number' && !isNaN(v));
+        result[k] = vals.length > 0 ? vals.reduce((a, b) => a + b, 0) / vals.length : 0;
+      }
+      return result;
+    };
+
     return {
       ...base,
       totalSupply: avg('totalSupply'),
@@ -226,6 +262,10 @@ export class Simulator {
       giniCoefficient: avg('giniCoefficient'),
       avgSatisfaction: avg('avgSatisfaction'),
       inflationRate: avg('inflationRate'),
+      totalSupplyByCurrency: avgRecord('totalSupplyByCurrency'),
+      netFlowByCurrency: avgRecord('netFlowByCurrency'),
+      velocityByCurrency: avgRecord('velocityByCurrency'),
+      giniCoefficientByCurrency: avgRecord('giniCoefficientByCurrency'),
     };
   }
 }
