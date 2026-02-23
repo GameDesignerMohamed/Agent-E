@@ -13,9 +13,9 @@ describe('P5 — Profitability Is Competitive', () => {
       ...emptyMetrics(184),
       tick: 184,
       totalAgents: total,
-      populationByRole: { Trader: 97, Fighter: 50, Crafter: 23, Gatherer: 18, Alchemist: 9, 'Market Maker': 11 },
+      populationByRole: { Trader: 97, consumer: 50, producer: 23, extractor: 18, refiner: 9, 'Market Maker': 11 },
       // Trader share = 97/208 = 0.466 > 0.45 threshold → should fire
-      roleShares: { Trader: 97 / total, Fighter: 50 / total, Crafter: 23 / total, Gatherer: 18 / total, Alchemist: 9 / total, 'Market Maker': 11 / total },
+      roleShares: { Trader: 97 / total, consumer: 50 / total, producer: 23 / total, extractor: 18 / total, refiner: 9 / total, 'Market Maker': 11 / total },
     };
     const result = P5_ProfitabilityIsCompetitive.check(m, t);
     expect(result.violated).toBe(true);
@@ -30,8 +30,8 @@ describe('P5 — Profitability Is Competitive', () => {
     const m = {
       ...emptyMetrics(200),
       totalAgents: total,
-      roleShares: { Fighter: 0.4, Gatherer: 0.2, Crafter: 0.15, Alchemist: 0.1, Trader: 0.1, 'Market Maker': 0.05 },
-      populationByRole: { Fighter: 72, Gatherer: 36, Crafter: 27, Alchemist: 18, Trader: 18, 'Market Maker': 9 },
+      roleShares: { consumer: 0.4, extractor: 0.2, producer: 0.15, refiner: 0.1, Trader: 0.1, 'Market Maker': 0.05 },
+      populationByRole: { consumer: 72, extractor: 36, producer: 27, refiner: 18, Trader: 18, 'Market Maker': 9 },
     };
     const result = P5_ProfitabilityIsCompetitive.check(m, t);
     expect(result.violated).toBe(false);

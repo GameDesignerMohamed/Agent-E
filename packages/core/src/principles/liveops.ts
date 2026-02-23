@@ -28,7 +28,7 @@ export const P51_SharkTooth: Principle = {
           threshold: thresholds.sharkToothPeakDecay,
         },
         suggestedAction: {
-          parameter: 'arenaReward',
+          parameter: 'rewardRate',
           direction: 'increase',
           magnitude: 0.10,
           reasoning:
@@ -50,7 +50,7 @@ export const P51_SharkTooth: Principle = {
           severity: 4,
           evidence: { lastValley, prevValley, ratio: lastValley / prevValley },
           suggestedAction: {
-            parameter: 'craftingCost',
+            parameter: 'productionCost',
             direction: 'decrease',
             magnitude: 0.10,
             reasoning:
@@ -73,14 +73,14 @@ export const P52_EndowmentEffect: Principle = {
   name: 'Endowment Effect',
   category: 'liveops',
   description:
-    'Players who never owned premium items do not value them. ' +
-    'Free trial events that let players experience premium items drive conversions ' +
+    'Participants who never owned premium items do not value them. ' +
+    'Free trial events that let participants experience premium items drive conversions ' +
     'because ownership creates perceived value (endowment effect).',
   check(metrics, _thresholds): PrincipleResult {
     const { avgSatisfaction, churnRate } = metrics;
 
     // Proxy: if event completion is high but satisfaction is still low,
-    // events are not creating the endowment effect (players complete but don't value the rewards)
+    // events are not creating the endowment effect (participants complete but don't value the rewards)
     const { eventCompletionRate } = metrics;
     if (isNaN(eventCompletionRate)) return { violated: false };
 
@@ -90,7 +90,7 @@ export const P52_EndowmentEffect: Principle = {
         severity: 4,
         evidence: { eventCompletionRate, avgSatisfaction, churnRate },
         suggestedAction: {
-          parameter: 'arenaReward',
+          parameter: 'rewardRate',
           direction: 'increase',
           magnitude: 0.15,
           reasoning:
@@ -128,13 +128,13 @@ export const P53_EventCompletionRate: Principle = {
           max: thresholds.eventCompletionMax,
         },
         suggestedAction: {
-          parameter: 'craftingCost',
+          parameter: 'productionCost',
           direction: 'decrease',
           magnitude: 0.15,
           reasoning:
             `Event completion rate ${(eventCompletionRate * 100).toFixed(0)}% — predatory territory ` +
             `(min: ${(thresholds.eventCompletionMin * 100).toFixed(0)}%). ` +
-            'Too hard for free players. Lower barriers to participation.',
+            'Too hard for free participants. Lower barriers to participation.',
         },
         confidence: 0.80,
         estimatedLag: 10,
@@ -147,7 +147,7 @@ export const P53_EventCompletionRate: Principle = {
         severity: 3,
         evidence: { eventCompletionRate, max: thresholds.eventCompletionMax },
         suggestedAction: {
-          parameter: 'arenaEntryFee',
+          parameter: 'entryFee',
           direction: 'increase',
           magnitude: 0.05,
           reasoning:
@@ -182,7 +182,7 @@ export const P54_LiveOpsCadence: Principle = {
         severity: 3,
         evidence: { velocity, avgSatisfaction, tick: metrics.tick },
         suggestedAction: {
-          parameter: 'arenaReward',
+          parameter: 'rewardRate',
           direction: 'increase',
           magnitude: 0.10,
           reasoning:
@@ -223,7 +223,7 @@ export const P56_ContentDropShock: Principle = {
             postDropMax: thresholds.postDropArbitrageMax,
           },
           suggestedAction: {
-            parameter: 'auctionFee',
+            parameter: 'transactionFee',
             direction: 'decrease',
             magnitude: 0.10,
             reasoning:

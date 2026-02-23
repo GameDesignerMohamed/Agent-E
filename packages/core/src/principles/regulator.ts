@@ -8,34 +8,43 @@ export const P25_CorrectLeversForCorrectProblems: Principle = {
   category: 'regulator',
   description:
     'Adjusting sinks for supply-side inflation is wrong. ' +
-    'Inflation from too much gathering → reduce mining yield. ' +
+    'Inflation from too much gathering → reduce yield rate. ' +
     'Inflation from pot payout → reduce reward multiplier. ' +
     'Matching lever to cause prevents oscillation.',
   check(metrics, thresholds): PrincipleResult {
     const { netFlow, supplyByResource } = metrics;
 
-    // Heuristic: if net flow is high AND raw material supply is very high,
-    // gathering is the primary source — correct lever is miningYield, not fees
-    const ore = supplyByResource['ore'] ?? 0;
-    const wood = supplyByResource['wood'] ?? 0;
-    const resourceFlood = ore + wood > 100;
+    // Check ALL resources: if any single resource's supply exceeds 3× the average
+    const resourceEntries = Object.entries(supplyByResource);
+    if (resourceEntries.length === 0) return { violated: false };
 
-    if (netFlow > thresholds.netFlowWarnThreshold && resourceFlood) {
-      return {
-        violated: true,
-        severity: 4,
-        evidence: { netFlow, ore, wood },
-        suggestedAction: {
-          parameter: 'miningYield',
-          direction: 'decrease',
-          magnitude: 0.15,
-          reasoning:
-            `Inflation with raw material backlog (ore ${ore}, wood ${wood}). ` +
-            'Root cause is gathering. Correct lever: miningYield, not fees.',
-        },
-        confidence: 0.75,
-        estimatedLag: 8,
-      };
+    const totalSupply = resourceEntries.reduce((sum, [_, s]) => sum + s, 0);
+    const avgSupply = totalSupply / resourceEntries.length;
+
+    for (const [resource, supply] of resourceEntries) {
+      if (supply > avgSupply * 3 && netFlow > thresholds.netFlowWarnThreshold) {
+        return {
+          violated: true,
+          severity: 4,
+          evidence: {
+            resource,
+            supply,
+            avgSupply,
+            ratio: supply / Math.max(1, avgSupply),
+            netFlow
+          },
+          suggestedAction: {
+            parameter: 'yieldRate',
+            direction: 'decrease',
+            magnitude: 0.15,
+            reasoning:
+              `Inflation with ${resource} backlog (${supply} units, ${(supply / Math.max(1, avgSupply)).toFixed(1)}× average). ` +
+              'Root cause is gathering. Correct lever: yieldRate, not fees.',
+          },
+          confidence: 0.75,
+          estimatedLag: 8,
+        };
+      }
     }
 
     return { violated: false };
@@ -63,7 +72,7 @@ export const P26_ContinuousPressureBeatsThresholdCuts: Principle = {
         severity: 4,
         evidence: { inflationRate },
         suggestedAction: {
-          parameter: 'craftingCost',
+          parameter: 'productionCost',
           direction: inflationRate > 0 ? 'increase' : 'decrease',
           magnitude: Math.min(thresholds.maxAdjustmentPercent, 0.05), // force smaller step
           reasoning:
@@ -99,7 +108,7 @@ export const P27_AdjustmentsNeedCooldowns: Principle = {
         severity: 4,
         evidence: { churnRate, avgSatisfaction },
         suggestedAction: {
-          parameter: 'arenaEntryFee',
+          parameter: 'entryFee',
           direction: 'decrease',
           magnitude: 0.05,
           reasoning:
@@ -120,7 +129,7 @@ export const P28_StructuralDominanceIsNotPathological: Principle = {
   name: 'Structural Dominance ≠ Pathological Monopoly',
   category: 'regulator',
   description:
-    'A designed Fighter majority (55%) should not trigger population suppression. ' +
+    'A designed dominant role (majority exceeds 55%) should not trigger population suppression. ' +
     'AgentE must distinguish between "this role is dominant BY DESIGN" (configured via ' +
     'dominantRoles) and "this role took over unexpectedly".',
   check(metrics, _thresholds): PrincipleResult {
@@ -146,7 +155,7 @@ export const P28_StructuralDominanceIsNotPathological: Principle = {
         severity: 5,
         evidence: { dominantRole, dominantShare, avgSatisfaction },
         suggestedAction: {
-          parameter: 'craftingCost',
+          parameter: 'productionCost',
           direction: 'decrease',
           magnitude: 0.10,
           reasoning:
@@ -182,7 +191,7 @@ export const P38_CommunicationPreventsRevolt: Principle = {
         severity: 3,
         evidence: { churnRate },
         suggestedAction: {
-          parameter: 'arenaReward',
+          parameter: 'rewardRate',
           direction: 'increase',
           magnitude: 0.10,
           reasoning:

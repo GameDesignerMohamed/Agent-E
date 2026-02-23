@@ -19,7 +19,7 @@ export const P33_FairNotEqual: Principle = {
         severity: 3,
         evidence: { giniCoefficient },
         suggestedAction: {
-          parameter: 'arenaReward',
+          parameter: 'rewardRate',
           direction: 'increase',
           magnitude: 0.10,
           reasoning:
@@ -37,7 +37,7 @@ export const P33_FairNotEqual: Principle = {
         severity: 7,
         evidence: { giniCoefficient },
         suggestedAction: {
-          parameter: 'auctionFee',
+          parameter: 'transactionFee',
           direction: 'increase',
           magnitude: 0.20,
           reasoning:
@@ -55,7 +55,7 @@ export const P33_FairNotEqual: Principle = {
         severity: 4,
         evidence: { giniCoefficient },
         suggestedAction: {
-          parameter: 'auctionFee',
+          parameter: 'transactionFee',
           direction: 'increase',
           magnitude: 0.10,
           reasoning:
@@ -91,7 +91,7 @@ export const P36_MechanicFrictionDetector: Principle = {
         severity: 5,
         evidence: { churnRate, avgSatisfaction, velocity },
         suggestedAction: {
-          parameter: 'arenaReward',
+          parameter: 'rewardRate',
           direction: 'increase',
           magnitude: 0.15,
           reasoning:
@@ -128,7 +128,7 @@ export const P37_LatecommerProblem: Principle = {
         severity: 6,
         evidence: { timeToValue, avgSatisfaction, churnRate },
         suggestedAction: {
-          parameter: 'craftingCost',
+          parameter: 'productionCost',
           direction: 'decrease',
           magnitude: 0.15,
           reasoning:
@@ -167,7 +167,7 @@ export const P45_TimeBudget: Principle = {
         severity: 5,
         evidence: { timeToValue, avgSatisfaction, timeBudgetRatio: thresholds.timeBudgetRatio },
         suggestedAction: {
-          parameter: 'arenaEntryFee',
+          parameter: 'entryFee',
           direction: 'decrease',
           magnitude: 0.15,
           reasoning:
@@ -208,7 +208,7 @@ export const P50_PayPowerRatio: Principle = {
           threshold: thresholds.payPowerRatioMax,
         },
         suggestedAction: {
-          parameter: 'auctionFee',
+          parameter: 'transactionFee',
           direction: 'increase',
           magnitude: 0.20,
           reasoning:

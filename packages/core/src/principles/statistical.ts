@@ -8,7 +8,7 @@ export const P42_TheMedianPrinciple: Principle = {
   category: 'statistical',
   description:
     'When (mean - median) / median > 0.3, mean is a lie. ' +
-    'A few whales with 10,000g raise the mean while most agents have 50g. ' +
+    'A few high-balance agents raise the mean while most agents have low balances. ' +
     'Always balance to median when divergence exceeds 30%.',
   check(metrics, thresholds): PrincipleResult {
     const { meanMedianDivergence, giniCoefficient } = metrics;
@@ -24,7 +24,7 @@ export const P42_TheMedianPrinciple: Principle = {
           medianBalance: metrics.medianBalance,
         },
         suggestedAction: {
-          parameter: 'auctionFee',
+          parameter: 'transactionFee',
           direction: 'increase',
           magnitude: 0.15,
           reasoning:
@@ -62,7 +62,7 @@ export const P43_SimulationMinimum: Principle = {
         severity: 3,
         evidence: { inflationRate, minIterations: thresholds.simulationMinIterations },
         suggestedAction: {
-          parameter: 'craftingCost',
+          parameter: 'productionCost',
           direction: inflationRate > 0 ? 'increase' : 'decrease',
           magnitude: 0.05,
           reasoning:

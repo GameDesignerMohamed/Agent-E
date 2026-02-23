@@ -1,4 +1,4 @@
-import type { Thresholds } from './types.js';
+import type { Thresholds, TickConfig } from './types.js';
 
 export const DEFAULT_THRESHOLDS: Thresholds = {
   // Statistical (P42-P43)
@@ -40,8 +40,8 @@ export const DEFAULT_THRESHOLDS: Thresholds = {
   cooldownTicks: 15,
 
   // Currency (P13)
-  arenaWinRate: 0.65,
-  arenaHouseCut: 0.10,
+  poolWinRate: 0.65,
+  poolHouseCut: 0.10,
 
   // Population balance (P9)
   roleSwitchFrictionMax: 0.05,   // >5% of population switching in one period = herd
@@ -78,7 +78,7 @@ export const DEFAULT_THRESHOLDS: Thresholds = {
 };
 
 export const PERSONA_HEALTHY_RANGES: Record<string, { min: number; max: number }> = {
-  Gamer:      { min: 0.20, max: 0.40 },
+  Active:     { min: 0.20, max: 0.40 },
   Trader:     { min: 0.05, max: 0.15 },
   Collector:  { min: 0.05, max: 0.15 },
   Speculator: { min: 0.00, max: 0.10 },
@@ -87,4 +87,11 @@ export const PERSONA_HEALTHY_RANGES: Record<string, { min: number; max: number }
   Social:     { min: 0.10, max: 0.20 },
   Whale:      { min: 0.00, max: 0.05 },
   Influencer: { min: 0.00, max: 0.05 },
+};
+
+export const DEFAULT_TICK_CONFIG: TickConfig = {
+  duration: 1,
+  unit: 'tick',
+  mediumWindow: 10,
+  coarseWindow: 100,
 };

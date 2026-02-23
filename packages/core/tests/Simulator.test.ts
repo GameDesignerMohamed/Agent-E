@@ -7,14 +7,14 @@ import type { SuggestedAction } from '../src/types.js';
 const t = DEFAULT_THRESHOLDS;
 
 const increaseAction: SuggestedAction = {
-  parameter: 'craftingCost',
+  parameter: 'productionCost',
   direction: 'increase',
   magnitude: 0.15,
   reasoning: 'Test increase',
 };
 
 const decreaseAction: SuggestedAction = {
-  parameter: 'miningYield',
+  parameter: 'yieldRate',
   direction: 'decrease',
   magnitude: 0.15,
   reasoning: 'Test decrease',

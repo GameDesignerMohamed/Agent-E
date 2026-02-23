@@ -19,7 +19,7 @@ export const P12_OnePrimaryFaucet: Principle = {
         severity: 5,
         evidence: { netFlow, faucetVolume, sinkVolume },
         suggestedAction: {
-          parameter: 'craftingCost',
+          parameter: 'productionCost',
           direction: 'increase',
           magnitude: 0.15,
           reasoning:
@@ -37,7 +37,7 @@ export const P12_OnePrimaryFaucet: Principle = {
         severity: 4,
         evidence: { netFlow, faucetVolume, sinkVolume },
         suggestedAction: {
-          parameter: 'craftingCost',
+          parameter: 'productionCost',
           direction: 'decrease',
           magnitude: 0.15,
           reasoning:
@@ -58,35 +58,41 @@ export const P13_PotsAreZeroSumAndSelfRegulate: Principle = {
   name: 'Pots Self-Regulate with Correct Multiplier',
   category: 'currency',
   description:
-    'Arena pot math: winRate × multiplier > (1 - houseCut) drains the pot. ' +
+    'Competitive pot math: winRate × multiplier > (1 - houseCut) drains the pot. ' +
     'At 65% win rate, multiplier must be ≤ 1.38. We use 1.5 for slight surplus buffer.',
   check(metrics, thresholds): PrincipleResult {
-    const { poolSizes } = metrics;
-    const arenaPot = poolSizes['arena'] ?? poolSizes['arenaPot'] ?? 0;
+    const { poolSizes, populationByRole } = metrics;
+    const totalAgents = metrics.totalAgents;
 
-    // Pot is draining if it's near zero despite fights happening
-    const fighters = metrics.populationByRole['Fighter'] ?? 0;
-    if (fighters > 5 && arenaPot < 50) {
-      // Estimate if the multiplier math is sustainable
-      const { arenaWinRate, arenaHouseCut } = thresholds;
-      const maxSustainableMultiplier = (1 - arenaHouseCut) / arenaWinRate;
+    // Check all pools - find the largest population (likely participants in competitive pools)
+    const roleEntries = Object.entries(populationByRole).sort((a, b) => b[1] - a[1]);
+    const dominantRole = roleEntries[0]?.[0];
+    const dominantCount = roleEntries[0]?.[1] ?? 0;
 
-      return {
-        violated: true,
-        severity: 7,
-        evidence: { arenaPot, fighters, maxSustainableMultiplier },
-        suggestedAction: {
-          parameter: 'arenaReward',
-          direction: 'decrease',
-          magnitude: 0.15,
-          reasoning:
-            `Arena pot at ${arenaPot.toFixed(0)}g with ${fighters} fighters. ` +
-            `Sustainable multiplier ≤ ${maxSustainableMultiplier.toFixed(2)}. ` +
-            'Reduce reward multiplier to prevent pot drain.',
-        },
-        confidence: 0.85,
-        estimatedLag: 3,
-      };
+    // For each pool, check if it's draining despite activity
+    for (const [poolName, poolSize] of Object.entries(poolSizes)) {
+      if (dominantCount > 5 && poolSize < 50) {
+        // Estimate if the multiplier math is sustainable
+        const { poolWinRate, poolHouseCut } = thresholds;
+        const maxSustainableMultiplier = (1 - poolHouseCut) / poolWinRate;
+
+        return {
+          violated: true,
+          severity: 7,
+          evidence: { pool: poolName, poolSize, participants: dominantCount, maxSustainableMultiplier },
+          suggestedAction: {
+            parameter: 'rewardRate',
+            direction: 'decrease',
+            magnitude: 0.15,
+            reasoning:
+              `${poolName} pool at ${poolSize.toFixed(0)} currency with ${dominantCount} active participants. ` +
+              `Sustainable multiplier ≤ ${maxSustainableMultiplier.toFixed(2)}. ` +
+              'Reduce reward multiplier to prevent pool drain.',
+          },
+          confidence: 0.85,
+          estimatedLag: 3,
+        };
+      }
     }
 
     return { violated: false };
@@ -95,11 +101,11 @@ export const P13_PotsAreZeroSumAndSelfRegulate: Principle = {
 
 export const P14_TrackActualInjection: Principle = {
   id: 'P14',
-  name: 'Track Actual Gold Injection, Not Value Creation',
+  name: 'Track Actual Currency Injection, Not Value Creation',
   category: 'currency',
   description:
-    'Counting resource gathering as "gold injected" is a lie. ' +
-    'Gold only enters when Fighters spawn (100-150g each). ' +
+    'Counting resource gathering as "currency injected" is misleading. ' +
+    'Currency enters through faucet mechanisms (spawning, rewards). ' +
     'Fake metrics break every downstream decision.',
   check(metrics, _thresholds): PrincipleResult {
     const { faucetVolume, netFlow, totalSupply } = metrics;
@@ -114,7 +120,7 @@ export const P14_TrackActualInjection: Principle = {
         severity: 4,
         evidence: { faucetVolume, netFlow, supplyGrowthRate },
         suggestedAction: {
-          parameter: 'miningYield',
+          parameter: 'yieldRate',
           direction: 'decrease',
           magnitude: 0.10,
           reasoning:
@@ -143,7 +149,6 @@ export const P15_PoolsNeedCapAndDecay: Principle = {
     const { poolCapPercent } = thresholds;
 
     for (const [pool, size] of Object.entries(poolSizes)) {
-      if (pool === 'arena' || pool === 'arenaPot') continue; // pot has different rules
       const shareOfSupply = size / Math.max(1, totalSupply);
       if (shareOfSupply > poolCapPercent * 2) { // trigger at 2× cap
         return {
@@ -151,7 +156,7 @@ export const P15_PoolsNeedCapAndDecay: Principle = {
           severity: 6,
           evidence: { pool, size, shareOfSupply, cap: poolCapPercent },
           suggestedAction: {
-            parameter: 'auctionFee',
+            parameter: 'transactionFee',
             direction: 'decrease',
             magnitude: 0.10,
             reasoning:
@@ -179,28 +184,29 @@ export const P16_WithdrawalPenaltyScales: Principle = {
     'Penalty must scale linearly: (1 - ticksStaked/lockDuration) × yield.',
   check(metrics, _thresholds): PrincipleResult {
     const { poolSizes, totalSupply } = metrics;
-    const bankPool = poolSizes['bank'] ?? poolSizes['bankPool'] ?? 0;
 
-    // If bank pool is small but staked gold is large, early withdrawal penalty is weak
-    // (people staking but pulling out early, depleting the pool)
+    // Check all pools - if any pool is small but locked capital is large, withdrawal penalty is weak
     const stakedEstimate = totalSupply * 0.15; // rough: if 15% staked is healthy
-    if (bankPool < 10 && stakedEstimate > 100) {
-      return {
-        violated: true,
-        severity: 3,
-        evidence: { bankPool, estimatedStaked: stakedEstimate },
-        suggestedAction: {
-          parameter: 'auctionFee',
-          direction: 'increase',
-          magnitude: 0.05,
-          reasoning:
-            'Bank pool depleted while significant gold should be staked. ' +
-            'Early withdrawals may be draining yield pool. ' +
-            'Ensure withdrawal penalty scales with lock duration.',
-        },
-        confidence: 0.45,
-        estimatedLag: 10,
-      };
+
+    for (const [poolName, poolSize] of Object.entries(poolSizes)) {
+      if (poolSize < 10 && stakedEstimate > 100) {
+        return {
+          violated: true,
+          severity: 3,
+          evidence: { pool: poolName, poolSize, estimatedStaked: stakedEstimate },
+          suggestedAction: {
+            parameter: 'transactionFee',
+            direction: 'increase',
+            magnitude: 0.05,
+            reasoning:
+              `${poolName} pool depleted while significant currency should be locked. ` +
+              'Early withdrawals may be draining the pool. ' +
+              'Ensure withdrawal penalty scales with lock duration.',
+          },
+          confidence: 0.45,
+          estimatedLag: 10,
+        };
+      }
     }
 
     return { violated: false };
@@ -225,7 +231,7 @@ export const P32_VelocityAboveSupply: Principle = {
         severity: 4,
         evidence: { velocity, totalSupply, totalResources },
         suggestedAction: {
-          parameter: 'auctionFee',
+          parameter: 'transactionFee',
           direction: 'decrease',
           magnitude: 0.20,
           reasoning:
@@ -277,7 +283,7 @@ export const P58_NoNaturalNumeraire: Principle = {
           meanPrice: mean,
         },
         suggestedAction: {
-          parameter: 'craftingCost',
+          parameter: 'productionCost',
           direction: 'increase',
           magnitude: 0.10,
           reasoning:

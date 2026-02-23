@@ -1,13 +1,19 @@
 // Stage 1: Observer — translates raw EconomyState into EconomyMetrics
 
-import type { EconomyState, EconomyMetrics, EconomicEvent } from './types.js';
+import type { EconomyState, EconomyMetrics, EconomicEvent, TickConfig } from './types.js';
 import { emptyMetrics } from './types.js';
+import { DEFAULT_TICK_CONFIG } from './defaults.js';
 
 export class Observer {
   private previousMetrics: EconomyMetrics | null = null;
   private previousPrices: Record<string, number> = {};
   private customMetricFns: Record<string, (state: EconomyState) => number> = {};
-  private anchorBaseline: { goldPerHour: number; itemsPerGold: number } | null = null;
+  private anchorBaseline: { currencyPerPeriod: number; itemsPerCurrency: number } | null = null;
+  private tickConfig: TickConfig;
+
+  constructor(tickConfig?: Partial<TickConfig>) {
+    this.tickConfig = { ...DEFAULT_TICK_CONFIG, ...tickConfig };
+  }
 
   registerCustomMetric(name: string, fn: (state: EconomyState) => number): void {
     this.customMetricFns[name] = fn;
@@ -147,7 +153,8 @@ export class Observer {
         : 80;
 
     const blockedAgentCount = satisfactions.filter(s => s < 20).length;
-    const timeToValue = tick > 0 ? Math.max(0, 20 - tick * 0.1) : 20; // simple proxy
+    // Time-to-value: ratio of blocked agents to total. Lower = healthier.
+    const timeToValue = totalAgents > 0 ? blockedAgentCount / totalAgents * 100 : 0;
 
     // ── Pools ──
     const poolSizes: Record<string, number> = { ...(state.poolSizes ?? {}) };
@@ -155,17 +162,17 @@ export class Observer {
     // ── Anchor ratio ──
     if (!this.anchorBaseline && tick === 1 && totalSupply > 0) {
       this.anchorBaseline = {
-        goldPerHour: totalSupply / Math.max(1, totalAgents),
-        itemsPerGold: priceIndex > 0 ? 1 / priceIndex : 0,
+        currencyPerPeriod: totalSupply / Math.max(1, totalAgents),
+        itemsPerCurrency: priceIndex > 0 ? 1 / priceIndex : 0,
       };
     }
     let anchorRatioDrift = 0;
     if (this.anchorBaseline && totalAgents > 0) {
-      const currentGoldPerHour = totalSupply / totalAgents;
+      const currentCurrencyPerPeriod = totalSupply / totalAgents;
       anchorRatioDrift =
-        this.anchorBaseline.goldPerHour > 0
-          ? (currentGoldPerHour - this.anchorBaseline.goldPerHour) /
-            this.anchorBaseline.goldPerHour
+        this.anchorBaseline.currencyPerPeriod > 0
+          ? (currentCurrencyPerPeriod - this.anchorBaseline.currencyPerPeriod) /
+            this.anchorBaseline.currencyPerPeriod
           : 0;
     }
 

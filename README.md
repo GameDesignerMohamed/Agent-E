@@ -49,16 +49,30 @@ Your Economy → Observer → Diagnoser → Simulator → Planner → Executor �
 | `autonomous` | Full pipeline — observes, diagnoses, simulates, plans, executes automatically |
 | `advisor` | Full pipeline but stops before execution — emits recommendations for your approval |
 
+## Tick Configuration
+
+```typescript
+const agent = new AgentE({
+  adapter: yourAdapter,
+  tickConfig: {
+    duration: 5,          // one tick = 5 seconds
+    unit: 'second',
+    mediumWindow: 12,     // medium metrics = every 12 ticks (60s)
+    coarseWindow: 120,    // coarse metrics = every 120 ticks (10min)
+  },
+});
+```
+
 ## Developer Controls
 
 ```typescript
-agent.lock('arenaEntryFee');                          // never touch this parameter
-agent.constrain('craftingCost', { min: 0.5, max: 2 }); // bound the range
-agent.addPrinciple(myCustomPrinciple);                // add your own rules
-agent.registerCustomMetric('myMetric', fn);           // add your own metrics
+agent.lock('entryFee');                                // never touch this parameter
+agent.constrain('productionCost', { min: 0.5, max: 2 }); // bound the range
+agent.addPrinciple(myCustomPrinciple);                 // add your own rules
+agent.registerCustomMetric('myMetric', fn);            // add your own metrics
 
 agent.on('beforeAction', (plan) => {
-  if (plan.parameter === 'arenaReward') return false; // veto
+  if (plan.parameter === 'rewardRate') return false;   // veto
 });
 ```
 

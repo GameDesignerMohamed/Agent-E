@@ -10,7 +10,7 @@ export const P5_ProfitabilityIsCompetitive: Principle = {
   description:
     'Any profitability formula that returns the same number regardless of how many ' +
     'agents are already in that role will cause stampedes. ' +
-    '97 Traders happened because profit = transactions × 10 with no competition denominator.',
+    '97 intermediaries happened because profit = transactions × 10 with no competition denominator.',
   check(metrics, thresholds): PrincipleResult {
     const { roleShares, populationByRole } = metrics;
 
@@ -18,7 +18,7 @@ export const P5_ProfitabilityIsCompetitive: Principle = {
     // Heuristic: any non-primary role above 40% share is suspicious
     const highShareRoles: string[] = [];
     for (const [role, share] of Object.entries(roleShares)) {
-      if (share > 0.45) highShareRoles.push(role); // >45% = stampede signal; Fighter at ~44% is healthy design
+      if (share > 0.45) highShareRoles.push(role); // >45% = stampede signal; dominant role at ~44% is healthy design
     }
 
     if (highShareRoles.length > 0) {
@@ -32,7 +32,7 @@ export const P5_ProfitabilityIsCompetitive: Principle = {
           population: populationByRole[dominantRole],
         },
         suggestedAction: {
-          parameter: 'auctionFee',
+          parameter: 'transactionFee',
           direction: 'increase',
           magnitude: thresholds.maxAdjustmentPercent,
           reasoning:
@@ -68,7 +68,7 @@ export const P6_CrowdingMultiplierOnAllRoles: Principle = {
           severity: 5,
           evidence: { role, share },
           suggestedAction: {
-            parameter: 'craftingCost',
+            parameter: 'productionCost',
             direction: 'increase',
             magnitude: 0.10,
             reasoning:
@@ -90,36 +90,46 @@ export const P7_NonSpecialistsSubsidiseSpecialists: Principle = {
   name: 'Non-Specialists Subsidise Specialists in Zero-Sum Games',
   category: 'incentive',
   description:
-    'In zero-sum pools (arena, staking), the math only works if non-specialists ' +
+    'In zero-sum pools (competitive pool, staking), the math only works if non-specialists ' +
     'overpay relative to specialists. If the pool is >70% specialists, ' +
     'there is no one left to subsidise and the pot drains.',
   check(metrics, _thresholds): PrincipleResult {
-    const { populationByRole, poolSizes } = metrics;
+    const { poolSizes } = metrics;
 
-    // Check: if arena pot exists, are Fighters overwhelming it?
-    const arenaPot = poolSizes['arena'] ?? poolSizes['arenaPot'] ?? 0;
-    if (arenaPot <= 0) return { violated: false };
+    // Check ALL pools: if any pool is growing while participant count is stagnant/declining
+    for (const [poolName, poolSize] of Object.entries(poolSizes)) {
+      if (poolSize <= 0) continue;
 
-    const fighters = populationByRole['Fighter'] ?? 0;
-    const total = metrics.totalAgents;
-    const fighterShare = fighters / Math.max(1, total);
+      // Get the dominant role (likely the specialist for this pool)
+      const roleEntries = Object.entries(metrics.populationByRole);
+      if (roleEntries.length === 0) continue;
 
-    if (fighterShare > 0.70 && arenaPot < 100) {
-      return {
-        violated: true,
-        severity: 6,
-        evidence: { fighterShare, arenaPot },
-        suggestedAction: {
-          parameter: 'arenaEntryFee',
-          direction: 'decrease',
-          magnitude: 0.10,
-          reasoning:
-            'Arena pot draining — too many specialists, not enough subsidising non-specialists. ' +
-            'Lower entry fee to attract diverse participants.',
-        },
-        confidence: 0.75,
-        estimatedLag: 5,
-      };
+      const [dominantRole, dominantPop] = roleEntries.reduce((max, entry) =>
+        entry[1] > max[1] ? entry : max
+      );
+
+      const total = metrics.totalAgents;
+      const dominantShare = dominantPop / Math.max(1, total);
+
+      // If dominant role exceeds 70% and pool is small, pool is draining
+      if (dominantShare > 0.70 && poolSize < 100) {
+        return {
+          violated: true,
+          severity: 6,
+          evidence: { poolName, poolSize, dominantRole, dominantShare },
+          suggestedAction: {
+            parameter: 'entryFee',
+            direction: 'decrease',
+            magnitude: 0.10,
+            reasoning:
+              `Pool "${poolName}" draining (${poolSize}) — ${dominantRole} at ${(dominantShare * 100).toFixed(0)}%. ` +
+              'Too many specialists, not enough subsidising non-specialists. ' +
+              'Lower entry fee to attract diverse participants.',
+          },
+          confidence: 0.75,
+          estimatedLag: 5,
+        };
+      }
     }
 
     return { violated: false };
@@ -131,9 +141,9 @@ export const P8_RegulatorCannotFightDesign: Principle = {
   name: 'Regulator Cannot Fight the Design',
   category: 'incentive',
   description:
-    'If the economy is designed to have a majority role (e.g. 55% Fighters), ' +
+    'If the economy is designed to have a majority role (e.g. dominant role exceeds 55%), ' +
     'the regulator must know this and exempt that role from population suppression. ' +
-    'AgentE at tick 1 seeing 55% Fighters and slashing arena rewards is overreach.',
+    'AgentE at tick 1 seeing dominant role exceeds 55% and slashing competitive pool rewards is overreach.',
   check(metrics, _thresholds): PrincipleResult {
     // This principle is mostly enforced by configuration (dominantRoles).
     // Here we detect a possible signal: dominant role's satisfaction is dropping
@@ -150,7 +160,7 @@ export const P8_RegulatorCannotFightDesign: Principle = {
           severity: 4,
           evidence: { dominantRole: dominantRole[0], share: dominantRole[1], avgSatisfaction },
           suggestedAction: {
-            parameter: 'arenaReward',
+            parameter: 'rewardRate',
             direction: 'increase',
             magnitude: 0.10,
             reasoning:

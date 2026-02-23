@@ -42,7 +42,7 @@ export class PersonaTracker {
   /** Classify all agents and return persona distribution */
   getDistribution(): Record<string, number> {
     const counts: Record<PersonaType, number> = {
-      Gamer: 0, Trader: 0, Collector: 0, Speculator: 0, Earner: 0,
+      Active: 0, Trader: 0, Collector: 0, Speculator: 0, Earner: 0,
       Builder: 0, Social: 0, Whale: 0, Influencer: 0,
     };
     let total = 0;
@@ -63,7 +63,7 @@ export class PersonaTracker {
   }
 
   private classify(history: AgentSignals[]): PersonaType {
-    if (history.length === 0) return 'Gamer';
+    if (history.length === 0) return 'Active';
 
     const avg = (key: keyof AgentSignals): number => {
       const vals = history.map(h => h[key]);
@@ -81,6 +81,6 @@ export class PersonaTracker {
     if (uniqueItems > 5 && extraction < 0) return 'Collector'; // buys and holds
     if (extraction > 100) return 'Earner';
     if (extraction > 50) return 'Speculator';
-    return 'Gamer'; // default: plays for engagement, not profit
+    return 'Active'; // default: plays for engagement, not profit
   }
 }

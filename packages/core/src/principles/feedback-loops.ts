@@ -8,8 +8,8 @@ export const P20_DecayPreventsAccumulation: Principle = {
   category: 'feedback',
   description:
     'Resources without decay create infinite hoarding. ' +
-    'A Gatherer who never sells has 500 ore rotting in their pocket ' +
-    'while Crafters starve. 2-10% decay per period forces circulation.',
+    'A gatherer who never sells has 500 raw materials rotting in their pocket ' +
+    'while producers starve. 2-10% decay per period forces circulation.',
   check(metrics, _thresholds): PrincipleResult {
     const { supplyByResource, velocity, totalAgents } = metrics;
 
@@ -23,7 +23,7 @@ export const P20_DecayPreventsAccumulation: Principle = {
         severity: 4,
         evidence: { totalResources, resourcesPerAgent, velocity },
         suggestedAction: {
-          parameter: 'miningYield',
+          parameter: 'yieldRate',
           direction: 'decrease',
           magnitude: 0.10,
           reasoning:
@@ -44,7 +44,7 @@ export const P21_PriceFromGlobalSupply: Principle = {
   name: 'Price Reflects Global Supply, Not Just AH Listings',
   category: 'feedback',
   description:
-    'If prices only update from Auction House activity, agents with hoarded ' +
+    'If prices only update from market activity, agents with hoarded ' +
     'inventory see artificially high prices and keep gathering when they should stop.',
   check(metrics, _thresholds): PrincipleResult {
     const { priceVolatility, supplyByResource, prices } = metrics;
@@ -60,7 +60,7 @@ export const P21_PriceFromGlobalSupply: Principle = {
           severity: 3,
           evidence: { resource, volatility, supply, price: prices[resource] },
           suggestedAction: {
-            parameter: 'auctionFee',
+            parameter: 'transactionFee',
             direction: 'increase',
             magnitude: 0.05,
             reasoning:
@@ -87,27 +87,46 @@ export const P22_MarketAwarenessPreventsSurplus: Principle = {
   check(metrics, _thresholds): PrincipleResult {
     const { supplyByResource, prices, productionIndex } = metrics;
 
-    // Signal: weapons supply very high, weapon price very low, but Crafters still producing
-    const weapons = supplyByResource['weapons'] ?? 0;
-    const weaponPrice = prices['weapons'] ?? 0;
-    const healthyWeaponPrice = 30; // approximate floor
+    // Calculate median price across all resources
+    const priceValues = Object.values(prices).filter(p => p > 0);
+    if (priceValues.length === 0) return { violated: false };
 
-    if (weapons > 100 && weaponPrice < healthyWeaponPrice * 0.5 && productionIndex > 0) {
-      return {
-        violated: true,
-        severity: 4,
-        evidence: { weapons, weaponPrice, productionIndex },
-        suggestedAction: {
-          parameter: 'craftingCost',
-          direction: 'increase',
-          magnitude: 0.10,
-          reasoning:
-            `${weapons} weapons with price ${weaponPrice.toFixed(0)}g but still producing. ` +
-            'Producers appear unaware of market. Raise production cost to slow output.',
-        },
-        confidence: 0.70,
-        estimatedLag: 8,
-      };
+    const sortedPrices = [...priceValues].sort((a, b) => a - b);
+    const medianPrice = sortedPrices[Math.floor(sortedPrices.length / 2)] ?? 0;
+
+    // Check each resource: if price deviates >3× from median while supply is falling
+    for (const [resource, price] of Object.entries(prices)) {
+      if (price <= 0) continue;
+
+      const supply = supplyByResource[resource] ?? 0;
+      const priceDeviation = price / Math.max(1, medianPrice);
+
+      // Price crash: price < 1/3 median, high supply, still producing
+      if (priceDeviation < 0.33 && supply > 100 && productionIndex > 0) {
+        return {
+          violated: true,
+          severity: 4,
+          evidence: {
+            resource,
+            price,
+            medianPrice,
+            priceDeviation,
+            supply,
+            productionIndex
+          },
+          suggestedAction: {
+            parameter: 'productionCost',
+            direction: 'increase',
+            magnitude: 0.10,
+            reasoning:
+              `${resource} price ${price.toFixed(0)} is ${(priceDeviation * 100).toFixed(0)}% of median (${medianPrice.toFixed(0)}). ` +
+              `Supply ${supply} units but still producing. ` +
+              'Producers appear unaware of market. Raise production cost to slow output.',
+          },
+          confidence: 0.70,
+          estimatedLag: 8,
+        };
+      }
     }
 
     return { violated: false };
@@ -119,8 +138,8 @@ export const P23_ProfitabilityFactorsFeasibility: Principle = {
   name: 'Profitability Factors Execution Feasibility',
   category: 'feedback',
   description:
-    'An agent who calculates profit = weapon_price - ore_cost but has no gold ' +
-    'to buy ore is chasing phantom profit. ' +
+    'An agent who calculates profit = goods_price - materials_cost but has no currency ' +
+    'to buy raw materials is chasing phantom profit. ' +
     'Feasibility (can I afford the inputs?) must be part of the profitability calc.',
   check(metrics, _thresholds): PrincipleResult {
     const { avgSatisfaction, blockedAgentCount, totalAgents } = metrics;
@@ -132,7 +151,7 @@ export const P23_ProfitabilityFactorsFeasibility: Principle = {
         severity: 5,
         evidence: { blockedFraction, blockedAgentCount, avgSatisfaction },
         suggestedAction: {
-          parameter: 'craftingCost',
+          parameter: 'productionCost',
           direction: 'decrease',
           magnitude: 0.15,
           reasoning:
@@ -167,7 +186,7 @@ export const P24_BlockedAgentsDecayFaster: Principle = {
         severity: 5,
         evidence: { blockedFraction, blockedAgentCount, churnRate },
         suggestedAction: {
-          parameter: 'auctionFee',
+          parameter: 'transactionFee',
           direction: 'decrease',
           magnitude: 0.15,
           reasoning:

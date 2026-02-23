@@ -1,8 +1,9 @@
 // Multi-resolution metric time-series storage (P41)
-// Three resolutions: fine (every tick), medium (every 10 ticks), coarse (every 100 ticks)
+// Three resolutions: fine (every tick), medium (configurable window), coarse (configurable epoch)
 
-import type { EconomyMetrics, MetricResolution, MetricQuery, MetricQueryResult } from './types.js';
+import type { EconomyMetrics, MetricResolution, MetricQuery, MetricQueryResult, TickConfig } from './types.js';
 import { emptyMetrics } from './types.js';
+import { DEFAULT_TICK_CONFIG } from './defaults.js';
 
 class RingBuffer<T> {
   private buf: T[];
@@ -44,22 +45,30 @@ class RingBuffer<T> {
 export class MetricStore {
   /** Fine: last 200 ticks, one entry per tick */
   private fine = new RingBuffer<EconomyMetrics>(200);
-  /** Medium: last 200 windows of 10 ticks */
+  /** Medium: last 200 windows */
   private medium = new RingBuffer<EconomyMetrics>(200);
-  /** Coarse: last 200 epochs of 100 ticks */
+  /** Coarse: last 200 epochs */
   private coarse = new RingBuffer<EconomyMetrics>(200);
 
+  private mediumWindow: number;
+  private coarseWindow: number;
   private ticksSinceLastMedium = 0;
   private ticksSinceLastCoarse = 0;
   private mediumAccumulator: EconomyMetrics[] = [];
   private coarseAccumulator: EconomyMetrics[] = [];
+
+  constructor(tickConfig?: Partial<TickConfig>) {
+    const config = { ...DEFAULT_TICK_CONFIG, ...tickConfig };
+    this.mediumWindow = config.mediumWindow!;
+    this.coarseWindow = config.coarseWindow!;
+  }
 
   record(metrics: EconomyMetrics): void {
     this.fine.push(metrics);
 
     this.mediumAccumulator.push(metrics);
     this.ticksSinceLastMedium++;
-    if (this.ticksSinceLastMedium >= 10) {
+    if (this.ticksSinceLastMedium >= this.mediumWindow) {
       this.medium.push(this.aggregate(this.mediumAccumulator));
       this.mediumAccumulator = [];
       this.ticksSinceLastMedium = 0;
@@ -67,7 +76,7 @@ export class MetricStore {
 
     this.coarseAccumulator.push(metrics);
     this.ticksSinceLastCoarse++;
-    if (this.ticksSinceLastCoarse >= 100) {
+    if (this.ticksSinceLastCoarse >= this.coarseWindow) {
       this.coarse.push(this.aggregate(this.coarseAccumulator));
       this.coarseAccumulator = [];
       this.ticksSinceLastCoarse = 0;

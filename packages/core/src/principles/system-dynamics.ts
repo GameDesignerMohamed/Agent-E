@@ -31,7 +31,7 @@ export const P39_TheLagPrinciple: Principle = {
         severity: 5,
         evidence: { inflationRate, netFlow, lagRange: [lagMin, lagMax] },
         suggestedAction: {
-          parameter: 'craftingCost',
+          parameter: 'productionCost',
           direction: 'increase',
           magnitude: 0.03, // very small — oscillation means over-adjusting
           reasoning:
@@ -69,7 +69,7 @@ export const P44_ComplexityBudget: Principle = {
         severity: 3,
         evidence: { customMetricCount, budgetMax: thresholds.complexityBudgetMax },
         suggestedAction: {
-          parameter: 'auctionFee',
+          parameter: 'transactionFee',
           direction: 'decrease',
           magnitude: 0.01,
           reasoning:

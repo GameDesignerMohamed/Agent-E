@@ -9,7 +9,7 @@ export const P1_ProductionMatchesConsumption: Principle = {
   category: 'supply_chain',
   description:
     'If producer rate < consumer rate, supply deficit kills the economy. ' +
-    '105 ore rotting at Forge (V0.4.6) happened because this was out of balance.',
+    'Raw materials piling at production locations happened because this was out of balance.',
   check(metrics, _thresholds): PrincipleResult {
     const { supplyByResource, demandSignals, populationByRole } = metrics;
 
@@ -24,21 +24,26 @@ export const P1_ProductionMatchesConsumption: Principle = {
       }
     }
 
-    // Also check: if producer roles are outnumbered relative to consumer roles
-    const crafters = (populationByRole['Crafter'] ?? 0) + (populationByRole['Alchemist'] ?? 0);
-    const consumers = (populationByRole['Fighter'] ?? 0);
-    const productionDeficit = consumers > 0 && crafters / consumers < 0.1;
+    // Also check: population imbalance between roles (producers vs consumers)
+    const roleEntries = Object.entries(populationByRole).sort((a, b) => b[1] - a[1]);
+    const totalPop = metrics.totalAgents;
+    const dominantRole = roleEntries[0];
+    const dominantCount = dominantRole?.[1] ?? 0;
+    const dominantShare = totalPop > 0 ? dominantCount / totalPop : 0;
 
-    if (violations.length > 0 || productionDeficit) {
+    // If dominant role > 40% but their key resources are scarce, production can't keep up
+    const populationImbalance = dominantShare > 0.4 && violations.length > 0;
+
+    if (violations.length > 0 || populationImbalance) {
       return {
         violated: true,
         severity: 7,
-        evidence: { scarceResources: violations, crafters, consumers },
+        evidence: { scarceResources: violations, dominantRole: dominantRole?.[0], dominantShare },
         suggestedAction: {
-          parameter: 'craftingCost',
+          parameter: 'productionCost',
           direction: 'decrease',
           magnitude: 0.15,
-          reasoning: 'Lower crafting cost to incentivise more production.',
+          reasoning: 'Lower production cost to incentivise more production.',
         },
         confidence: violations.length > 0 ? 0.85 : 0.6,
         estimatedLag: 10,
@@ -55,32 +60,38 @@ export const P2_ClosedLoopsNeedDirectHandoff: Principle = {
   category: 'supply_chain',
   description:
     'Raw materials listed on an open market create noise and liquidity problems. ' +
-    'Gatherers delivering ore directly to Crafters at the Forge is faster and cleaner.',
+    'Gatherers delivering raw materials directly to producers at production zones is faster and cleaner.',
   check(metrics, _thresholds): PrincipleResult {
-    const { supplyByResource, prices, velocity } = metrics;
+    const { supplyByResource, prices, velocity, totalAgents } = metrics;
 
-    // Signal: raw materials (ore, wood) have high supply but low velocity
+    // Signal: raw materials have high supply but low velocity
     // This suggests they are listed but not being bought
-    const ore = supplyByResource['ore'] ?? 0;
-    const wood = supplyByResource['wood'] ?? 0;
-    const orePrice = prices['ore'] ?? 0;
-    const woodPrice = prices['wood'] ?? 0;
+    const avgSupplyPerAgent = totalAgents > 0
+      ? Object.values(supplyByResource).reduce((s, v) => s + v, 0) / totalAgents
+      : 0;
 
-    const oreBacklog = ore > 50 && orePrice > 0;
-    const woodBacklog = wood > 50 && woodPrice > 0;
+    // Check for ANY resource with excessive supply relative to average
+    const backlogResources: string[] = [];
+    for (const [resource, supply] of Object.entries(supplyByResource)) {
+      const price = prices[resource] ?? 0;
+      if (supply > avgSupplyPerAgent * 0.5 && price > 0) {
+        backlogResources.push(resource);
+      }
+    }
+
     const stagnant = velocity < 3;
 
-    if ((oreBacklog || woodBacklog) && stagnant) {
+    if (backlogResources.length > 0 && stagnant) {
       return {
         violated: true,
         severity: 5,
-        evidence: { ore, wood, velocity },
+        evidence: { backlogResources, velocity },
         suggestedAction: {
-          parameter: 'auctionFee',
+          parameter: 'transactionFee',
           direction: 'increase',
           magnitude: 0.20,
           reasoning:
-            'Raise AH fees to discourage raw material listings. ' +
+            'Raise market fees to discourage raw material listings. ' +
             'Direct hand-off at production zones is the correct channel.',
         },
         confidence: 0.70,
@@ -98,37 +109,40 @@ export const P3_BootstrapCapitalCoversFirstTransaction: Principle = {
   category: 'supply_chain',
   description:
     'A new producer must be able to afford their first transaction without selling ' +
-    'anything first. Crafter starting with 15g but needing 30g to accept ore hand-off ' +
+    'anything first. Producer starting with low currency but needing more to accept raw material hand-off ' +
     'blocks the entire supply chain from tick 1.',
   check(metrics, _thresholds): PrincipleResult {
-    const { populationByRole, supplyByResource, prices } = metrics;
+    const { populationByRole, supplyByResource, prices, totalAgents } = metrics;
 
-    // Proxy: if there are producers but supply of their output is zero or near-zero
-    // despite producers existing, bootstrap likely failed
-    const crafters = populationByRole['Crafter'] ?? 0;
-    const alchemists = populationByRole['Alchemist'] ?? 0;
-    const weapons = supplyByResource['weapons'] ?? 0;
-    const potions = supplyByResource['potions'] ?? 0;
+    // Proxy: if there are agents but supply of ANY produced resource is zero
+    // despite positive prices for inputs, bootstrap likely failed
+    const totalProducers = Object.values(populationByRole).reduce((s, v) => s + v, 0);
 
-    const crafterBootstrapFail = crafters > 0 && weapons === 0 && (prices['ore'] ?? 0) > 0;
-    const alchemistBootstrapFail = alchemists > 0 && potions === 0 && (prices['wood'] ?? 0) > 0;
-
-    if (crafterBootstrapFail || alchemistBootstrapFail) {
-      return {
-        violated: true,
-        severity: 8,
-        evidence: { crafters, alchemists, weapons, potions },
-        suggestedAction: {
-          parameter: 'craftingCost',
-          direction: 'decrease',
-          magnitude: 0.30,
-          reasoning:
-            'Producers cannot complete first transaction. ' +
-            'Lower production cost to unblock bootstrap.',
-        },
-        confidence: 0.80,
-        estimatedLag: 3,
-      };
+    if (totalProducers > 0) {
+      // Check for any resource with zero supply but positive input prices
+      for (const [resource, supply] of Object.entries(supplyByResource)) {
+        if (supply === 0) {
+          // Check if there are any priced inputs (suggesting materials available but not being produced)
+          const anyInputPriced = Object.values(prices).some(p => p > 0);
+          if (anyInputPriced) {
+            return {
+              violated: true,
+              severity: 8,
+              evidence: { resource, totalProducers, supply },
+              suggestedAction: {
+                parameter: 'productionCost',
+                direction: 'decrease',
+                magnitude: 0.30,
+                reasoning:
+                  'Producers cannot complete first transaction. ' +
+                  'Lower production cost to unblock bootstrap.',
+              },
+              confidence: 0.80,
+              estimatedLag: 3,
+            };
+          }
+        }
+      }
     }
 
     return { violated: false };
@@ -141,51 +155,47 @@ export const P4_MaterialsFlowFasterThanCooldown: Principle = {
   category: 'supply_chain',
   description:
     'Input delivery rate must exceed or match production cooldown rate. ' +
-    'If Crafters craft every 5 ticks but only receive ore every 10 ticks, ' +
+    'If producers craft every 5 ticks but only receive raw materials every 10 ticks, ' +
     'they starve regardless of supply levels.',
   check(metrics, _thresholds): PrincipleResult {
-    const { supplyByResource, populationByRole, velocity } = metrics;
+    const { supplyByResource, populationByRole, velocity, totalAgents } = metrics;
 
-    const gatherers = populationByRole['Gatherer'] ?? 0;
-    const crafters = populationByRole['Crafter'] ?? 0;
-    const alchemists = populationByRole['Alchemist'] ?? 0;
+    // Check total raw material supply vs total population
+    const totalSupply = Object.values(supplyByResource).reduce((s, v) => s + v, 0);
+    const avgSupplyPerAgent = totalAgents > 0 ? totalSupply / totalAgents : 0;
 
-    // Rough proxy: if ore supply is growing (gatherers > 0) but weapons aren't
-    // being produced (weapons supply static), delivery is outpacing consumption
-    // or consumption is bottlenecked by material shortage
-    const producers = crafters + alchemists;
-    const gathererToProcuderRatio = gatherers / Math.max(1, producers);
+    // Check population ratio across all roles
+    const roleEntries = Object.entries(populationByRole);
+    const totalRoles = roleEntries.length;
 
-    // Too few gatherers: producers will starve
-    if (producers > 0 && gathererToProcuderRatio < 0.5 && velocity < 5) {
+    // If there's significant population imbalance and low velocity, may indicate flow issues
+    if (totalRoles >= 2 && velocity < 5 && avgSupplyPerAgent < 0.5) {
       return {
         violated: true,
         severity: 5,
-        evidence: { gatherers, crafters, alchemists, gathererToProcuderRatio },
+        evidence: { avgSupplyPerAgent, velocity, totalRoles },
         suggestedAction: {
-          parameter: 'miningYield',
+          parameter: 'yieldRate',
           direction: 'increase',
           magnitude: 0.15,
-          reasoning: 'Too few gatherers relative to producers. Increase yield to compensate.',
+          reasoning: 'Low supply per agent with stagnant velocity. Increase yield to compensate.',
         },
         confidence: 0.65,
         estimatedLag: 8,
       };
     }
 
-    // Too many: materials pile up
-    const ore = supplyByResource['ore'] ?? 0;
-    const wood = supplyByResource['wood'] ?? 0;
-    if (ore > 80 || wood > 80) {
+    // Too much supply piling up: materials accumulating faster than being consumed
+    if (avgSupplyPerAgent > 2) {
       return {
         violated: true,
         severity: 4,
-        evidence: { ore, wood, gatherers, producers },
+        evidence: { avgSupplyPerAgent, totalSupply, totalAgents },
         suggestedAction: {
-          parameter: 'miningYield',
+          parameter: 'yieldRate',
           direction: 'decrease',
           magnitude: 0.20,
-          reasoning: 'Raw materials piling up. Gatherers outpacing producers.',
+          reasoning: 'Raw materials piling up. Extractors outpacing producers.',
         },
         confidence: 0.80,
         estimatedLag: 5,
@@ -217,7 +227,7 @@ export const P60_SurplusDisposalAsymmetry: Principle = {
           discount: thresholds.disposalTradeWeightDiscount,
         },
         suggestedAction: {
-          parameter: 'craftingCost',
+          parameter: 'productionCost',
           direction: 'decrease',
           magnitude: 0.10,
           reasoning:

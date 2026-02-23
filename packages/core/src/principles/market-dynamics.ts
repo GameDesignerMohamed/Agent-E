@@ -8,7 +8,7 @@ export const P29_PinchPoint: Principle = {
   category: 'market_dynamics',
   description:
     'Every economy has a resource that constrains all downstream activity. ' +
-    'In AgentE v0: weapons are the pinch point (Fighters need them, Crafters make them). ' +
+    'Identify which resource is the pinch point (consumers need them, producers make them). ' +
     'If demand drops → oversupply. If frustration rises → undersupply.',
   check(metrics, _thresholds): PrincipleResult {
     const { pinchPoints, supplyByResource, demandSignals } = metrics;
@@ -23,7 +23,7 @@ export const P29_PinchPoint: Principle = {
           severity: 7,
           evidence: { resource, supply, demand, status },
           suggestedAction: {
-            parameter: 'craftingCost',
+            parameter: 'productionCost',
             direction: 'decrease',
             magnitude: 0.15,
             reasoning:
@@ -42,7 +42,7 @@ export const P29_PinchPoint: Principle = {
           severity: 4,
           evidence: { resource, supply, status },
           suggestedAction: {
-            parameter: 'craftingCost',
+            parameter: 'productionCost',
             direction: 'increase',
             magnitude: 0.10,
             reasoning:
@@ -64,9 +64,9 @@ export const P30_MovingPinchPoint: Principle = {
   name: 'Moving Pinch Point',
   category: 'market_dynamics',
   description:
-    'Player progression shifts the demand curve. A static pinch point that ' +
-    'works at level 1 will be cleared at level 10. The pinch point must move ' +
-    'with the player to maintain ongoing scarcity and engagement.',
+    'Agent progression shifts the demand curve. A static pinch point that ' +
+    'works early will be cleared later. The pinch point must move ' +
+    'with agent progression to maintain ongoing scarcity and engagement.',
   check(metrics, _thresholds): PrincipleResult {
     const { capacityUsage, supplyByResource, avgSatisfaction } = metrics;
 
@@ -82,7 +82,7 @@ export const P30_MovingPinchPoint: Principle = {
         severity: 3,
         evidence: { capacityUsage, resourcesPerAgent, avgSatisfaction },
         suggestedAction: {
-          parameter: 'craftingCost',
+          parameter: 'productionCost',
           direction: 'increase',
           magnitude: 0.10,
           reasoning:
@@ -142,7 +142,7 @@ export const P57_CombinatorialPriceSpace: Principle = {
           target: thresholds.relativePriceConvergenceTarget,
         },
         suggestedAction: {
-          parameter: 'auctionFee',
+          parameter: 'transactionFee',
           direction: 'decrease',
           magnitude: 0.10,
           reasoning:

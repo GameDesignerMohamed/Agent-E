@@ -20,7 +20,7 @@ export const P34_ExtractionRatio: Principle = {
         severity: 8,
         evidence: { extractionRatio, threshold: thresholds.extractionRatioRed },
         suggestedAction: {
-          parameter: 'auctionFee',
+          parameter: 'transactionFee',
           direction: 'increase',
           magnitude: 0.25,
           reasoning:
@@ -39,7 +39,7 @@ export const P34_ExtractionRatio: Principle = {
         severity: 5,
         evidence: { extractionRatio, threshold: thresholds.extractionRatioYellow },
         suggestedAction: {
-          parameter: 'auctionFee',
+          parameter: 'transactionFee',
           direction: 'increase',
           magnitude: 0.10,
           reasoning:
@@ -62,7 +62,7 @@ export const P47_SmokeTest: Principle = {
   description:
     'intrinsic_utility_value / total_market_value < 0.3 = economy is >70% speculation. ' +
     'If utility value drops below 10%, a single bad week can collapse the entire market. ' +
-    'Real utility (weapons that help you fight, potions that heal) must anchor value.',
+    'Real utility (resources in the economy serve distinct utility functions) must anchor value.',
   check(metrics, thresholds): PrincipleResult {
     const { smokeTestRatio } = metrics;
     if (isNaN(smokeTestRatio)) return { violated: false };
@@ -73,7 +73,7 @@ export const P47_SmokeTest: Principle = {
         severity: 9,
         evidence: { smokeTestRatio, threshold: thresholds.smokeTestCritical },
         suggestedAction: {
-          parameter: 'arenaReward',
+          parameter: 'rewardRate',
           direction: 'increase',
           magnitude: 0.20,
           reasoning:
@@ -92,7 +92,7 @@ export const P47_SmokeTest: Principle = {
         severity: 6,
         evidence: { smokeTestRatio, threshold: thresholds.smokeTestWarning },
         suggestedAction: {
-          parameter: 'arenaReward',
+          parameter: 'rewardRate',
           direction: 'increase',
           magnitude: 0.10,
           reasoning:
@@ -114,8 +114,8 @@ export const P48_CurrencyInsulation: Principle = {
   category: 'open_economy',
   description:
     'Gameplay economy correlation with external markets > 0.5 = insulation failure. ' +
-    'When your in-game gold price tracks ETH/USD, external market crashes destroy ' +
-    'in-game economies. Good design insulates the two.',
+    'When your native currency price correlates with external asset, external market crashes destroy ' +
+    'internal economies. Good design insulates the two.',
   check(metrics, thresholds): PrincipleResult {
     const { currencyInsulation } = metrics;
     if (isNaN(currencyInsulation)) return { violated: false };
@@ -126,7 +126,7 @@ export const P48_CurrencyInsulation: Principle = {
         severity: 6,
         evidence: { currencyInsulation, threshold: thresholds.currencyInsulationMax },
         suggestedAction: {
-          parameter: 'auctionFee',
+          parameter: 'transactionFee',
           direction: 'increase',
           magnitude: 0.10,
           reasoning:

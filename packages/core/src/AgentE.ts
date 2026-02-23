@@ -15,7 +15,7 @@ import type {
   MetricQueryResult,
 } from './types.js';
 import { emptyMetrics } from './types.js';
-import { DEFAULT_THRESHOLDS } from './defaults.js';
+import { DEFAULT_THRESHOLDS, DEFAULT_TICK_CONFIG } from './defaults.js';
 import { Observer } from './Observer.js';
 import { Diagnoser } from './Diagnoser.js';
 import { Simulator } from './Simulator.js';
@@ -38,7 +38,7 @@ export class AgentE {
   private mode: AgentEMode;
 
   // ── Pipeline ──
-  private observer = new Observer();
+  private observer!: Observer;
   private diagnoser: Diagnoser;
   private simulator = new Simulator();
   private planner = new Planner();
@@ -46,7 +46,7 @@ export class AgentE {
 
   // ── State ──
   readonly log = new DecisionLog();
-  readonly store = new MetricStore();
+  readonly store!: MetricStore;
   private personaTracker = new PersonaTracker();
   private params: Record<string, number> = {};
   private eventBuffer: EconomicEvent[] = [];
@@ -64,6 +64,7 @@ export class AgentE {
       mode: this.mode,
       dominantRoles: config.dominantRoles ?? [],
       idealDistribution: config.idealDistribution ?? {},
+      tickConfig: config.tickConfig ?? { duration: 1, unit: 'tick' },
       gracePeriod: config.gracePeriod ?? 50,
       checkInterval: config.checkInterval ?? 5,
       maxAdjustmentPercent: config.maxAdjustmentPercent ?? 0.15,
@@ -76,6 +77,11 @@ export class AgentE {
       maxAdjustmentPercent: config.maxAdjustmentPercent ?? DEFAULT_THRESHOLDS.maxAdjustmentPercent,
       cooldownTicks: config.cooldownTicks ?? DEFAULT_THRESHOLDS.cooldownTicks,
     };
+
+    // Resolve TickConfig and pass to Observer and MetricStore
+    const tickConfig = { ...DEFAULT_TICK_CONFIG, ...config.tickConfig };
+    this.observer = new Observer(tickConfig);
+    this.store = new MetricStore(tickConfig);
 
     this.diagnoser = new Diagnoser(ALL_PRINCIPLES);
 
@@ -125,7 +131,7 @@ export class AgentE {
     this.isPaused = false;
   }
 
-  // ── Main cycle (call once per tick from your game loop) ────────────────────
+  // ── Main cycle (call once per tick from your economy loop) ─────────────────
 
   async tick(state?: EconomyState): Promise<void> {
     if (!this.isRunning || this.isPaused) return;

@@ -17,7 +17,7 @@ const agent = new AgentE({
   adapter: {
     getState: () => ({
       tick: currentTick,
-      agentBalances: { /* id → gold */ },
+      agentBalances: { /* id → balance */ },
       agentRoles: { /* id → role */ },
       agentInventories: { /* id → { resource → qty } */ },
       marketPrices: { /* resource → price */ },
@@ -58,15 +58,29 @@ Organized across 15 categories: supply chain, incentives, population, currency f
 
 Each principle has a `check(metrics, thresholds)` function that returns either `{ violated: false }` or a violation with severity, evidence, suggested action, confidence, and estimated lag.
 
+## Tick Configuration
+
+```typescript
+const agent = new AgentE({
+  adapter: yourAdapter,
+  tickConfig: {
+    duration: 5,          // one tick = 5 seconds
+    unit: 'second',
+    mediumWindow: 12,     // medium metrics = every 12 ticks (60s)
+    coarseWindow: 120,    // coarse metrics = every 120 ticks (10min)
+  },
+});
+```
+
 ## Developer API
 
 ```typescript
 // Lock a parameter from automated adjustment
-agent.lock('craftingCost');
-agent.unlock('craftingCost');
+agent.lock('productionCost');
+agent.unlock('productionCost');
 
 // Constrain a parameter to a range
-agent.constrain('auctionFee', { min: 0.01, max: 0.50 });
+agent.constrain('transactionFee', { min: 0.01, max: 0.50 });
 
 // Add a custom principle
 agent.addPrinciple(myPrinciple);
@@ -96,21 +110,21 @@ import type { Principle } from '@agent-e/core';
 
 const myRule: Principle = {
   id: 'MY_01',
-  name: 'Healer Population Floor',
+  name: 'Support Role Population Floor',
   category: 'population',
-  description: 'Healer share below 5% is a crisis',
+  description: 'Support role share below 5% is a crisis',
   check(metrics, thresholds) {
-    const share = metrics.roleShares['Healer'] ?? 0;
+    const share = metrics.roleShares['support'] ?? 0;
     if (share < 0.05) {
       return {
         violated: true,
         severity: 8,
         evidence: { share },
         suggestedAction: {
-          parameter: 'healerReward',
+          parameter: 'supportReward',
           direction: 'increase',
           magnitude: 0.25,
-          reasoning: 'Healer population critically low.',
+          reasoning: 'Support role population critically low.',
         },
         confidence: 0.90,
         estimatedLag: 10,

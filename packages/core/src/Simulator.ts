@@ -176,19 +176,23 @@ export class Simulator {
     const { parameter, direction } = action;
     const sign = direction === 'increase' ? -1 : 1; // increase cost = reduce flow
 
-    if (parameter === 'craftingCost' || parameter === 'alchemyCost') {
+    // Get dominant role population (highest count)
+    const roleEntries = Object.entries(metrics.populationByRole).sort((a, b) => b[1] - a[1]);
+    const dominantRoleCount = roleEntries[0]?.[1] ?? 0;
+
+    if (parameter === 'productionCost') {
       return sign * metrics.netFlow * 0.2;
     }
-    if (parameter === 'auctionFee') {
+    if (parameter === 'transactionFee') {
       return sign * metrics.velocity * 10 * 0.1;
     }
-    if (parameter === 'arenaEntryFee') {
-      return sign * (metrics.populationByRole['Fighter'] ?? 0) * 0.5;
+    if (parameter === 'entryFee') {
+      return sign * dominantRoleCount * 0.5;
     }
-    if (parameter === 'arenaReward') {
-      return -sign * (metrics.populationByRole['Fighter'] ?? 0) * 0.3;
+    if (parameter === 'rewardRate') {
+      return -sign * dominantRoleCount * 0.3;
     }
-    if (parameter === 'miningYield' || parameter === 'lumberYield') {
+    if (parameter === 'yieldRate') {
       return sign * metrics.faucetVolume * 0.15;
     }
     return sign * metrics.netFlow * 0.1;

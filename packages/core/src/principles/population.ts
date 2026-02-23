@@ -22,7 +22,7 @@ export const P9_RoleSwitchingNeedsFriction: Principle = {
         severity: 5,
         evidence: { totalChurnRate: totalChurn, churnByRole },
         suggestedAction: {
-          parameter: 'craftingCost',
+          parameter: 'productionCost',
           direction: 'increase',
           magnitude: 0.05,
           reasoning:
@@ -48,7 +48,7 @@ export const P10_SpawnWeightingUsesInversePopulation: Principle = {
   category: 'population',
   description:
     'New agents should preferentially fill the least-populated roles. ' +
-    'Flat spawn probability causes initial imbalances to compound.',
+    'Flat entry probability causes initial imbalances to compound.',
   check(metrics, _thresholds): PrincipleResult {
     const { roleShares } = metrics;
     if (Object.keys(roleShares).length === 0) return { violated: false };
@@ -66,12 +66,12 @@ export const P10_SpawnWeightingUsesInversePopulation: Principle = {
         severity: 4,
         evidence: { roleShares, stdDev, leastPopulatedRole: minRole?.[0] },
         suggestedAction: {
-          parameter: 'miningYield',
+          parameter: 'yieldRate',
           direction: 'increase',
           magnitude: 0.05,
           reasoning:
             `High role share variance (σ=${stdDev.toFixed(2)}). ` +
-            'Spawn weighting may not be filling under-populated roles. ' +
+            'Entry weighting may not be filling under-populated roles. ' +
             'Increasing yield makes under-populated producer roles more attractive.',
         },
         confidence: 0.60,
@@ -103,7 +103,7 @@ export const P11_TwoTierPressure: Principle = {
           severity: 6,
           evidence: { role, share },
           suggestedAction: {
-            parameter: 'auctionFee',
+            parameter: 'transactionFee',
             direction: 'increase',
             magnitude: 0.15,
             reasoning:
@@ -139,7 +139,7 @@ export const P46_PersonaDiversity: Principle = {
           severity: 5,
           evidence: { dominantPersona: persona, share, personaDistribution },
           suggestedAction: {
-            parameter: 'arenaReward',
+            parameter: 'rewardRate',
             direction: 'increase',
             magnitude: 0.10,
             reasoning:
@@ -160,7 +160,7 @@ export const P46_PersonaDiversity: Principle = {
         severity: 3,
         evidence: { significantClusters, required: thresholds.personaMinClusters },
         suggestedAction: {
-          parameter: 'auctionFee',
+          parameter: 'transactionFee',
           direction: 'decrease',
           magnitude: 0.05,
           reasoning:

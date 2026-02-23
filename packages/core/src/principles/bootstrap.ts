@@ -9,7 +9,7 @@ export const P17_GracePeriodBeforeIntervention: Principle = {
   description:
     'Any intervention before tick 50 is premature. The economy needs time to ' +
     'bootstrap with designed distributions. AgentE intervening at tick 1 against ' +
-    '55% Fighters (designed) killed the economy instantly.',
+    'dominant role exceeds 55% (designed) killed the economy instantly.',
   check(metrics, _thresholds): PrincipleResult {
     // This principle is enforced in the AgentE pipeline itself (gracePeriod config).
     // Here we flag if grace period appears to have ended too early by checking:
@@ -20,7 +20,7 @@ export const P17_GracePeriodBeforeIntervention: Principle = {
         severity: 7,
         evidence: { tick: metrics.tick, avgSatisfaction: metrics.avgSatisfaction },
         suggestedAction: {
-          parameter: 'arenaEntryFee',
+          parameter: 'entryFee',
           direction: 'decrease',
           magnitude: 0.20,
           reasoning:
@@ -42,34 +42,37 @@ export const P18_FirstProducerNeedsStartingInventory: Principle = {
   name: 'First Producer Needs Starting Inventory + Capital',
   category: 'bootstrap',
   description:
-    'A Crafter with 0 weapons and 0 gold must sell nothing to get gold before ' +
-    'they can buy ore. This creates a chicken-and-egg freeze. ' +
-    'Starting inventory (2 weapons + 4 ore + 40g) breaks the deadlock.',
+    'A producer with 0 resources and 0 currency must sell nothing to get currency before ' +
+    'they can buy raw materials. This creates a chicken-and-egg freeze. ' +
+    'Starting inventory (2 goods + 4 raw materials + 40 currency) breaks the deadlock.',
   check(metrics, _thresholds): PrincipleResult {
     if (metrics.tick > 20) return { violated: false }; // bootstrap window over
 
-    const weapons = metrics.supplyByResource['weapons'] ?? 0;
-    const potions = metrics.supplyByResource['potions'] ?? 0;
-    const crafters = metrics.populationByRole['Crafter'] ?? 0;
-    const alchemists = metrics.populationByRole['Alchemist'] ?? 0;
-
-    // If producers exist but their products don't, bootstrap inventory wasn't provided
-    if ((crafters > 0 && weapons === 0) || (alchemists > 0 && potions === 0)) {
-      return {
-        violated: true,
-        severity: 8,
-        evidence: { tick: metrics.tick, weapons, potions, crafters, alchemists },
-        suggestedAction: {
-          parameter: 'craftingCost',
-          direction: 'decrease',
-          magnitude: 0.50,
-          reasoning:
-            'Bootstrap failure: producers have no products on tick 1-20. ' +
-            'Drastically reduce production cost to allow immediate output.',
-        },
-        confidence: 0.90,
-        estimatedLag: 2,
-      };
+    // Check all resources: if ANY resource has zero supply while its producers exist
+    for (const [resource, supply] of Object.entries(metrics.supplyByResource)) {
+      if (supply === 0) {
+        // Find roles that produce this resource (heuristic: check if role population exists)
+        for (const [role, population] of Object.entries(metrics.populationByRole)) {
+          if (population > 0) {
+            // Bootstrap failure detected
+            return {
+              violated: true,
+              severity: 8,
+              evidence: { tick: metrics.tick, resource, supply, role, population },
+              suggestedAction: {
+                parameter: 'productionCost',
+                direction: 'decrease',
+                magnitude: 0.50,
+                reasoning:
+                  `Bootstrap failure: ${role} exists but ${resource} supply is 0 on tick 1-20. ` +
+                  'Drastically reduce production cost to allow immediate output.',
+              },
+              confidence: 0.90,
+              estimatedLag: 2,
+            };
+          }
+        }
+      }
     }
 
     return { violated: false };
@@ -82,28 +85,43 @@ export const P19_StartingSupplyExceedsDemand: Principle = {
   category: 'bootstrap',
   description:
     'Launch with more consumables than you think you need. ' +
-    'Early scarcity creates an AH gridlock where everyone wants to buy ' +
+    'Early scarcity creates a market gridlock where everyone wants to buy ' +
     'and nobody has anything to sell.',
   check(metrics, _thresholds): PrincipleResult {
     if (metrics.tick > 30) return { violated: false }; // only relevant early
 
-    const fighters = metrics.populationByRole['Fighter'] ?? 0;
-    const weapons = metrics.supplyByResource['weapons'] ?? 0;
-    const potions = metrics.supplyByResource['potions'] ?? 0;
+    // Find the most-populated role
+    const roleEntries = Object.entries(metrics.populationByRole);
+    if (roleEntries.length === 0) return { violated: false };
 
-    // Each fighter needs a weapon. If weapons < 50% of fighters at start, cold-start likely
-    if (fighters > 5 && weapons < fighters * 0.5) {
+    const [mostPopulatedRole, population] = roleEntries.reduce((max, entry) =>
+      entry[1] > max[1] ? entry : max
+    );
+
+    if (population < 5) return { violated: false }; // not enough agents to matter
+
+    // Check if this role has zero access to ANY resource they would consume
+    // (Heuristic: check all resources - if total supply across all resources < 50% of population)
+    const totalResourceSupply = Object.values(metrics.supplyByResource).reduce((sum, s) => sum + s, 0);
+    const resourcesPerAgent = totalResourceSupply / Math.max(1, population);
+
+    if (resourcesPerAgent < 0.5) {
       return {
         violated: true,
         severity: 6,
-        evidence: { fighters, weapons, potions, weaponsPerFighter: weapons / Math.max(1, fighters) },
+        evidence: {
+          mostPopulatedRole,
+          population,
+          totalResourceSupply,
+          resourcesPerAgent
+        },
         suggestedAction: {
-          parameter: 'arenaReward',
+          parameter: 'rewardRate',
           direction: 'increase',
           magnitude: 0.20,
           reasoning:
-            `${fighters} fighters but only ${weapons} weapons. Cold-start scarcity. ` +
-            'Boost arena reward to attract fighters even without weapons.',
+            `${mostPopulatedRole} (${population} agents) has insufficient resources (${resourcesPerAgent.toFixed(2)} per agent). ` +
+            'Cold-start scarcity. Boost competitive pool reward to attract participation despite scarcity.',
         },
         confidence: 0.75,
         estimatedLag: 5,

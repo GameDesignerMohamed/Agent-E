@@ -169,7 +169,7 @@ describe('P60 — Surplus Disposal Asymmetry', () => {
     const result = P60_SurplusDisposalAsymmetry.check(m, t);
     expect(result.violated).toBe(true);
     if (result.violated) {
-      expect(result.suggestedAction.parameter).toBe('craftingCost');
+      expect(result.suggestedAction.parameter).toBe('productionCost');
     }
   });
 

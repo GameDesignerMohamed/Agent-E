@@ -7,8 +7,8 @@ export const P31_AnchorValueTracking: Principle = {
   name: 'Anchor Value Tracking',
   category: 'measurement',
   description:
-    '1 hour of play = X gold = Y items. If this ratio drifts, the economy ' +
-    'is inflating or deflating in ways that players feel before metrics catch it. ' +
+    '1 period of activity = X currency = Y resources. If this ratio drifts, the economy ' +
+    'is inflating or deflating in ways that participants feel before metrics catch it. ' +
     'Track the ratio constantly.',
   check(metrics, _thresholds): PrincipleResult {
     const { anchorRatioDrift, inflationRate } = metrics;
@@ -19,12 +19,12 @@ export const P31_AnchorValueTracking: Principle = {
         severity: 5,
         evidence: { anchorRatioDrift, inflationRate },
         suggestedAction: {
-          parameter: 'craftingCost',
+          parameter: 'productionCost',
           direction: anchorRatioDrift > 0 ? 'increase' : 'decrease',
           magnitude: 0.10,
           reasoning:
             `Anchor ratio has drifted ${(anchorRatioDrift * 100).toFixed(0)}% from baseline. ` +
-            'Time-to-value for players is changing. Adjust production costs to restore.',
+            'Time-to-value for participants is changing. Adjust production costs to restore.',
         },
         confidence: 0.65,
         estimatedLag: 10,
@@ -57,7 +57,7 @@ export const P41_MultiResolutionMonitoring: Principle = {
         severity: 4,
         evidence: { giniCoefficient, avgSatisfaction },
         suggestedAction: {
-          parameter: 'auctionFee',
+          parameter: 'transactionFee',
           direction: 'increase',
           magnitude: 0.10,
           reasoning:
@@ -95,7 +95,7 @@ export const P55_ArbitrageThermometer: Principle = {
           critical: thresholds.arbitrageIndexCritical,
         },
         suggestedAction: {
-          parameter: 'auctionFee',
+          parameter: 'transactionFee',
           direction: 'decrease',
           magnitude: 0.15,
           reasoning:
@@ -117,7 +117,7 @@ export const P55_ArbitrageThermometer: Principle = {
           warning: thresholds.arbitrageIndexWarning,
         },
         suggestedAction: {
-          parameter: 'auctionFee',
+          parameter: 'transactionFee',
           direction: 'decrease',
           magnitude: 0.08,
           reasoning:
@@ -154,7 +154,7 @@ export const P59_GiftEconomyNoise: Principle = {
           threshold: thresholds.giftTradeFilterRatio,
         },
         suggestedAction: {
-          parameter: 'auctionFee',
+          parameter: 'transactionFee',
           direction: 'increase',
           magnitude: 0.05,
           reasoning:

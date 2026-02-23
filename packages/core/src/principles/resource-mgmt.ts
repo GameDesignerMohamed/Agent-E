@@ -8,32 +8,30 @@ export const P35_DestructionCreatesValue: Principle = {
   category: 'resource',
   description:
     'If nothing is ever permanently lost, inflation is inevitable. ' +
-    'Weapon durability (breaks after 3 fights), potion consumption on use, ' +
-    'and ore costs for crafting are all destruction mechanisms. ' +
+    'Resource durability and consumption mechanisms create destruction. ' +
     'Without them, supply grows without bound.',
   check(metrics, _thresholds): PrincipleResult {
     const { supplyByResource, sinkVolume, netFlow } = metrics;
 
-    // High supply of consumables + low sink volume = destruction not working
-    const weapons = supplyByResource['weapons'] ?? 0;
-    const potions = supplyByResource['potions'] ?? 0;
-
-    if ((weapons > 200 || potions > 200) && sinkVolume < 5 && netFlow > 0) {
-      return {
-        violated: true,
-        severity: 6,
-        evidence: { weapons, potions, sinkVolume, netFlow },
-        suggestedAction: {
-          parameter: 'arenaEntryFee',
-          direction: 'decrease',
-          magnitude: 0.10,
-          reasoning:
-            `${weapons} weapons + ${potions} potions with low destruction (sink ${sinkVolume}/t). ` +
-            'Consumables not being consumed. Lower arena entry to increase weapon/potion usage.',
-        },
-        confidence: 0.70,
-        estimatedLag: 5,
-      };
+    // Check ALL resources: if any resource has high supply + low destruction
+    for (const [resource, supply] of Object.entries(supplyByResource)) {
+      if (supply > 200 && sinkVolume < 5 && netFlow > 0) {
+        return {
+          violated: true,
+          severity: 6,
+          evidence: { resource, supply, sinkVolume, netFlow },
+          suggestedAction: {
+            parameter: 'entryFee',
+            direction: 'decrease',
+            magnitude: 0.10,
+            reasoning:
+              `${resource} supply at ${supply} units with low destruction (sink ${sinkVolume}/t). ` +
+              'Resources not being consumed. Lower competitive pool entry to increase resource usage.',
+          },
+          confidence: 0.70,
+          estimatedLag: 5,
+        };
+      }
     }
 
     return { violated: false };
@@ -58,7 +56,7 @@ export const P40_ReplacementRate: Principle = {
           severity: 6,
           evidence: { productionIndex, sinkVolume, replacementRatio },
           suggestedAction: {
-            parameter: 'miningYield',
+            parameter: 'yieldRate',
             direction: 'increase',
             magnitude: 0.15,
             reasoning:
@@ -74,7 +72,7 @@ export const P40_ReplacementRate: Principle = {
           severity: 3,
           evidence: { productionIndex, sinkVolume, replacementRatio },
           suggestedAction: {
-            parameter: 'miningYield',
+            parameter: 'yieldRate',
             direction: 'decrease',
             magnitude: 0.10,
             reasoning:
@@ -109,7 +107,7 @@ export const P49_IdleAssetTax: Principle = {
         severity: 5,
         evidence: { giniCoefficient, top10PctShare, velocity },
         suggestedAction: {
-          parameter: 'auctionFee',
+          parameter: 'transactionFee',
           direction: 'increase',
           magnitude: 0.15,
           reasoning:

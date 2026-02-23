@@ -10,7 +10,7 @@ describe('Diagnoser', () => {
   it('returns violations sorted by severity DESC', () => {
     const diagnoser = new Diagnoser(ALL_PRINCIPLES);
 
-    // Create a bad economy: no weapons, lots of fighters, low satisfaction, high gini
+    // Create a bad economy: no goodA, lots of consumers, low satisfaction, high gini
     const m = {
       ...emptyMetrics(60),
       tick: 60,
@@ -18,12 +18,12 @@ describe('Diagnoser', () => {
       avgSatisfaction: 30,
       giniCoefficient: 0.70,
       churnRate: 0.12,
-      supplyByResource: { weapons: 0, ore: 5, potions: 0 },
-      demandSignals: { weapons: 50 },
-      prices: { ore: 15, weapons: 50 },
-      populationByRole: { Fighter: 50, Crafter: 2, Gatherer: 5 },
-      roleShares: { Fighter: 0.25, Crafter: 0.01, Gatherer: 0.025 },
-      poolSizes: { arena: 10 },
+      supplyByResource: { goodA: 0, materialA: 5, goodB: 0 },
+      demandSignals: { goodA: 50 },
+      prices: { materialA: 15, goodA: 50 },
+      populationByRole: { consumer: 50, producer: 2, extractor: 5 },
+      roleShares: { consumer: 0.25, producer: 0.01, extractor: 0.025 },
+      poolSizes: { poolA: 10 },
       netFlow: 0,
       faucetVolume: 0,
       sinkVolume: 0,
@@ -53,19 +53,19 @@ describe('Diagnoser', () => {
       netFlow: 0,
       faucetVolume: 50,
       sinkVolume: 50,
-      supplyByResource: { weapons: 30, ore: 15, potions: 20 },
-      demandSignals: { weapons: 20, potions: 10 },
-      prices: { ore: 15, weapons: 50, potions: 40 },
-      populationByRole: { Fighter: 80, Crafter: 30, Gatherer: 35, Alchemist: 20, Trader: 10, 'Market Maker': 5 },
-      roleShares: { Fighter: 0.44, Crafter: 0.17, Gatherer: 0.19, Alchemist: 0.11, Trader: 0.06, 'Market Maker': 0.03 },
-      poolSizes: { arena: 500, bank: 200 },
+      supplyByResource: { goodA: 30, materialA: 15, goodB: 20 },
+      demandSignals: { goodA: 20, goodB: 10 },
+      prices: { materialA: 15, goodA: 50, goodB: 40 },
+      populationByRole: { consumer: 80, producer: 30, extractor: 35, refiner: 20, Trader: 10, 'Market Maker': 5 },
+      roleShares: { consumer: 0.44, producer: 0.17, extractor: 0.19, refiner: 0.11, Trader: 0.06, 'Market Maker': 0.03 },
+      poolSizes: { poolA: 500, poolB: 200 },
       totalSupply: 8000,
       blockedAgentCount: 5,
       medianBalance: 40,
       meanBalance: 44,
       meanMedianDivergence: 0.10,
       top10PctShare: 0.35,
-      pinchPoints: { weapons: 'optimal', potions: 'optimal' },
+      pinchPoints: { goodA: 'optimal', goodB: 'optimal' },
     };
 
     const diagnoses = diagnoser.diagnose(m, t);
@@ -87,7 +87,7 @@ describe('Diagnoser', () => {
             severity: 10,
             evidence: {},
             suggestedAction: {
-              parameter: 'craftingCost',
+              parameter: 'productionCost',
               direction: 'increase',
               magnitude: 0.10,
               reasoning: 'test',

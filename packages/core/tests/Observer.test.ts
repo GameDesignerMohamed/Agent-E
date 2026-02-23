@@ -5,18 +5,18 @@ import type { EconomyState } from '../src/types.js';
 function makeState(overrides: Partial<EconomyState> = {}): EconomyState {
   return {
     tick: 10,
-    roles: ['Fighter', 'Crafter', 'Gatherer'],
-    resources: ['ore', 'weapons'],
+    roles: ['consumer', 'producer', 'extractor'],
+    resources: ['materialA', 'goodA'],
     currency: 'gold',
     agentBalances: { a1: 100, a2: 50, a3: 200 },
-    agentRoles: { a1: 'Fighter', a2: 'Crafter', a3: 'Gatherer' },
+    agentRoles: { a1: 'consumer', a2: 'producer', a3: 'extractor' },
     agentInventories: {
-      a1: { weapons: 1, ore: 0 },
-      a2: { weapons: 2, ore: 4 },
-      a3: { ore: 8, wood: 3 },
+      a1: { goodA: 1, materialA: 0 },
+      a2: { goodA: 2, materialA: 4 },
+      a3: { materialA: 8, materialB: 3 },
     },
     agentSatisfaction: { a1: 80, a2: 60, a3: 70 },
-    marketPrices: { ore: 15, wood: 12, weapons: 50, potions: 40 },
+    marketPrices: { materialA: 15, materialB: 12, goodA: 50, goodB: 40 },
     recentTransactions: [],
     ...overrides,
   };
@@ -47,18 +47,18 @@ describe('Observer', () => {
   it('computes role shares correctly', () => {
     const obs = new Observer();
     const m = obs.compute(makeState(), []);
-    expect(m.roleShares['Fighter']).toBeCloseTo(1 / 3);
-    expect(m.roleShares['Crafter']).toBeCloseTo(1 / 3);
-    expect(m.roleShares['Gatherer']).toBeCloseTo(1 / 3);
+    expect(m.roleShares['consumer']).toBeCloseTo(1 / 3);
+    expect(m.roleShares['producer']).toBeCloseTo(1 / 3);
+    expect(m.roleShares['extractor']).toBeCloseTo(1 / 3);
   });
 
   it('computes supply by resource from inventories', () => {
     const obs = new Observer();
     const m = obs.compute(makeState(), []);
-    // a1: weapons 1, a2: weapons 2 + ore 4, a3: ore 8 + wood 3
-    expect(m.supplyByResource['weapons']).toBe(3); // 1 + 2
-    expect(m.supplyByResource['ore']).toBe(12);    // 4 + 8
-    expect(m.supplyByResource['wood']).toBe(3);
+    // a1: goodA 1, a2: goodA 2 + materialA 4, a3: materialA 8 + materialB 3
+    expect(m.supplyByResource['goodA']).toBe(3); // 1 + 2
+    expect(m.supplyByResource['materialA']).toBe(12);    // 4 + 8
+    expect(m.supplyByResource['materialB']).toBe(3);
   });
 
   it('computes avg satisfaction', () => {
@@ -90,12 +90,12 @@ describe('Observer', () => {
   it('supports custom metrics', () => {
     const obs = new Observer();
     obs.registerCustomMetric('weaponDeficit', (state) => {
-      const fighters = Object.values(state.agentRoles).filter(r => r === 'Fighter').length;
-      const weapons = Object.values(state.agentInventories)
-        .reduce((s, inv) => s + (inv['weapons'] ?? 0), 0);
-      return fighters - weapons;
+      const consumers = Object.values(state.agentRoles).filter(r => r === 'consumer').length;
+      const goodA = Object.values(state.agentInventories)
+        .reduce((s, inv) => s + (inv['goodA'] ?? 0), 0);
+      return consumers - goodA;
     });
     const m = obs.compute(makeState(), []);
-    expect(m.custom['weaponDeficit']).toBe(1 - 3); // 1 fighter, 3 weapons
+    expect(m.custom['weaponDeficit']).toBe(1 - 3); // 1 consumer, 3 goodA
   });
 });

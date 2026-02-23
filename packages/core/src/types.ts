@@ -346,8 +346,8 @@ export interface Thresholds {
   cooldownTicks: number;
 
   // Currency (P13)
-  arenaWinRate: number;
-  arenaHouseCut: number;
+  poolWinRate: number;              // generic: win rate for competitive pools
+  poolHouseCut: number;             // generic: house cut for competitive pools
 
   // Population balance (P9)
   roleSwitchFrictionMax: number;
@@ -383,17 +383,33 @@ export interface Thresholds {
   disposalTradeWeightDiscount: number;    // P60: multiplier applied to disposal-trade price signals (0–1)
 }
 
+// ── Tick Configuration ───────────────────────────────────────────────────────
+
+export interface TickConfig {
+  /** How many real-world units one tick represents. Default: 1 */
+  duration: number;
+  /** The unit of time. Default: 'tick' (abstract). Examples: 'second', 'minute', 'block', 'frame' */
+  unit: string;
+  /** Medium-resolution metric window in ticks. Default: 10 */
+  mediumWindow?: number;
+  /** Coarse-resolution metric window in ticks. Default: 100 */
+  coarseWindow?: number;
+}
+
 // ── AgentE Config ─────────────────────────────────────────────────────────────
 
 export type AgentEMode = 'autonomous' | 'advisor';
 
 export interface AgentEConfig {
-  adapter: EconomyAdapter | 'game' | 'defi' | 'marketplace';
+  adapter: EconomyAdapter;
   mode?: AgentEMode;
 
-  // Economy structure hints (helps grace period + fighter-exempt logic)
-  dominantRoles?: string[];           // roles exempt from population caps (e.g. ['Fighter'])
+  // Economy structure hints
+  dominantRoles?: string[];           // roles exempt from population caps
   idealDistribution?: Record<string, number>;
+
+  // Tick configuration
+  tickConfig?: Partial<TickConfig>;
 
   // Timing
   gracePeriod?: number;               // ticks before first intervention (default 50)
@@ -415,7 +431,7 @@ export interface AgentEConfig {
 // ── Persona Types ─────────────────────────────────────────────────────────────
 
 export type PersonaType =
-  | 'Gamer'
+  | 'Active'
   | 'Trader'
   | 'Collector'
   | 'Speculator'

@@ -11,12 +11,12 @@ import { emptyMetrics } from '../../src/types.js';
 const t = DEFAULT_THRESHOLDS;
 
 describe('P1 — Production Must Match Consumption', () => {
-  it('fires when weapons are scarce but fighters exist', () => {
+  it('fires when goodA is scarce but consumers exist', () => {
     const m = {
       ...emptyMetrics(100),
-      supplyByResource: { weapons: 0, potions: 5 },
-      demandSignals: { weapons: 20 },
-      populationByRole: { Fighter: 50, Crafter: 2 },
+      supplyByResource: { goodA: 0, goodB: 5 },
+      demandSignals: { goodA: 20 },
+      populationByRole: { consumer: 50, producer: 2 },
     };
     const result = P1_ProductionMatchesConsumption.check(m, t);
     expect(result.violated).toBe(true);
@@ -28,9 +28,9 @@ describe('P1 — Production Must Match Consumption', () => {
   it('does not fire when supply meets demand', () => {
     const m = {
       ...emptyMetrics(100),
-      supplyByResource: { weapons: 80 },
-      demandSignals: { weapons: 20 },
-      populationByRole: { Fighter: 20, Crafter: 8 },
+      supplyByResource: { goodA: 80 },
+      demandSignals: { goodA: 20 },
+      populationByRole: { consumer: 20, producer: 8 },
     };
     const result = P1_ProductionMatchesConsumption.check(m, t);
     expect(result.violated).toBe(false);
@@ -38,11 +38,11 @@ describe('P1 — Production Must Match Consumption', () => {
 });
 
 describe('P2 — Closed Loops Need Direct Handoff', () => {
-  it('fires when ore piles up with low velocity', () => {
+  it('fires when materialA piles up with low velocity', () => {
     const m = {
       ...emptyMetrics(100),
-      supplyByResource: { ore: 105 },
-      prices: { ore: 15 },
+      supplyByResource: { materialA: 105 },
+      prices: { materialA: 15 },
       velocity: 1,
     };
     const result = P2_ClosedLoopsNeedDirectHandoff.check(m, t);
@@ -52,8 +52,8 @@ describe('P2 — Closed Loops Need Direct Handoff', () => {
   it('does not fire when velocity is healthy', () => {
     const m = {
       ...emptyMetrics(100),
-      supplyByResource: { ore: 105 },
-      prices: { ore: 15 },
+      supplyByResource: { materialA: 105 },
+      prices: { materialA: 15 },
       velocity: 15,
     };
     const result = P2_ClosedLoopsNeedDirectHandoff.check(m, t);
@@ -62,13 +62,13 @@ describe('P2 — Closed Loops Need Direct Handoff', () => {
 });
 
 describe('P3 — Bootstrap Capital', () => {
-  it('fires at tick 5 when crafters exist but no weapons', () => {
+  it('fires at tick 5 when producers exist but no goodA', () => {
     const m = {
       ...emptyMetrics(5),
       tick: 5,
-      supplyByResource: { weapons: 0 },
-      prices: { ore: 15 },
-      populationByRole: { Crafter: 5, Alchemist: 0 },
+      supplyByResource: { goodA: 0 },
+      prices: { materialA: 15 },
+      populationByRole: { producer: 5, refiner: 0 },
     };
     const result = P3_BootstrapCapitalCoversFirstTransaction.check(m, t);
     expect(result.violated).toBe(true);
@@ -77,13 +77,13 @@ describe('P3 — Bootstrap Capital', () => {
     }
   });
 
-  it('does not fire when weapons exist', () => {
+  it('does not fire when goodA exists', () => {
     const m = {
       ...emptyMetrics(5),
       tick: 5,
-      supplyByResource: { weapons: 10 },
-      prices: { ore: 15 },
-      populationByRole: { Crafter: 5, Alchemist: 0 },
+      supplyByResource: { goodA: 10 },
+      prices: { materialA: 15 },
+      populationByRole: { producer: 5, refiner: 0 },
     };
     const result = P3_BootstrapCapitalCoversFirstTransaction.check(m, t);
     expect(result.violated).toBe(false);
@@ -91,11 +91,12 @@ describe('P3 — Bootstrap Capital', () => {
 });
 
 describe('P4 — Materials Flow Faster Than Cooldown', () => {
-  it('fires when ore backlog is enormous', () => {
+  it('fires when materialA backlog is enormous', () => {
     const m = {
       ...emptyMetrics(50),
-      supplyByResource: { ore: 200, wood: 10 },
-      populationByRole: { Gatherer: 10, Crafter: 5, Alchemist: 3 },
+      totalAgents: 18,
+      supplyByResource: { materialA: 200, materialB: 10 },
+      populationByRole: { extractor: 10, producer: 5, refiner: 3 },
       velocity: 4,
     };
     const result = P4_MaterialsFlowFasterThanCooldown.check(m, t);
@@ -105,11 +106,12 @@ describe('P4 — Materials Flow Faster Than Cooldown', () => {
     }
   });
 
-  it('fires when gatherers are too few relative to producers', () => {
+  it('fires when extractors are too few relative to producers', () => {
     const m = {
       ...emptyMetrics(50),
-      supplyByResource: { ore: 5, wood: 5 },
-      populationByRole: { Gatherer: 1, Crafter: 20, Alchemist: 10 },
+      totalAgents: 31,
+      supplyByResource: { materialA: 5, materialB: 5 },
+      populationByRole: { extractor: 1, producer: 20, refiner: 10 },
       velocity: 2,
     };
     const result = P4_MaterialsFlowFasterThanCooldown.check(m, t);
