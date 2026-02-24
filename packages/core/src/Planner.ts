@@ -59,7 +59,11 @@ export class Planner {
     if (this.activePlanCount >= thresholds.complexityBudgetMax) return null;
 
     // Compute target value
-    const currentValue = currentParams[param] ?? 1.0;
+    // NOTE: currentParams may not have this param yet (first adjustment).
+    // If the action provides absoluteValue, prefer it as baseline.
+    // Otherwise fall back to 1.0 — which is why 'set' actions are preferred
+    // for first-time corrections.
+    const currentValue = currentParams[param] ?? action.absoluteValue ?? 1.0;
     const magnitude = Math.min(action.magnitude ?? 0.10, thresholds.maxAdjustmentPercent);
     let targetValue: number;
 
@@ -111,6 +115,10 @@ export class Planner {
   }
 
   recordRolledBack(_plan: ActionPlan): void {
+    this.activePlanCount = Math.max(0, this.activePlanCount - 1);
+  }
+
+  recordSettled(_plan: ActionPlan): void {
     this.activePlanCount = Math.max(0, this.activePlanCount - 1);
   }
 

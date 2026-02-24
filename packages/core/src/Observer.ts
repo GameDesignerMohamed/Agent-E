@@ -331,7 +331,8 @@ export class Observer {
     for (const [name, fn] of Object.entries(this.customMetricFns)) {
       try {
         custom[name] = fn(state);
-      } catch {
+      } catch (err) {
+        console.warn(`[AgentE] Custom metric '${name}' threw an error:`, err);
         custom[name] = NaN;
       }
     }

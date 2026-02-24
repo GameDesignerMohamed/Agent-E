@@ -26,19 +26,26 @@ export class Executor {
 
   /**
    * Check all active plans for rollback conditions.
-   * Called every tick after metrics are computed.
-   * Returns list of plans that were rolled back.
+   * Returns { rolledBack, settled } — plans that were undone and plans that passed their window.
    */
   async checkRollbacks(
     metrics: EconomyMetrics,
     adapter: EconomyAdapter,
-  ): Promise<ActionPlan[]> {
+  ): Promise<{ rolledBack: ActionPlan[]; settled: ActionPlan[] }> {
     const rolledBack: ActionPlan[] = [];
+    const settled: ActionPlan[] = [];
     const remaining: ActivePlan[] = [];
 
     for (const active of this.activePlans) {
       const { plan, originalValue } = active;
       const rc = plan.rollbackCondition;
+
+      // Hard TTL: evict plans that have been active for too long
+      const maxActiveTicks = 200;
+      if (plan.appliedAt !== undefined && metrics.tick - plan.appliedAt > maxActiveTicks) {
+        settled.push(plan);
+        continue;
+      }
 
       // Not ready to check yet
       if (metrics.tick < rc.checkAfterTick) {
@@ -48,6 +55,17 @@ export class Executor {
 
       // Check rollback condition
       const metricValue = this.getMetricValue(metrics, rc.metric);
+
+      // Fail-safe: if metric is unresolvable, trigger rollback
+      if (Number.isNaN(metricValue)) {
+        console.warn(
+          `[AgentE] Rollback check: metric path '${rc.metric}' resolved to NaN for plan '${plan.id}'. Triggering rollback as fail-safe.`
+        );
+        await adapter.setParam(plan.parameter, originalValue, plan.currency);
+        rolledBack.push(plan);
+        continue;
+      }
+
       const shouldRollback =
         rc.direction === 'below'
           ? metricValue < rc.threshold
@@ -57,12 +75,11 @@ export class Executor {
         // Undo the adjustment
         await adapter.setParam(plan.parameter, originalValue, plan.currency);
         rolledBack.push(plan);
-        // Don't push to remaining — remove from tracking
       } else {
         // Plan has passed its check window — consider it settled
         const settledTick = rc.checkAfterTick + 10;
         if (metrics.tick > settledTick) {
-          // Plan is settled, stop tracking
+          settled.push(plan);
         } else {
           remaining.push(active);
         }
@@ -70,7 +87,7 @@ export class Executor {
     }
 
     this.activePlans = remaining;
-    return rolledBack;
+    return { rolledBack, settled };
   }
 
   private getMetricValue(metrics: EconomyMetrics, metricPath: string): number {

@@ -117,6 +117,7 @@ export class DecisionLog {
       id: `stub_${metrics.tick}`,
       diagnosis,
       parameter: action.parameter,
+      ...(action.currency !== undefined ? { currency: action.currency } : {}),
       currentValue: 1,
       targetValue: 1,
       maxChangePercent: 0,

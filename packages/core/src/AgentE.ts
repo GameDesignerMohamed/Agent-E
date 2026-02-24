@@ -7,6 +7,7 @@ import type {
   EconomyAdapter,
   EconomyState,
   EconomicEvent,
+  EconomyMetrics,
   Principle,
   DecisionEntry,
   ActionPlan,
@@ -145,16 +146,25 @@ export class AgentE {
     this.eventBuffer = [];
 
     // Stage 1: Observe
-    const metrics = this.observer.compute(currentState, events);
+    let metrics: EconomyMetrics;
+    try {
+      metrics = this.observer.compute(currentState, events);
+    } catch (err) {
+      console.error(`[AgentE] Observer.compute() failed at tick ${currentState.tick}:`, err);
+      return; // skip this tick, don't crash the loop
+    }
     this.store.record(metrics);
     this.personaTracker.update(currentState);
     metrics.personaDistribution = this.personaTracker.getDistribution();
 
     // Check rollbacks on active plans
-    const rolledBack = await this.executor.checkRollbacks(metrics, this.adapter);
+    const { rolledBack, settled } = await this.executor.checkRollbacks(metrics, this.adapter);
     for (const plan of rolledBack) {
       this.planner.recordRolledBack(plan);
       this.emit('rollback', plan, 'rollback condition triggered');
+    }
+    for (const plan of settled) {
+      this.planner.recordSettled(plan);
     }
 
     // Grace period — no interventions
