@@ -23,27 +23,46 @@ export function createWebSocketHandler(
 ): () => void {
   const wss = new WebSocketServer({ server: httpServer });
 
-  // Heartbeat: ping every 30s
+  // Heartbeat: ping every 30s, disconnect if no pong within 10s
+  const aliveMap = new WeakMap<WebSocket, boolean>();
+
   const heartbeatInterval = setInterval(() => {
     for (const ws of wss.clients) {
       if (ws.readyState === WebSocket.OPEN) {
+        if (aliveMap.get(ws) === false) {
+          // No pong received since last ping — terminate
+          ws.terminate();
+          continue;
+        }
+        aliveMap.set(ws, false);
         ws.ping();
       }
     }
   }, 30_000);
 
   wss.on('connection', (ws) => {
+    console.log('[AgentE Server] Client connected');
+    aliveMap.set(ws, true);
+
+    ws.on('pong', () => {
+      aliveMap.set(ws, true);
+    });
+
+    ws.on('close', () => {
+      console.log('[AgentE Server] Client disconnected');
+    });
+
     ws.on('message', async (raw) => {
       let msg: IncomingMessage;
       try {
         msg = JSON.parse(raw.toString()) as IncomingMessage;
       } catch {
-        send(ws, { type: 'error', error: 'Invalid JSON' });
+        send(ws, { type: 'error', message: 'Malformed JSON' });
         return;
       }
 
       if (!msg.type || typeof msg.type !== 'string') {
-        send(ws, { type: 'error', error: 'Missing "type" field' });
+        send(ws, { type: 'error', message: 'Missing "type" field' });
         return;
       }
 
@@ -52,19 +71,17 @@ export function createWebSocketHandler(
           const state = msg['state'];
           const events = msg['events'];
 
-          const validation = validateEconomyState(state);
-          if (!validation.valid) {
-            send(ws, { type: 'validation_error', validation });
-            // Also send individual warnings
-            for (const w of validation.warnings) {
-              send(ws, { type: 'validation_warning', warning: w });
+          if (server.validateState) {
+            const validation = validateEconomyState(state);
+            if (!validation.valid) {
+              send(ws, { type: 'validation_error', validationErrors: validation.errors });
+              return;
             }
-            return;
-          }
 
-          // Forward warnings even if valid
-          for (const w of validation.warnings) {
-            send(ws, { type: 'validation_warning', warning: w });
+            // Forward warnings even if valid
+            if (validation.warnings.length > 0) {
+              send(ws, { type: 'validation_warning', validationWarnings: validation.warnings });
+            }
           }
 
           try {
@@ -77,22 +94,16 @@ export function createWebSocketHandler(
               type: 'tick_result',
               adjustments: result.adjustments,
               alerts: result.alerts.map(a => ({
-                principle: a.principle.id,
-                name: a.principle.name,
+                principleId: a.principle.id,
+                principleName: a.principle.name,
                 severity: a.violation.severity,
-                suggestedAction: a.violation.suggestedAction,
+                reasoning: a.violation.suggestedAction.reasoning,
               })),
               health: result.health,
-              decisions: result.decisions.map(d => ({
-                id: d.id,
-                tick: d.tick,
-                principle: d.diagnosis.principle.id,
-                parameter: d.plan.parameter,
-                result: d.result,
-              })),
+              tick: result.tick,
             });
           } catch (err) {
-            send(ws, { type: 'error', error: 'Tick processing failed' });
+            send(ws, { type: 'error', message: 'Tick processing failed' });
           }
           break;
         }
@@ -103,7 +114,7 @@ export function createWebSocketHandler(
             server.getAgentE().ingest(event);
             send(ws, { type: 'event_ack' });
           } else {
-            send(ws, { type: 'error', error: 'Missing "event" field' });
+            send(ws, { type: 'error', message: 'Missing "event" field' });
           }
           break;
         }
@@ -123,10 +134,13 @@ export function createWebSocketHandler(
 
         case 'diagnose': {
           const state = msg['state'];
-          const validation = validateEconomyState(state);
-          if (!validation.valid) {
-            send(ws, { type: 'validation_error', validation });
-            return;
+
+          if (server.validateState) {
+            const validation = validateEconomyState(state);
+            if (!validation.valid) {
+              send(ws, { type: 'validation_error', validationErrors: validation.errors });
+              return;
+            }
           }
 
           const result = server.diagnoseOnly(state as EconomyState);
@@ -134,8 +148,8 @@ export function createWebSocketHandler(
             type: 'diagnose_result',
             health: result.health,
             diagnoses: result.diagnoses.map(d => ({
-              principle: d.principle.id,
-              name: d.principle.name,
+              principleId: d.principle.id,
+              principleName: d.principle.name,
               severity: d.violation.severity,
               suggestedAction: d.violation.suggestedAction,
             })),
@@ -144,7 +158,7 @@ export function createWebSocketHandler(
         }
 
         default:
-          send(ws, { type: 'error', error: `Unknown message type: "${msg.type}"` });
+          send(ws, { type: 'error', message: `Unknown message type: "${msg.type}"` });
       }
     });
   });

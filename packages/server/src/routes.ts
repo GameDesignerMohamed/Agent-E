@@ -5,14 +5,14 @@ import type * as http from 'node:http';
 import { validateEconomyState } from '@agent-e/core';
 import type { AgentEServer } from './AgentEServer.js';
 
-function setCorsHeaders(res: http.ServerResponse): void {
-  res.setHeader('Access-Control-Allow-Origin', '*');
+function setCorsHeaders(res: http.ServerResponse, origin: string): void {
+  res.setHeader('Access-Control-Allow-Origin', origin);
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 }
 
-function json(res: http.ServerResponse, status: number, data: unknown): void {
-  setCorsHeaders(res);
+function json(res: http.ServerResponse, status: number, data: unknown, origin: string): void {
+  setCorsHeaders(res, origin);
   res.writeHead(status, { 'Content-Type': 'application/json' });
   res.end(JSON.stringify(data));
 }
@@ -40,6 +40,8 @@ function readBody(req: http.IncomingMessage): Promise<string> {
 export function createRouteHandler(
   server: AgentEServer,
 ): (req: http.IncomingMessage, res: http.ServerResponse) => void {
+  const cors = server.corsOrigin;
+
   return async (req, res) => {
     const url = new URL(req.url ?? '/', `http://${req.headers.host ?? 'localhost'}`);
     const path = url.pathname;
@@ -47,7 +49,7 @@ export function createRouteHandler(
 
     // CORS preflight
     if (method === 'OPTIONS') {
-      setCorsHeaders(res);
+      setCorsHeaders(res, cors);
       res.writeHead(204);
       res.end();
       return;
@@ -61,12 +63,12 @@ export function createRouteHandler(
         try {
           parsed = JSON.parse(body);
         } catch {
-          json(res, 400, { error: 'Invalid JSON' });
+          json(res, 400, { error: 'Invalid JSON' }, cors);
           return;
         }
 
         if (!parsed || typeof parsed !== 'object') {
-          json(res, 400, { error: 'Body must be a JSON object' });
+          json(res, 400, { error: 'Body must be a JSON object' }, cors);
           return;
         }
 
@@ -74,14 +76,16 @@ export function createRouteHandler(
         const state = payload['state'] ?? parsed;
         const events = payload['events'];
 
-        // Validate state
-        const validation = validateEconomyState(state);
-        if (!validation.valid) {
-          json(res, 400, {
-            error: 'Invalid state',
-            validation,
-          });
-          return;
+        // Validate state (if enabled)
+        if (server.validateState) {
+          const validation = validateEconomyState(state);
+          if (!validation.valid) {
+            json(res, 400, {
+              error: 'invalid_state',
+              validationErrors: validation.errors,
+            }, cors);
+            return;
+          }
         }
 
         const result = await server.processTick(
@@ -89,25 +93,24 @@ export function createRouteHandler(
           Array.isArray(events) ? events as import('@agent-e/core').EconomicEvent[] : undefined,
         );
 
+        // Include validation warnings if any
+        const warnings = server.validateState
+          ? validateEconomyState(state).warnings
+          : [];
+
         json(res, 200, {
           adjustments: result.adjustments,
           alerts: result.alerts.map(a => ({
-            principle: a.principle.id,
-            name: a.principle.name,
+            principleId: a.principle.id,
+            principleName: a.principle.name,
             severity: a.violation.severity,
             evidence: a.violation.evidence,
-            suggestedAction: a.violation.suggestedAction,
+            reasoning: a.violation.suggestedAction.reasoning,
           })),
           health: result.health,
-          decisions: result.decisions.map(d => ({
-            id: d.id,
-            tick: d.tick,
-            principle: d.diagnosis.principle.id,
-            parameter: d.plan.parameter,
-            result: d.result,
-            reasoning: d.reasoning,
-          })),
-        });
+          tick: result.tick,
+          ...(warnings.length > 0 ? { validationWarnings: warnings } : {}),
+        }, cors);
         return;
       }
 
@@ -120,13 +123,13 @@ export function createRouteHandler(
           mode: agentE.getMode(),
           activePlans: agentE.getActivePlans().length,
           uptime: server.getUptime(),
-        });
+        }, cors);
         return;
       }
 
       // GET /decisions — decision log with optional ?limit and ?since
       if (path === '/decisions' && method === 'GET') {
-        const limit = parseInt(url.searchParams.get('limit') ?? '50', 10);
+        const limit = parseInt(url.searchParams.get('limit') ?? '100', 10);
         const since = url.searchParams.get('since');
         const agentE = server.getAgentE();
 
@@ -137,61 +140,58 @@ export function createRouteHandler(
           decisions = agentE.log.latest(limit);
         }
 
-        json(res, 200, {
-          decisions: decisions.map(d => ({
-            id: d.id,
-            tick: d.tick,
-            timestamp: d.timestamp,
-            principle: d.diagnosis.principle.id,
-            principeName: d.diagnosis.principle.name,
-            parameter: d.plan.parameter,
-            currentValue: d.plan.currentValue,
-            targetValue: d.plan.targetValue,
-            result: d.result,
-            reasoning: d.reasoning,
-          })),
-        });
+        json(res, 200, { decisions }, cors);
         return;
       }
 
-      // POST /config — lock/unlock/constrain/mode
+      // POST /config — batch lock/unlock/constrain/mode
       if (path === '/config' && method === 'POST') {
         const body = await readBody(req);
         let parsed: unknown;
         try {
           parsed = JSON.parse(body);
         } catch {
-          json(res, 400, { error: 'Invalid JSON' });
+          json(res, 400, { error: 'Invalid JSON' }, cors);
           return;
         }
 
         const config = parsed as Record<string, unknown>;
 
-        if (config['action'] === 'lock' && typeof config['param'] === 'string') {
-          server.lock(config['param']);
-          json(res, 200, { ok: true, action: 'lock', param: config['param'] });
-        } else if (config['action'] === 'unlock' && typeof config['param'] === 'string') {
-          server.unlock(config['param']);
-          json(res, 200, { ok: true, action: 'unlock', param: config['param'] });
-        } else if (
-          config['action'] === 'constrain' &&
-          typeof config['param'] === 'string' &&
-          typeof config['min'] === 'number' &&
-          typeof config['max'] === 'number'
-        ) {
-          server.constrain(config['param'], { min: config['min'], max: config['max'] });
-          json(res, 200, { ok: true, action: 'constrain', param: config['param'] });
-        } else if (
-          config['action'] === 'mode' &&
-          (config['mode'] === 'autonomous' || config['mode'] === 'advisor')
-        ) {
-          server.setMode(config['mode']);
-          json(res, 200, { ok: true, action: 'mode', mode: config['mode'] });
-        } else {
-          json(res, 400, {
-            error: 'Invalid config action. Use: lock, unlock, constrain, or mode',
-          });
+        // Lock parameters
+        if (Array.isArray(config['lock'])) {
+          for (const param of config['lock']) {
+            if (typeof param === 'string') server.lock(param);
+          }
         }
+
+        // Unlock parameters
+        if (Array.isArray(config['unlock'])) {
+          for (const param of config['unlock']) {
+            if (typeof param === 'string') server.unlock(param);
+          }
+        }
+
+        // Constrain parameters
+        if (Array.isArray(config['constrain'])) {
+          for (const c of config['constrain'] as unknown[]) {
+            if (
+              c && typeof c === 'object' &&
+              typeof (c as Record<string, unknown>)['param'] === 'string' &&
+              typeof (c as Record<string, unknown>)['min'] === 'number' &&
+              typeof (c as Record<string, unknown>)['max'] === 'number'
+            ) {
+              const constraint = c as { param: string; min: number; max: number };
+              server.constrain(constraint.param, { min: constraint.min, max: constraint.max });
+            }
+          }
+        }
+
+        // Mode switch
+        if (config['mode'] === 'autonomous' || config['mode'] === 'advisor') {
+          server.setMode(config['mode']);
+        }
+
+        json(res, 200, { ok: true }, cors);
         return;
       }
 
@@ -206,7 +206,7 @@ export function createRouteHandler(
             category: p.category,
             description: p.description,
           })),
-        });
+        }, cors);
         return;
       }
 
@@ -217,17 +217,19 @@ export function createRouteHandler(
         try {
           parsed = JSON.parse(body);
         } catch {
-          json(res, 400, { error: 'Invalid JSON' });
+          json(res, 400, { error: 'Invalid JSON' }, cors);
           return;
         }
 
         const payload = parsed as Record<string, unknown>;
         const state = payload['state'] ?? parsed;
 
-        const validation = validateEconomyState(state);
-        if (!validation.valid) {
-          json(res, 400, { error: 'Invalid state', validation });
-          return;
+        if (server.validateState) {
+          const validation = validateEconomyState(state);
+          if (!validation.valid) {
+            json(res, 400, { error: 'invalid_state', validationErrors: validation.errors }, cors);
+            return;
+          }
         }
 
         const result = server.diagnoseOnly(state as import('@agent-e/core').EconomyState);
@@ -235,21 +237,21 @@ export function createRouteHandler(
         json(res, 200, {
           health: result.health,
           diagnoses: result.diagnoses.map(d => ({
-            principle: d.principle.id,
-            name: d.principle.name,
+            principleId: d.principle.id,
+            principleName: d.principle.name,
             severity: d.violation.severity,
             evidence: d.violation.evidence,
             suggestedAction: d.violation.suggestedAction,
           })),
-        });
+        }, cors);
         return;
       }
 
       // 404
-      json(res, 404, { error: 'Not found' });
+      json(res, 404, { error: 'Not found' }, cors);
     } catch (err) {
       console.error('[AgentE Server] Unhandled route error:', err);
-      json(res, 500, { error: 'Internal server error' });
+      json(res, 500, { error: 'Internal server error' }, cors);
     }
   };
 }

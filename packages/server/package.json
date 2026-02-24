@@ -1,7 +1,13 @@
 {
   "name": "@agent-e/server",
-  "version": "1.4.1",
-  "description": "Plug-and-play HTTP + WebSocket server for AgentE",
+  "version": "1.4.4",
+  "description": "Ready-to-run HTTP + WebSocket server for AgentE",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/AE-Vault/AgentE-v0.git",
+    "directory": "packages/server"
+  },
   "main": "./dist/index.js",
   "module": "./dist/index.mjs",
   "types": "./dist/index.d.ts",
@@ -12,10 +18,25 @@
       "require": "./dist/index.js"
     }
   },
-  "files": ["dist"],
+  "bin": {
+    "agent-e-server": "./dist/cli.js"
+  },
+  "files": ["dist", "README.md"],
   "scripts": {
     "build": "tsup",
-    "dev": "tsup --watch"
+    "dev": "tsup --watch",
+    "start": "node dist/cli.js"
+  },
+  "keywords": [
+    "economy",
+    "balancer",
+    "game-economy",
+    "server",
+    "websocket",
+    "autonomous"
+  ],
+  "publishConfig": {
+    "access": "public"
   },
   "dependencies": {
     "@agent-e/core": "*",

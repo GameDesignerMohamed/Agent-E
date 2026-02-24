@@ -29,7 +29,7 @@ function validState(tick = 100) {
 beforeAll(async () => {
   server = new AgentEServer({
     port: 0, // random port
-    agentEConfig: {
+    agentE: {
       gracePeriod: 0,
       checkInterval: 1,
     },
@@ -57,10 +57,12 @@ describe('HTTP: POST /tick', () => {
     expect(data).toHaveProperty('adjustments');
     expect(data).toHaveProperty('health');
     expect(data).toHaveProperty('alerts');
+    expect(data).toHaveProperty('tick');
     expect(typeof data.health).toBe('number');
+    expect(typeof data.tick).toBe('number');
   });
 
-  it('returns 400 for invalid state', async () => {
+  it('returns 400 with validationErrors for invalid state', async () => {
     const res = await fetch(`${baseUrl}/tick`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -68,8 +70,9 @@ describe('HTTP: POST /tick', () => {
     });
     expect(res.status).toBe(400);
     const data = await res.json();
-    expect(data).toHaveProperty('error');
-    expect(data).toHaveProperty('validation');
+    expect(data.error).toBe('invalid_state');
+    expect(data).toHaveProperty('validationErrors');
+    expect(Array.isArray(data.validationErrors)).toBe(true);
   });
 
   it('healthy economy returns empty adjustments', async () => {
@@ -96,6 +99,8 @@ describe('HTTP: GET /health', () => {
     expect(data).toHaveProperty('health');
     expect(data).toHaveProperty('uptime');
     expect(data).toHaveProperty('mode');
+    expect(data).toHaveProperty('tick');
+    expect(data).toHaveProperty('activePlans');
     expect(typeof data.uptime).toBe('number');
   });
 });
@@ -111,16 +116,15 @@ describe('HTTP: GET /decisions', () => {
 });
 
 describe('HTTP: POST /config', () => {
-  it('locks a parameter', async () => {
+  it('locks parameters via batch config', async () => {
     const res = await fetch(`${baseUrl}/config`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ action: 'lock', param: 'craftingCost' }),
+      body: JSON.stringify({ lock: ['craftingCost'] }),
     });
     expect(res.status).toBe(200);
     const data = await res.json();
     expect(data.ok).toBe(true);
-    expect(data.action).toBe('lock');
   });
 });
 
@@ -147,6 +151,12 @@ describe('HTTP: POST /diagnose', () => {
     expect(data).toHaveProperty('health');
     expect(data).toHaveProperty('diagnoses');
     expect(Array.isArray(data.diagnoses)).toBe(true);
+    // Verify field names match spec
+    if (data.diagnoses.length > 0) {
+      expect(data.diagnoses[0]).toHaveProperty('principleId');
+      expect(data.diagnoses[0]).toHaveProperty('principleName');
+      expect(data.diagnoses[0]).toHaveProperty('severity');
+    }
   });
 });
 
@@ -187,6 +197,7 @@ describe('WebSocket', () => {
     expect(response['type']).toBe('tick_result');
     expect(response).toHaveProperty('adjustments');
     expect(response).toHaveProperty('health');
+    expect(response).toHaveProperty('tick');
     ws.close();
   });
 
@@ -199,20 +210,23 @@ describe('WebSocket', () => {
     ws.close();
   });
 
-  it('returns error for malformed message', async () => {
+  it('returns error with message field for malformed input', async () => {
     const ws = await connectWs();
     const response = await sendAndReceive(ws, { notType: 'hello' });
     expect(response['type']).toBe('error');
+    expect(response).toHaveProperty('message');
     ws.close();
   });
 
-  it('returns validation_error for invalid state', async () => {
+  it('returns validation_error with validationErrors for invalid state', async () => {
     const ws = await connectWs();
     const response = await sendAndReceive(ws, {
       type: 'tick',
       state: { tick: -1 },
     });
     expect(response['type']).toBe('validation_error');
+    expect(response).toHaveProperty('validationErrors');
+    expect(Array.isArray(response['validationErrors'])).toBe(true);
     ws.close();
   });
 });

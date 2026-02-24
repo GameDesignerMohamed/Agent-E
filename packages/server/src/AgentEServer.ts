@@ -17,7 +17,16 @@ import { createWebSocketHandler } from './websocket.js';
 export interface ServerConfig {
   port?: number;
   host?: string;
-  agentEConfig?: Partial<Omit<AgentEConfig, 'adapter'>>;
+  agentE?: Partial<Omit<AgentEConfig, 'adapter'>>;
+  validateState?: boolean;
+  corsOrigin?: string;
+}
+
+export interface EnrichedAdjustment {
+  parameter: string;
+  value: number;
+  currency?: string;
+  reasoning: string;
 }
 
 interface QueuedAdjustment {
@@ -32,14 +41,18 @@ export class AgentEServer {
   private lastState: EconomyState | null = null;
   private adjustmentQueue: QueuedAdjustment[] = [];
   private alerts: Diagnosis[] = [];
-  private readonly port: number;
+  readonly port: number;
   private readonly host: string;
   private readonly startedAt = Date.now();
   private cleanupWs: (() => void) | null = null;
+  readonly validateState: boolean;
+  readonly corsOrigin: string;
 
   constructor(config: ServerConfig = {}) {
-    this.port = config.port ?? 3000;
+    this.port = config.port ?? 3100;
     this.host = config.host ?? '0.0.0.0';
+    this.validateState = config.validateState ?? true;
+    this.corsOrigin = config.corsOrigin ?? '*';
 
     // Build a "remote" adapter — state comes from HTTP/WS, not polled
     const adapter: EconomyAdapter = {
@@ -64,16 +77,17 @@ export class AgentEServer {
       },
     };
 
+    const agentECfg = config.agentE ?? {};
     const agentEConfig: AgentEConfig = {
       adapter,
-      mode: config.agentEConfig?.mode ?? 'autonomous',
-      gracePeriod: config.agentEConfig?.gracePeriod ?? 0,
-      checkInterval: config.agentEConfig?.checkInterval ?? 1,
-      ...(config.agentEConfig?.dominantRoles ? { dominantRoles: config.agentEConfig.dominantRoles } : {}),
-      ...(config.agentEConfig?.idealDistribution ? { idealDistribution: config.agentEConfig.idealDistribution } : {}),
-      ...(config.agentEConfig?.maxAdjustmentPercent !== undefined ? { maxAdjustmentPercent: config.agentEConfig.maxAdjustmentPercent } : {}),
-      ...(config.agentEConfig?.cooldownTicks !== undefined ? { cooldownTicks: config.agentEConfig.cooldownTicks } : {}),
-      ...(config.agentEConfig?.thresholds ? { thresholds: config.agentEConfig.thresholds } : {}),
+      mode: agentECfg.mode ?? 'autonomous',
+      gracePeriod: agentECfg.gracePeriod ?? 0,
+      checkInterval: agentECfg.checkInterval ?? 1,
+      ...(agentECfg.dominantRoles ? { dominantRoles: agentECfg.dominantRoles } : {}),
+      ...(agentECfg.idealDistribution ? { idealDistribution: agentECfg.idealDistribution } : {}),
+      ...(agentECfg.maxAdjustmentPercent !== undefined ? { maxAdjustmentPercent: agentECfg.maxAdjustmentPercent } : {}),
+      ...(agentECfg.cooldownTicks !== undefined ? { cooldownTicks: agentECfg.cooldownTicks } : {}),
+      ...(agentECfg.thresholds ? { thresholds: agentECfg.thresholds } : {}),
     };
 
     this.agentE = new AgentE(agentEConfig);
@@ -96,6 +110,8 @@ export class AgentEServer {
 
     return new Promise((resolve) => {
       this.server.listen(this.port, this.host, () => {
+        const addr = this.getAddress();
+        console.log(`[AgentE Server] Listening on http://${addr.host}:${addr.port}`);
         resolve();
       });
     });
@@ -134,16 +150,17 @@ export class AgentEServer {
    * 2. Set state
    * 3. Ingest events
    * 4. Run agentE.tick(state)
-   * 5. Drain adjustment queue
+   * 5. Drain adjustment queue, enrich with reasoning from decisions
    * 6. Return response
    */
   async processTick(
     state: EconomyState,
     events?: EconomicEvent[],
   ): Promise<{
-    adjustments: QueuedAdjustment[];
+    adjustments: EnrichedAdjustment[];
     alerts: Diagnosis[];
     health: number;
+    tick: number;
     decisions: ReturnType<AgentE['getDecisions']>;
   }> {
     // Clear queues
@@ -164,16 +181,29 @@ export class AgentEServer {
     await this.agentE.tick(state);
 
     // Drain adjustments
-    const adjustments = [...this.adjustmentQueue];
+    const rawAdj = [...this.adjustmentQueue];
     this.adjustmentQueue = [];
 
-    // Cross-reference with decision log
+    // Cross-reference with decision log to attach reasoning
     const decisions = this.agentE.getDecisions({ since: state.tick, until: state.tick });
+
+    const adjustments: EnrichedAdjustment[] = rawAdj.map(adj => {
+      const decision = decisions.find(d =>
+        d.plan.parameter === adj.key && d.result === 'applied',
+      );
+      return {
+        parameter: adj.key,
+        value: adj.value,
+        ...(adj.currency ? { currency: adj.currency } : {}),
+        reasoning: decision?.diagnosis.violation.suggestedAction.reasoning ?? '',
+      };
+    });
 
     return {
       adjustments,
       alerts: [...this.alerts],
       health: this.agentE.getHealth(),
+      tick: state.tick,
       decisions,
     };
   }
@@ -189,10 +219,8 @@ export class AgentEServer {
     const prevState = this.lastState;
     this.lastState = state;
 
-    // Run diagnosis without ticking
-    const diagnoser = this.agentE;
-    const diagnoses = diagnoser.diagnoseNow();
-    const health = diagnoser.getHealth();
+    const diagnoses = this.agentE.diagnoseNow();
+    const health = this.agentE.getHealth();
 
     this.lastState = prevState;
     return { diagnoses, health };

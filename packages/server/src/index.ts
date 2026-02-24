@@ -1,5 +1,5 @@
 export { AgentEServer } from './AgentEServer.js';
-export type { ServerConfig } from './AgentEServer.js';
+export type { ServerConfig, EnrichedAdjustment } from './AgentEServer.js';
 
 /**
  * Quick-start helper — creates and starts an AgentE server.
@@ -7,7 +7,7 @@ export type { ServerConfig } from './AgentEServer.js';
  * @example
  * ```ts
  * import { startServer } from '@agent-e/server';
- * const server = await startServer({ port: 3000 });
+ * const server = await startServer({ port: 3100 });
  * // POST /tick, GET /health, etc.
  * ```
  */
