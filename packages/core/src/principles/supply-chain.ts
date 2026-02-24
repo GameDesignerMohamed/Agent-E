@@ -40,7 +40,7 @@ export const P1_ProductionMatchesConsumption: Principle = {
         severity: 7,
         evidence: { scarceResources: violations, dominantRole: dominantRole?.[0], dominantShare },
         suggestedAction: {
-          parameter: 'productionCost',
+          parameterType: 'cost',
           direction: 'decrease',
           magnitude: 0.15,
           reasoning: 'Lower production cost to incentivise more production.',
@@ -87,7 +87,8 @@ export const P2_ClosedLoopsNeedDirectHandoff: Principle = {
         severity: 5,
         evidence: { backlogResources, velocity },
         suggestedAction: {
-          parameter: 'transactionFee',
+          parameterType: 'fee',
+          scope: { tags: ['transaction'] },
           direction: 'increase',
           magnitude: 0.20,
           reasoning:
@@ -130,7 +131,7 @@ export const P3_BootstrapCapitalCoversFirstTransaction: Principle = {
               severity: 8,
               evidence: { resource, totalProducers, supply },
               suggestedAction: {
-                parameter: 'productionCost',
+                parameterType: 'cost',
                 direction: 'decrease',
                 magnitude: 0.30,
                 reasoning:
@@ -155,7 +156,7 @@ export const P4_MaterialsFlowFasterThanCooldown: Principle = {
   category: 'supply_chain',
   description:
     'Input delivery rate must exceed or match production cooldown rate. ' +
-    'If producers craft every 5 ticks but only receive raw materials every 10 ticks, ' +
+    'If producers produce every 5 ticks but only receive raw materials every 10 ticks, ' +
     'they starve regardless of supply levels.',
   check(metrics, _thresholds): PrincipleResult {
     const { supplyByResource, populationByRole, velocity, totalAgents } = metrics;
@@ -175,7 +176,7 @@ export const P4_MaterialsFlowFasterThanCooldown: Principle = {
         severity: 5,
         evidence: { avgSupplyPerAgent, velocity, totalRoles },
         suggestedAction: {
-          parameter: 'yieldRate',
+          parameterType: 'yield',
           direction: 'increase',
           magnitude: 0.15,
           reasoning: 'Low supply per agent with stagnant velocity. Increase yield to compensate.',
@@ -192,7 +193,7 @@ export const P4_MaterialsFlowFasterThanCooldown: Principle = {
         severity: 4,
         evidence: { avgSupplyPerAgent, totalSupply, totalAgents },
         suggestedAction: {
-          parameter: 'yieldRate',
+          parameterType: 'yield',
           direction: 'decrease',
           magnitude: 0.20,
           reasoning: 'Raw materials piling up. Extractors outpacing producers.',
@@ -227,7 +228,7 @@ export const P60_SurplusDisposalAsymmetry: Principle = {
           discount: thresholds.disposalTradeWeightDiscount,
         },
         suggestedAction: {
-          parameter: 'productionCost',
+          parameterType: 'cost',
           direction: 'decrease',
           magnitude: 0.10,
           reasoning:

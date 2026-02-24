@@ -9,6 +9,8 @@ export { Executor } from './Executor.js';
 export { DecisionLog } from './DecisionLog.js';
 export { MetricStore } from './MetricStore.js';
 export { PersonaTracker } from './PersonaTracker.js';
+export { ParameterRegistry } from './ParameterRegistry.js';
+export type { ParameterType, FlowImpact, ParameterScope, RegisteredParameter } from './ParameterRegistry.js';
 export { validateEconomyState } from './StateValidator.js';
 export type { ValidationError, ValidationWarning, ValidationResult } from './StateValidator.js';
 export { DEFAULT_THRESHOLDS, PERSONA_HEALTHY_RANGES } from './defaults.js';

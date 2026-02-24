@@ -1,11 +1,11 @@
-// P33, P37, P45, P50: Player Experience Principles
+// P33, P37, P45, P50: Participant Experience Principles
 
 import type { Principle, PrincipleResult } from '../types.js';
 
 export const P33_FairNotEqual: Principle = {
   id: 'P33',
   name: 'Fair ≠ Equal',
-  category: 'player_experience',
+  category: 'participant_experience',
   description:
     'Gini = 0 is boring — everyone has the same and there is nothing to strive for. ' +
     'Healthy inequality from skill/effort is fine. Inequality from money (pay-to-win) ' +
@@ -20,9 +20,9 @@ export const P33_FairNotEqual: Principle = {
           severity: 3,
           evidence: { currency: curr, giniCoefficient },
           suggestedAction: {
-            parameter: 'rewardRate',
+            parameterType: 'reward',
             direction: 'increase',
-            currency: curr,
+            scope: { currency: curr },
             magnitude: 0.10,
             reasoning:
               `[${curr}] Gini ${giniCoefficient.toFixed(2)} — near-perfect equality. Economy lacks stakes. ` +
@@ -39,9 +39,9 @@ export const P33_FairNotEqual: Principle = {
           severity: 7,
           evidence: { currency: curr, giniCoefficient },
           suggestedAction: {
-            parameter: 'transactionFee',
+            parameterType: 'fee',
             direction: 'increase',
-            currency: curr,
+            scope: { tags: ['transaction'], currency: curr },
             magnitude: 0.20,
             reasoning:
               `[${curr}] Gini ${giniCoefficient.toFixed(2)} — oligarchy level. Toxic inequality. ` +
@@ -58,9 +58,9 @@ export const P33_FairNotEqual: Principle = {
           severity: 4,
           evidence: { currency: curr, giniCoefficient },
           suggestedAction: {
-            parameter: 'transactionFee',
+            parameterType: 'fee',
             direction: 'increase',
-            currency: curr,
+            scope: { tags: ['transaction'], currency: curr },
             magnitude: 0.10,
             reasoning:
               `[${curr}] Gini ${giniCoefficient.toFixed(2)} — high inequality warning. ` +
@@ -78,33 +78,33 @@ export const P33_FairNotEqual: Principle = {
 
 export const P36_MechanicFrictionDetector: Principle = {
   id: 'P36',
-  name: 'Mechanic Friction Detector',
-  category: 'player_experience',
+  name: 'Mechanism Friction Detector',
+  category: 'participant_experience',
   description:
     'Deterministic + probabilistic systems → expectation mismatch. ' +
-    'When crafting is guaranteed but combat is random, players feel betrayed by ' +
-    'the random side. Mix mechanics carefully or segregate them entirely.',
+    'When production is guaranteed but competition is random, participants feel betrayed by ' +
+    'the random side. Mix mechanisms carefully or segregate them entirely.',
   check(metrics, _thresholds): PrincipleResult {
     const { avgSatisfaction, churnRate, velocity } = metrics;
 
     // Proxy: High churn despite reasonable economic activity suggests
-    // frustration with mechanic mismatch rather than economic problems
-    // (Activity exists but players leave anyway = not economic, likely mechanic friction)
+    // frustration with mechanism mismatch rather than economic problems
+    // (Activity exists but participants leave anyway = not economic, likely mechanism friction)
     if (churnRate > 0.10 && avgSatisfaction < 50 && velocity > 3) {
       return {
         violated: true,
         severity: 5,
         evidence: { churnRate, avgSatisfaction, velocity },
         suggestedAction: {
-          parameter: 'rewardRate',
+          parameterType: 'reward',
           direction: 'increase',
           magnitude: 0.15,
           reasoning:
             `Churn ${(churnRate * 100).toFixed(1)}% with satisfaction ${avgSatisfaction.toFixed(0)} ` +
             'despite active economy (velocity ' + velocity.toFixed(1) + '). ' +
-            'Suggests mechanic friction (deterministic vs random systems). ' +
+            'Suggests mechanism friction (deterministic vs random systems). ' +
             'Increase rewards to compensate for perceived unfairness. ' +
-            'ADVISORY: Review if mixing guaranteed and probabilistic mechanics.',
+            'ADVISORY: Review if mixing guaranteed and probabilistic mechanisms.',
         },
         confidence: 0.55,
         estimatedLag: 15,
@@ -117,8 +117,8 @@ export const P36_MechanicFrictionDetector: Principle = {
 
 export const P37_LatecommerProblem: Principle = {
   id: 'P37',
-  name: 'Latecomer Problem',
-  category: 'player_experience',
+  name: 'Late Entrant Problem',
+  category: 'participant_experience',
   description:
     'A new participant must reach viability in reasonable time. ' +
     'If all the good roles are saturated and prices are high, ' +
@@ -126,14 +126,14 @@ export const P37_LatecommerProblem: Principle = {
   check(metrics, _thresholds): PrincipleResult {
     const { timeToValue, avgSatisfaction, churnRate } = metrics;
 
-    // High churn + low satisfaction + slow time-to-value = latecomer problem
+    // High churn + low satisfaction + slow time-to-value = late entrant problem
     if (churnRate > 0.08 && avgSatisfaction < 55 && timeToValue > 20) {
       return {
         violated: true,
         severity: 6,
         evidence: { timeToValue, avgSatisfaction, churnRate },
         suggestedAction: {
-          parameter: 'productionCost',
+          parameterType: 'cost',
           direction: 'decrease',
           magnitude: 0.15,
           reasoning:
@@ -153,7 +153,7 @@ export const P37_LatecommerProblem: Principle = {
 export const P45_TimeBudget: Principle = {
   id: 'P45',
   name: 'Time Budget',
-  category: 'player_experience',
+  category: 'participant_experience',
   description:
     'required_time ≤ available_time × 0.8. If the economy requires more engagement ' +
     'than participants can realistically give, it is a disguised paywall. ' +
@@ -172,8 +172,9 @@ export const P45_TimeBudget: Principle = {
         severity: 5,
         evidence: { timeToValue, avgSatisfaction, timeBudgetRatio: thresholds.timeBudgetRatio },
         suggestedAction: {
-          parameter: 'entryFee',
+          parameterType: 'fee',
           direction: 'decrease',
+          scope: { tags: ['entry'] },
           magnitude: 0.15,
           reasoning:
             `Time-to-value ${timeToValue} ticks with ${avgSatisfaction.toFixed(0)} satisfaction. ` +
@@ -191,7 +192,7 @@ export const P45_TimeBudget: Principle = {
 export const P50_PayPowerRatio: Principle = {
   id: 'P50',
   name: 'Pay-Power Ratio',
-  category: 'player_experience',
+  category: 'participant_experience',
   description:
     'spender / non-spender power ratio > 2.0 = pay-to-win territory. ' +
     'Target 1.5 (meaningful advantage without shutting out non-payers). ' +
@@ -213,8 +214,9 @@ export const P50_PayPowerRatio: Principle = {
           threshold: thresholds.payPowerRatioMax,
         },
         suggestedAction: {
-          parameter: 'transactionFee',
+          parameterType: 'fee',
           direction: 'increase',
+          scope: { tags: ['transaction'] },
           magnitude: 0.20,
           reasoning:
             `Top 10% hold ${(top10PctShare * 100).toFixed(0)}% of wealth (Gini ${giniCoefficient.toFixed(2)}). ` +
@@ -230,7 +232,7 @@ export const P50_PayPowerRatio: Principle = {
   },
 };
 
-export const PLAYER_EXPERIENCE_PRINCIPLES: Principle[] = [
+export const PARTICIPANT_EXPERIENCE_PRINCIPLES: Principle[] = [
   P33_FairNotEqual,
   P36_MechanicFrictionDetector,
   P37_LatecommerProblem,

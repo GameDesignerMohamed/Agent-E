@@ -34,7 +34,7 @@ export const P25_CorrectLeversForCorrectProblems: Principle = {
             netFlow
           },
           suggestedAction: {
-            parameter: 'yieldRate',
+            parameterType: 'yield',
             direction: 'decrease',
             magnitude: 0.15,
             reasoning:
@@ -72,7 +72,7 @@ export const P26_ContinuousPressureBeatsThresholdCuts: Principle = {
         severity: 4,
         evidence: { inflationRate },
         suggestedAction: {
-          parameter: 'productionCost',
+          parameterType: 'cost',
           direction: inflationRate > 0 ? 'increase' : 'decrease',
           magnitude: Math.min(thresholds.maxAdjustmentPercent, 0.05), // force smaller step
           reasoning:
@@ -108,7 +108,7 @@ export const P27_AdjustmentsNeedCooldowns: Principle = {
         severity: 4,
         evidence: { churnRate, avgSatisfaction },
         suggestedAction: {
-          parameter: 'entryFee',
+          parameterType: 'fee', scope: { tags: ['entry'] },
           direction: 'decrease',
           magnitude: 0.05,
           reasoning:
@@ -155,7 +155,7 @@ export const P28_StructuralDominanceIsNotPathological: Principle = {
         severity: 5,
         evidence: { dominantRole, dominantShare, avgSatisfaction },
         suggestedAction: {
-          parameter: 'productionCost',
+          parameterType: 'cost',
           direction: 'decrease',
           magnitude: 0.10,
           reasoning:
@@ -178,7 +178,7 @@ export const P38_CommunicationPreventsRevolt: Principle = {
   category: 'regulator',
   description:
     'Every adjustment must be logged with reasoning. ' +
-    'An adjustment made without explanation to players causes revolt. ' +
+    'An adjustment made without explanation to participants causes revolt. ' +
     'AgentE logs every decision — this principle checks that logging is active.',
   check(metrics, _thresholds): PrincipleResult {
     // This is structurally enforced by DecisionLog. As a diagnostic,
@@ -191,7 +191,7 @@ export const P38_CommunicationPreventsRevolt: Principle = {
         severity: 3,
         evidence: { churnRate },
         suggestedAction: {
-          parameter: 'rewardRate',
+          parameterType: 'reward',
           direction: 'increase',
           magnitude: 0.10,
           reasoning:

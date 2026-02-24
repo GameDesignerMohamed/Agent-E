@@ -24,11 +24,11 @@ function makeDiagnosis(currency?: string): Diagnosis {
       severity: 5,
       evidence: { currency: currency ?? 'gold' },
       suggestedAction: {
-        parameter: 'productionCost',
+        parameterType: 'cost',
         direction: 'increase',
         magnitude: 0.10,
         reasoning: 'test',
-        ...(currency !== undefined ? { currency } : {}),
+        ...(currency !== undefined ? { scope: { currency } } : {}),
       },
       confidence: 0.80,
       estimatedLag: 8,
@@ -40,7 +40,7 @@ function makeSimResult(): SimulationResult {
   const em = emptyMetrics(110);
   return {
     proposedAction: {
-      parameter: 'productionCost',
+      parameterType: 'cost',
       direction: 'increase',
       magnitude: 0.10,
       reasoning: 'test',
@@ -58,10 +58,10 @@ function makeSimResult(): SimulationResult {
 
 function makePlan(overrides: Partial<ActionPlan> = {}): ActionPlan {
   return {
-    id: 'plan_100_productionCost',
+    id: 'plan_100_cost',
     diagnosis: makeDiagnosis('gold'),
-    parameter: 'productionCost',
-    currency: 'gold',
+    parameter: 'cost',
+    scope: { currency: 'gold' },
     currentValue: 1.0,
     targetValue: 1.15,
     maxChangePercent: 0.15,
@@ -78,54 +78,54 @@ function makePlan(overrides: Partial<ActionPlan> = {}): ActionPlan {
   };
 }
 
-describe('Planner — currency propagation', () => {
-  it('sets plan.currency when action has currency', () => {
+describe('Planner — scope propagation', () => {
+  it('sets plan.scope when action has scope', () => {
     const planner = new Planner();
     const result = planner.plan(
       makeDiagnosis('gems'),
       emptyMetrics(100),
       makeSimResult(),
-      { productionCost: 1.0 },
+      { cost: 1.0 },
       t,
     );
     expect(result).not.toBeNull();
-    expect(result!.currency).toBe('gems');
+    expect(result!.scope?.currency).toBe('gems');
   });
 
-  it('omits plan.currency when action has no currency', () => {
+  it('omits plan.scope when action has no scope', () => {
     const planner = new Planner();
     const result = planner.plan(
       makeDiagnosis(undefined),
       emptyMetrics(100),
       makeSimResult(),
-      { productionCost: 1.0 },
+      { cost: 1.0 },
       t,
     );
     expect(result).not.toBeNull();
-    expect(result!.currency).toBeUndefined();
+    expect(result!.scope).toBeUndefined();
   });
 
-  it('plan.parameter matches action.parameter', () => {
+  it('plan.parameter matches action.parameterType', () => {
     const planner = new Planner();
     const result = planner.plan(
       makeDiagnosis('gold'),
       emptyMetrics(100),
       makeSimResult(),
-      { productionCost: 1.0 },
+      { cost: 1.0 },
       t,
     );
     expect(result).not.toBeNull();
-    expect(result!.parameter).toBe('productionCost');
+    expect(result!.parameter).toBe('cost');
   });
 
   it('plan is null when parameter is locked', () => {
     const planner = new Planner();
-    planner.lock('productionCost');
+    planner.lock('cost');
     const result = planner.plan(
       makeDiagnosis('gold'),
       emptyMetrics(100),
       makeSimResult(),
-      { productionCost: 1.0 },
+      { cost: 1.0 },
       t,
     );
     expect(result).toBeNull();
@@ -137,45 +137,45 @@ describe('Planner — currency propagation', () => {
       makeDiagnosis('gold'),
       emptyMetrics(100),
       { ...makeSimResult(), netImprovement: false },
-      { productionCost: 1.0 },
+      { cost: 1.0 },
       t,
     );
     expect(result).toBeNull();
   });
 });
 
-describe('Executor — currency pass-through', () => {
-  it('apply passes plan.currency to adapter.setParam', async () => {
+describe('Executor — scope pass-through', () => {
+  it('apply passes plan.scope to adapter.setParam', async () => {
     const executor = new Executor();
     const adapter: EconomyAdapter = {
       getState: vi.fn() as EconomyAdapter['getState'],
       setParam: vi.fn() as EconomyAdapter['setParam'],
     };
-    const plan = makePlan({ currency: 'gems', targetValue: 1.15 });
-    await executor.apply(plan, adapter, { productionCost: 1.0 });
-    expect(adapter.setParam).toHaveBeenCalledWith('productionCost', 1.15, 'gems');
+    const plan = makePlan({ scope: { currency: 'gems' }, targetValue: 1.15 });
+    await executor.apply(plan, adapter, { cost: 1.0 });
+    expect(adapter.setParam).toHaveBeenCalledWith('cost', 1.15, { currency: 'gems' });
   });
 
-  it('apply works without currency (undefined)', async () => {
+  it('apply works without scope (undefined)', async () => {
     const executor = new Executor();
     const adapter: EconomyAdapter = {
       getState: vi.fn() as EconomyAdapter['getState'],
       setParam: vi.fn() as EconomyAdapter['setParam'],
     };
     const plan = makePlan({ targetValue: 1.15 });
-    delete (plan as Record<string, unknown>)['currency'];
-    await executor.apply(plan, adapter, { productionCost: 1.0 });
-    expect(adapter.setParam).toHaveBeenCalledWith('productionCost', 1.15, undefined);
+    delete (plan as Record<string, unknown>)['scope'];
+    await executor.apply(plan, adapter, { cost: 1.0 });
+    expect(adapter.setParam).toHaveBeenCalledWith('cost', 1.15, undefined);
   });
 
-  it('rollback passes plan.currency to adapter.setParam', async () => {
+  it('rollback passes plan.scope to adapter.setParam', async () => {
     const executor = new Executor();
     const adapter: EconomyAdapter = {
       getState: vi.fn() as EconomyAdapter['getState'],
       setParam: vi.fn() as EconomyAdapter['setParam'],
     };
-    const plan = makePlan({ currency: 'gold' });
-    await executor.apply(plan, adapter, { productionCost: 1.0 });
+    const plan = makePlan({ scope: { currency: 'gold' } });
+    await executor.apply(plan, adapter, { cost: 1.0 });
 
     // Trigger rollback: avgSatisfaction below threshold, tick past checkAfterTick
     const metrics = {
@@ -185,7 +185,7 @@ describe('Executor — currency pass-through', () => {
     };
     const { rolledBack } = await executor.checkRollbacks(metrics, adapter);
     expect(rolledBack.length).toBe(1);
-    expect(adapter.setParam).toHaveBeenLastCalledWith('productionCost', 1.0, 'gold');
+    expect(adapter.setParam).toHaveBeenLastCalledWith('cost', 1.0, { currency: 'gold' });
   });
 });
 
@@ -225,7 +225,7 @@ describe('V1.4.6 — activePlanCount settlement', () => {
       makeDiagnosis('gold'),
       emptyMetrics(100),
       makeSimResult(),
-      { productionCost: 1.0 },
+      { cost: 1.0 },
       t,
     );
     expect(blocked).toBeNull();
@@ -244,7 +244,7 @@ describe('V1.4.6 — activePlanCount settlement', () => {
       makeDiagnosis('gold'),
       emptyMetrics(100),
       makeSimResult(),
-      { productionCost: 1.0 },
+      { cost: 1.0 },
       t,
     );
     expect(unblocked).not.toBeNull();
@@ -267,7 +267,7 @@ describe('V1.4.6 — NaN metric rollback fail-safe', () => {
       },
     });
     plan.appliedAt = 5;
-    await executor.apply(plan, adapter, { productionCost: 1.0 });
+    await executor.apply(plan, adapter, { cost: 1.0 });
 
     const metrics = { ...emptyMetrics(15), tick: 15, avgSatisfaction: 80 };
     const { rolledBack } = await executor.checkRollbacks(metrics, adapter);
@@ -293,7 +293,7 @@ describe('V1.4.6 — activePlans hard TTL eviction', () => {
         checkAfterTick: 99999, // far future — would never settle normally
       },
     });
-    await executor.apply(plan, adapter, { productionCost: 1.0 });
+    await executor.apply(plan, adapter, { cost: 1.0 });
 
     // At tick 201, TTL kicks in (201 - 0 > 200)
     const metrics = { ...emptyMetrics(201), tick: 201 };
@@ -309,7 +309,7 @@ describe('V1.4.6 — Planner absoluteValue fallback', () => {
     const planner = new Planner();
     const diagnosis = makeDiagnosis('gold');
     diagnosis.violation.suggestedAction = {
-      parameter: 'rewardRate',
+      parameterType: 'reward',
       direction: 'decrease',
       magnitude: 0.10,
       reasoning: 'test',

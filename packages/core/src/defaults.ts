@@ -16,12 +16,12 @@ export const DEFAULT_THRESHOLDS: Thresholds = {
   smokeTestCritical: 0.10,
   currencyInsulationMax: 0.50,
 
-  // Player Experience (P45, P50)
+  // Participant Experience (P45, P50)
   timeBudgetRatio: 0.80,
   payPowerRatioMax: 2.0,
   payPowerRatioTarget: 1.5,
 
-  // LiveOps (P51, P53)
+  // Operations (P51, P53)
   sharkToothPeakDecay: 0.95,
   sharkToothValleyDecay: 0.90,
   eventCompletionMin: 0.40,
@@ -85,7 +85,7 @@ export const PERSONA_HEALTHY_RANGES: Record<string, { min: number; max: number }
   Earner:     { min: 0.00, max: 0.15 },
   Builder:    { min: 0.05, max: 0.15 },
   Social:     { min: 0.10, max: 0.20 },
-  Whale:      { min: 0.00, max: 0.05 },
+  HighValue:  { min: 0.00, max: 0.05 },
   Influencer: { min: 0.00, max: 0.05 },
 };
 

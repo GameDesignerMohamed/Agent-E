@@ -29,9 +29,9 @@ export const P42_TheMedianPrinciple: Principle = {
             medianBalance,
           },
           suggestedAction: {
-            parameter: 'transactionFee',
+            parameterType: 'fee',
+            scope: { tags: ['transaction'], currency: curr },
             direction: 'increase',
-            currency: curr,
             magnitude: 0.15,
             reasoning:
               `[${curr}] Mean/median divergence ${(meanMedianDivergence * 100).toFixed(0)}% ` +
@@ -69,7 +69,7 @@ export const P43_SimulationMinimum: Principle = {
         severity: 3,
         evidence: { inflationRate, minIterations: thresholds.simulationMinIterations },
         suggestedAction: {
-          parameter: 'productionCost',
+          parameterType: 'cost',
           direction: inflationRate > 0 ? 'increase' : 'decrease',
           magnitude: 0.05,
           reasoning:

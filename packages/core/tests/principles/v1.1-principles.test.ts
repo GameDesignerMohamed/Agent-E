@@ -3,7 +3,7 @@ import {
   P55_ArbitrageThermometer,
   P59_GiftEconomyNoise,
 } from '../../src/principles/measurement.js';
-import { P56_ContentDropShock } from '../../src/principles/liveops.js';
+import { P56_ContentDropShock } from '../../src/principles/operations.js';
 import { P57_CombinatorialPriceSpace } from '../../src/principles/market-dynamics.js';
 import { P58_NoNaturalNumeraire } from '../../src/principles/currency-flow.js';
 import { P60_SurplusDisposalAsymmetry } from '../../src/principles/supply-chain.js';
@@ -182,7 +182,7 @@ describe('P60 — Surplus Disposal Asymmetry', () => {
     const result = P60_SurplusDisposalAsymmetry.check(m, t);
     expect(result.violated).toBe(true);
     if (result.violated) {
-      expect(result.suggestedAction.parameter).toBe('productionCost');
+      expect(result.suggestedAction.parameterType).toBe('cost');
     }
   });
 

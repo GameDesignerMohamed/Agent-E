@@ -21,7 +21,7 @@ export const P35_DestructionCreatesValue: Principle = {
           severity: 6,
           evidence: { resource, supply, sinkVolume, netFlow },
           suggestedAction: {
-            parameter: 'entryFee',
+            parameterType: 'fee', scope: { tags: ['entry'] },
             direction: 'decrease',
             magnitude: 0.10,
             reasoning:
@@ -56,7 +56,7 @@ export const P40_ReplacementRate: Principle = {
           severity: 6,
           evidence: { productionIndex, sinkVolume, replacementRatio },
           suggestedAction: {
-            parameter: 'yieldRate',
+            parameterType: 'yield',
             direction: 'increase',
             magnitude: 0.15,
             reasoning:
@@ -72,7 +72,7 @@ export const P40_ReplacementRate: Principle = {
           severity: 3,
           evidence: { productionIndex, sinkVolume, replacementRatio },
           suggestedAction: {
-            parameter: 'yieldRate',
+            parameterType: 'yield',
             direction: 'decrease',
             magnitude: 0.10,
             reasoning:
@@ -107,7 +107,7 @@ export const P49_IdleAssetTax: Principle = {
         severity: 5,
         evidence: { giniCoefficient, top10PctShare, velocity },
         suggestedAction: {
-          parameter: 'transactionFee',
+          parameterType: 'fee', scope: { tags: ['transaction'] },
           direction: 'increase',
           magnitude: 0.15,
           reasoning:

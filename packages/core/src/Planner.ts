@@ -7,6 +7,7 @@ import type {
   EconomyMetrics,
   SimulationResult,
 } from './types.js';
+import type { ParameterRegistry, ParameterScope } from './ParameterRegistry.js';
 
 interface ParameterConstraint {
   min: number;
@@ -38,6 +39,7 @@ export class Planner {
    * - parameter is still in cooldown
    * - simulation result failed
    * - complexity budget exceeded
+   * - no matching parameter in registry
    */
   plan(
     diagnosis: Diagnosis,
@@ -45,9 +47,27 @@ export class Planner {
     simulationResult: SimulationResult,
     currentParams: Record<string, number>,
     thresholds: Thresholds,
+    registry?: ParameterRegistry,
   ): ActionPlan | null {
     const action = diagnosis.violation.suggestedAction;
-    const param = action.parameter;
+
+    // Resolve parameterType + scope to a concrete key via registry
+    let param: string;
+    let resolvedBaseline: number | undefined;
+    let scope: ParameterScope | undefined;
+
+    if (registry) {
+      const resolved = registry.resolve(action.parameterType, action.scope);
+      if (!resolved) return null; // no matching parameter registered
+      param = resolved.key;
+      resolvedBaseline = resolved.currentValue;
+      scope = resolved.scope as ParameterScope | undefined;
+      action.resolvedParameter = param;
+    } else {
+      // Fallback: use parameterType as param name directly
+      param = action.resolvedParameter ?? action.parameterType;
+      scope = action.scope as ParameterScope | undefined;
+    }
 
     // Hard checks
     if (this.lockedParams.has(param)) return null;
@@ -59,11 +79,8 @@ export class Planner {
     if (this.activePlanCount >= thresholds.complexityBudgetMax) return null;
 
     // Compute target value
-    // NOTE: currentParams may not have this param yet (first adjustment).
-    // If the action provides absoluteValue, prefer it as baseline.
-    // Otherwise fall back to 1.0 — which is why 'set' actions are preferred
-    // for first-time corrections.
-    const currentValue = currentParams[param] ?? action.absoluteValue ?? 1.0;
+    // Prefer registry's currentValue, then currentParams, then absoluteValue, then 1.0
+    const currentValue = resolvedBaseline ?? currentParams[param] ?? action.absoluteValue ?? 1.0;
     const magnitude = Math.min(action.magnitude ?? 0.10, thresholds.maxAdjustmentPercent);
     let targetValue: number;
 
@@ -91,7 +108,7 @@ export class Planner {
       id: `plan_${metrics.tick}_${param}`,
       diagnosis,
       parameter: param,
-      ...(action.currency !== undefined ? { currency: action.currency } : {}),
+      ...(scope !== undefined ? { scope } : {}),
       currentValue,
       targetValue,
       maxChangePercent: thresholds.maxAdjustmentPercent,
@@ -99,7 +116,7 @@ export class Planner {
       rollbackCondition: {
         metric: 'avgSatisfaction',
         direction: 'below',
-        threshold: Math.max(20, metrics.avgSatisfaction - 10), // rollback if sat drops >10 pts
+        threshold: Math.max(20, metrics.avgSatisfaction - 10),
         checkAfterTick: metrics.tick + estimatedLag + 3,
       },
       simulationResult,

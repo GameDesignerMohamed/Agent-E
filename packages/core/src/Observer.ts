@@ -37,7 +37,7 @@ export class Observer {
       const curr = e.currency ?? defaultCurrency;
       switch (e.type) {
         case 'mint':
-        case 'spawn':
+        case 'enter':
           faucetVolumeByCurrency[curr] = (faucetVolumeByCurrency[curr] ?? 0) + (e.amount ?? 0);
           break;
         case 'burn':
@@ -58,6 +58,53 @@ export class Observer {
           roleChangeEvents.push(e);
           break;
       }
+    }
+
+    // ── Per-system & per-source/sink tracking ──
+    const flowBySystem: Record<string, number> = {};
+    const activityBySystem: Record<string, number> = {};
+    const actorsBySystem: Record<string, Set<string>> = {};
+    const flowBySource: Record<string, number> = {};
+    const flowBySink: Record<string, number> = {};
+
+    for (const e of recentEvents) {
+      if (e.system) {
+        activityBySystem[e.system] = (activityBySystem[e.system] ?? 0) + 1;
+        if (!actorsBySystem[e.system]) actorsBySystem[e.system] = new Set();
+        actorsBySystem[e.system]!.add(e.actor);
+
+        const amt = e.amount ?? 0;
+        if (e.type === 'mint' || e.type === 'enter') {
+          flowBySystem[e.system] = (flowBySystem[e.system] ?? 0) + amt;
+        } else if (e.type === 'burn' || e.type === 'consume') {
+          flowBySystem[e.system] = (flowBySystem[e.system] ?? 0) - amt;
+        }
+      }
+      if (e.sourceOrSink) {
+        const amt = e.amount ?? 0;
+        if (e.type === 'mint' || e.type === 'enter') {
+          flowBySource[e.sourceOrSink] = (flowBySource[e.sourceOrSink] ?? 0) + amt;
+        } else if (e.type === 'burn' || e.type === 'consume') {
+          flowBySink[e.sourceOrSink] = (flowBySink[e.sourceOrSink] ?? 0) + amt;
+        }
+      }
+    }
+
+    const participantsBySystem: Record<string, number> = {};
+    for (const [sys, actors] of Object.entries(actorsBySystem)) {
+      participantsBySystem[sys] = actors.size;
+    }
+
+    const totalSourceFlow = Object.values(flowBySource).reduce((s, v) => s + v, 0);
+    const sourceShare: Record<string, number> = {};
+    for (const [src, vol] of Object.entries(flowBySource)) {
+      sourceShare[src] = totalSourceFlow > 0 ? vol / totalSourceFlow : 0;
+    }
+
+    const totalSinkFlow = Object.values(flowBySink).reduce((s, v) => s + v, 0);
+    const sinkShare: Record<string, number> = {};
+    for (const [snk, vol] of Object.entries(flowBySink)) {
+      sinkShare[snk] = totalSinkFlow > 0 ? vol / totalSinkFlow : 0;
     }
 
     const currencies = state.currencies;
@@ -412,6 +459,13 @@ export class Observer {
       sharkToothValleys: this.previousMetrics?.sharkToothValleys ?? [],
       eventCompletionRate: NaN,
       contentDropAge,
+      flowBySystem,
+      activityBySystem,
+      participantsBySystem,
+      flowBySource,
+      flowBySink,
+      sourceShare,
+      sinkShare,
       custom,
     };
 

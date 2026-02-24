@@ -22,7 +22,7 @@ export const P9_RoleSwitchingNeedsFriction: Principle = {
         severity: 5,
         evidence: { totalChurnRate: totalChurn, churnByRole },
         suggestedAction: {
-          parameter: 'productionCost',
+          parameterType: 'cost',
           direction: 'increase',
           magnitude: 0.05,
           reasoning:
@@ -44,10 +44,10 @@ export const P9_RoleSwitchingNeedsFriction: Principle = {
 
 export const P10_SpawnWeightingUsesInversePopulation: Principle = {
   id: 'P10',
-  name: 'Spawn Weighting Uses Inverse Population',
+  name: 'Entry Weighting Uses Inverse Population',
   category: 'population',
   description:
-    'New agents should preferentially fill the least-populated roles. ' +
+    'New entrants should preferentially fill the least-populated roles. ' +
     'Flat entry probability causes initial imbalances to compound.',
   check(metrics, _thresholds): PrincipleResult {
     const { roleShares } = metrics;
@@ -55,7 +55,7 @@ export const P10_SpawnWeightingUsesInversePopulation: Principle = {
 
     const shares = Object.values(roleShares);
     const mean = shares.reduce((s, v) => s + v, 0) / shares.length;
-    // High variance in role shares is a signal that spawn is not balancing
+    // High variance in role shares is a signal that entry is not balancing
     const variance = shares.reduce((s, v) => s + (v - mean) ** 2, 0) / shares.length;
     const stdDev = Math.sqrt(variance);
 
@@ -66,7 +66,7 @@ export const P10_SpawnWeightingUsesInversePopulation: Principle = {
         severity: 4,
         evidence: { roleShares, stdDev, leastPopulatedRole: minRole?.[0] },
         suggestedAction: {
-          parameter: 'yieldRate',
+          parameterType: 'yield',
           direction: 'increase',
           magnitude: 0.05,
           reasoning:
@@ -103,7 +103,7 @@ export const P11_TwoTierPressure: Principle = {
           severity: 6,
           evidence: { role, share },
           suggestedAction: {
-            parameter: 'transactionFee',
+            parameterType: 'fee', scope: { tags: ['transaction'] },
             direction: 'increase',
             magnitude: 0.15,
             reasoning:
@@ -139,7 +139,7 @@ export const P46_PersonaDiversity: Principle = {
           severity: 5,
           evidence: { dominantPersona: persona, share, personaDistribution },
           suggestedAction: {
-            parameter: 'rewardRate',
+            parameterType: 'reward',
             direction: 'increase',
             magnitude: 0.10,
             reasoning:
@@ -160,7 +160,7 @@ export const P46_PersonaDiversity: Principle = {
         severity: 3,
         evidence: { significantClusters, required: thresholds.personaMinClusters },
         suggestedAction: {
-          parameter: 'transactionFee',
+          parameterType: 'fee', scope: { tags: ['transaction'] },
           direction: 'decrease',
           magnitude: 0.05,
           reasoning:

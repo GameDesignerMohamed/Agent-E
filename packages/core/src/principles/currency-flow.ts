@@ -7,7 +7,7 @@ export const P12_OnePrimaryFaucet: Principle = {
   name: 'One Primary Faucet',
   category: 'currency',
   description:
-    'Multiple independent currency sources (gathering + production + quests) each ' +
+    'Multiple independent currency sources (gathering + production + activities) each ' +
     'creating currency causes uncontrolled inflation. One clear primary faucet ' +
     'makes the economy predictable and auditable.',
   check(metrics, thresholds): PrincipleResult {
@@ -22,9 +22,9 @@ export const P12_OnePrimaryFaucet: Principle = {
           severity: 5,
           evidence: { currency: curr, netFlow, faucetVolume, sinkVolume },
           suggestedAction: {
-            parameter: 'productionCost',
+            parameterType: 'cost',
             direction: 'increase',
-            currency: curr,
+            scope: { currency: curr },
             magnitude: 0.15,
             reasoning:
               `[${curr}] Net flow +${netFlow.toFixed(1)}/tick. Inflationary. ` +
@@ -41,9 +41,9 @@ export const P12_OnePrimaryFaucet: Principle = {
           severity: 4,
           evidence: { currency: curr, netFlow, faucetVolume, sinkVolume },
           suggestedAction: {
-            parameter: 'productionCost',
+            parameterType: 'cost',
             direction: 'decrease',
-            currency: curr,
+            scope: { currency: curr },
             magnitude: 0.15,
             reasoning:
               `[${curr}] Net flow ${netFlow.toFixed(1)}/tick. Deflationary. ` +
@@ -85,9 +85,9 @@ export const P13_PotsAreZeroSumAndSelfRegulate: Principle = {
             severity: 7,
             evidence: { currency: curr, pool: poolName, poolSize, participants: dominantCount, maxSustainableMultiplier },
             suggestedAction: {
-              parameter: 'rewardRate',
+              parameterType: 'reward',
               direction: 'decrease',
-              currency: curr,
+              scope: { currency: curr },
               magnitude: 0.15,
               reasoning:
                 `[${curr}] ${poolName} pool at ${poolSize.toFixed(0)} currency with ${dominantCount} active participants. ` +
@@ -111,7 +111,7 @@ export const P14_TrackActualInjection: Principle = {
   category: 'currency',
   description:
     'Counting resource gathering as "currency injected" is misleading. ' +
-    'Currency enters through faucet mechanisms (spawning, rewards). ' +
+    'Currency enters through faucet mechanisms (entering, rewards). ' +
     'Fake metrics break every downstream decision.',
   check(metrics, _thresholds): PrincipleResult {
     for (const curr of metrics.currencies) {
@@ -127,9 +127,9 @@ export const P14_TrackActualInjection: Principle = {
           severity: 4,
           evidence: { currency: curr, faucetVolume, netFlow, supplyGrowthRate },
           suggestedAction: {
-            parameter: 'yieldRate',
+            parameterType: 'yield',
             direction: 'decrease',
-            currency: curr,
+            scope: { currency: curr },
             magnitude: 0.10,
             reasoning:
               `[${curr}] Supply growing at ${(supplyGrowthRate * 100).toFixed(1)}%/tick. ` +
@@ -168,9 +168,9 @@ export const P15_PoolsNeedCapAndDecay: Principle = {
             severity: 6,
             evidence: { currency: curr, pool, size, shareOfSupply, cap: poolCapPercent },
             suggestedAction: {
-              parameter: 'transactionFee',
+              parameterType: 'fee',
               direction: 'decrease',
-              currency: curr,
+              scope: { tags: ['transaction'], currency: curr },
               magnitude: 0.10,
               reasoning:
                 `[${curr}] ${pool} pool at ${(shareOfSupply * 100).toFixed(1)}% of supply ` +
@@ -209,9 +209,9 @@ export const P16_WithdrawalPenaltyScales: Principle = {
             severity: 3,
             evidence: { currency: curr, pool: poolName, poolSize, estimatedStaked: stakedEstimate },
             suggestedAction: {
-              parameter: 'transactionFee',
+              parameterType: 'fee',
               direction: 'increase',
-              currency: curr,
+              scope: { tags: ['transaction'], currency: curr },
               magnitude: 0.05,
               reasoning:
                 `[${curr}] ${poolName} pool depleted while significant currency should be locked. ` +
@@ -250,9 +250,9 @@ export const P32_VelocityAboveSupply: Principle = {
           severity: 4,
           evidence: { currency: curr, velocity, totalSupply, totalResources },
           suggestedAction: {
-            parameter: 'transactionFee',
+            parameterType: 'fee',
             direction: 'decrease',
-            currency: curr,
+            scope: { tags: ['transaction'], currency: curr },
             magnitude: 0.20,
             reasoning:
               `[${curr}] Velocity ${velocity}/t with ${totalResources} resources in system. ` +
@@ -304,9 +304,9 @@ export const P58_NoNaturalNumeraire: Principle = {
             meanPrice: mean,
           },
           suggestedAction: {
-            parameter: 'productionCost',
+            parameterType: 'cost',
             direction: 'increase',
-            currency: curr,
+            scope: { currency: curr },
             magnitude: 0.10,
             reasoning:
               `[${curr}] Price coefficient of variation ${coeffOfVariation.toFixed(2)} with velocity ${velocity.toFixed(1)}. ` +

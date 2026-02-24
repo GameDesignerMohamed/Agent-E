@@ -18,7 +18,7 @@ export class Executor {
     currentParams: Record<string, number>,
   ): Promise<void> {
     const originalValue = currentParams[plan.parameter] ?? plan.currentValue;
-    await adapter.setParam(plan.parameter, plan.targetValue, plan.currency);
+    await adapter.setParam(plan.parameter, plan.targetValue, plan.scope);
     plan.appliedAt = plan.diagnosis.tick;
 
     this.activePlans.push({ plan, originalValue });
@@ -61,7 +61,7 @@ export class Executor {
         console.warn(
           `[AgentE] Rollback check: metric path '${rc.metric}' resolved to NaN for plan '${plan.id}'. Triggering rollback as fail-safe.`
         );
-        await adapter.setParam(plan.parameter, originalValue, plan.currency);
+        await adapter.setParam(plan.parameter, originalValue, plan.scope);
         rolledBack.push(plan);
         continue;
       }
@@ -73,7 +73,7 @@ export class Executor {
 
       if (shouldRollback) {
         // Undo the adjustment
-        await adapter.setParam(plan.parameter, originalValue, plan.currency);
+        await adapter.setParam(plan.parameter, originalValue, plan.scope);
         rolledBack.push(plan);
       } else {
         // Plan has passed its check window — consider it settled
@@ -91,7 +91,7 @@ export class Executor {
   }
 
   private getMetricValue(metrics: EconomyMetrics, metricPath: string): number {
-    // Support dotted paths like 'poolSizes.arena' or 'custom.myMetric'
+    // Support dotted paths like 'poolSizes.competitive' or 'custom.myMetric'
     const parts = metricPath.split('.');
     let value: unknown = metrics;
     for (const part of parts) {

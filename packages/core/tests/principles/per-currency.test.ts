@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { P42_TheMedianPrinciple } from '../../src/principles/statistical.js';
-import { P33_FairNotEqual } from '../../src/principles/player-experience.js';
+import { P33_FairNotEqual } from '../../src/principles/participant-experience.js';
 import { DEFAULT_THRESHOLDS } from '../../src/defaults.js';
 import { emptyMetrics } from '../../src/types.js';
 
@@ -20,7 +20,7 @@ describe('P42 — The Median Principle (multi-currency)', () => {
     expect(result.violated).toBe(true);
     if (result.violated) {
       expect(result.evidence['currency']).toBe('gems');
-      expect(result.suggestedAction.currency).toBe('gems');
+      expect(result.suggestedAction.scope?.currency).toBe('gems');
     }
   });
 

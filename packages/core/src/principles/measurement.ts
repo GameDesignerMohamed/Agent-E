@@ -19,7 +19,7 @@ export const P31_AnchorValueTracking: Principle = {
         severity: 5,
         evidence: { anchorRatioDrift, inflationRate },
         suggestedAction: {
-          parameter: 'productionCost',
+          parameterType: 'cost',
           direction: anchorRatioDrift > 0 ? 'increase' : 'decrease',
           magnitude: 0.10,
           reasoning:
@@ -57,7 +57,7 @@ export const P41_MultiResolutionMonitoring: Principle = {
         severity: 4,
         evidence: { giniCoefficient, avgSatisfaction },
         suggestedAction: {
-          parameter: 'transactionFee',
+          parameterType: 'fee', scope: { tags: ['transaction'] },
           direction: 'increase',
           magnitude: 0.10,
           reasoning:
@@ -95,7 +95,7 @@ export const P55_ArbitrageThermometer: Principle = {
           critical: thresholds.arbitrageIndexCritical,
         },
         suggestedAction: {
-          parameter: 'transactionFee',
+          parameterType: 'fee', scope: { tags: ['transaction'] },
           direction: 'decrease',
           magnitude: 0.15,
           reasoning:
@@ -117,7 +117,7 @@ export const P55_ArbitrageThermometer: Principle = {
           warning: thresholds.arbitrageIndexWarning,
         },
         suggestedAction: {
-          parameter: 'transactionFee',
+          parameterType: 'fee', scope: { tags: ['transaction'] },
           direction: 'decrease',
           magnitude: 0.08,
           reasoning:
@@ -154,7 +154,7 @@ export const P59_GiftEconomyNoise: Principle = {
           threshold: thresholds.giftTradeFilterRatio,
         },
         suggestedAction: {
-          parameter: 'transactionFee',
+          parameterType: 'fee', scope: { tags: ['transaction'] },
           direction: 'increase',
           magnitude: 0.05,
           reasoning:

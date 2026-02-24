@@ -32,7 +32,7 @@ export const P5_ProfitabilityIsCompetitive: Principle = {
           population: populationByRole[dominantRole],
         },
         suggestedAction: {
-          parameter: 'transactionFee',
+          parameterType: 'fee', scope: { tags: ['transaction'] },
           direction: 'increase',
           magnitude: thresholds.maxAdjustmentPercent,
           reasoning:
@@ -68,7 +68,7 @@ export const P6_CrowdingMultiplierOnAllRoles: Principle = {
           severity: 5,
           evidence: { role, share },
           suggestedAction: {
-            parameter: 'productionCost',
+            parameterType: 'cost',
             direction: 'increase',
             magnitude: 0.10,
             reasoning:
@@ -118,7 +118,7 @@ export const P7_NonSpecialistsSubsidiseSpecialists: Principle = {
           severity: 6,
           evidence: { poolName, poolSize, dominantRole, dominantShare },
           suggestedAction: {
-            parameter: 'entryFee',
+            parameterType: 'fee', scope: { tags: ['entry'] },
             direction: 'decrease',
             magnitude: 0.10,
             reasoning:
@@ -160,7 +160,7 @@ export const P8_RegulatorCannotFightDesign: Principle = {
           severity: 4,
           evidence: { dominantRole: dominantRole[0], share: dominantRole[1], avgSatisfaction },
           suggestedAction: {
-            parameter: 'rewardRate',
+            parameterType: 'reward',
             direction: 'increase',
             magnitude: 0.10,
             reasoning:

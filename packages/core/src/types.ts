@@ -13,7 +13,7 @@ export type EconomicEventType =
   | 'produce'
   | 'consume'
   | 'role_change'
-  | 'spawn'
+  | 'enter'
   | 'churn';
 
 export interface EconomicEvent {
@@ -27,6 +27,8 @@ export interface EconomicEvent {
   price?: number;             // per-unit price (in the event's currency)
   from?: string;              // source (for transfers)
   to?: string;                // destination
+  system?: string;            // which subsystem generated this event
+  sourceOrSink?: string;      // named source/sink for flow attribution
   metadata?: Record<string, unknown>;
 }
 
@@ -133,6 +135,15 @@ export interface EconomyMetrics {
   disposalTradeRatioByCurrency: Record<string, number>;
   disposalTradeRatio: number;
 
+  // ── Multi-system metrics ──
+  flowBySystem: Record<string, number>;           // system → net flow
+  activityBySystem: Record<string, number>;       // system → event count
+  participantsBySystem: Record<string, number>;    // system → unique actor count
+  flowBySource: Record<string, number>;            // source → inflow volume
+  flowBySink: Record<string, number>;              // sink → outflow volume
+  sourceShare: Record<string, number>;             // source → fraction of total inflow
+  sinkShare: Record<string, number>;               // sink → fraction of total outflow
+
   // ── Custom metrics registered by developer ──
   custom: Record<string, number>;
 }
@@ -214,6 +225,13 @@ export function emptyMetrics(tick = 0): EconomyMetrics {
     sharkToothValleys: [],
     eventCompletionRate: NaN,
     contentDropAge: 0,
+    flowBySystem: {},
+    activityBySystem: {},
+    participantsBySystem: {},
+    flowBySource: {},
+    flowBySink: {},
+    sourceShare: {},
+    sinkShare: {},
     custom: {},
   };
 }
@@ -233,11 +251,11 @@ export type PrincipleCategory =
   | 'wealth_distribution'
   | 'resource'
   | 'system_design'
-  | 'player_experience'
+  | 'participant_experience'
   | 'statistical'
   | 'system_dynamics'
   | 'open_economy'
-  | 'liveops';
+  | 'operations';
 
 export interface PrincipleViolation {
   violated: true;
@@ -265,11 +283,12 @@ export interface Principle {
 // ── Actions ──────────────────────────────────────────────────────────────────
 
 export interface SuggestedAction {
-  parameter: string;
+  parameterType: import('./ParameterRegistry.js').ParameterType;
   direction: 'increase' | 'decrease' | 'set';
   magnitude?: number;               // fractional (0.15 = 15%)
   absoluteValue?: number;
-  currency?: string;                // which currency this action targets (undefined = all/global)
+  scope?: Partial<import('./ParameterRegistry.js').ParameterScope>;
+  resolvedParameter?: string;       // filled by Planner after registry resolution
   reasoning: string;
 }
 
@@ -277,7 +296,7 @@ export interface ActionPlan {
   id: string;
   diagnosis: Diagnosis;
   parameter: string;
-  currency?: string;             // which currency this action targets
+  scope?: import('./ParameterRegistry.js').ParameterScope;
   currentValue: number;
   targetValue: number;
   maxChangePercent: number;
@@ -359,6 +378,9 @@ export interface EconomyState {
   marketPrices: Record<string, Record<string, number>>;      // currencyName → { resource → price }
   recentTransactions: EconomicEvent[];
   poolSizes?: Record<string, Record<string, number>>;        // poolName → { currencyName → amount }
+  systems?: string[];                                        // e.g. ['marketplace', 'staking', 'production']
+  sources?: string[];                                        // named faucet sources
+  sinks?: string[];                                          // named sink channels
   customData?: Record<string, unknown>;
 }
 
@@ -366,7 +388,7 @@ export interface EconomyAdapter {
   /** Return current full state snapshot */
   getState(): EconomyState | Promise<EconomyState>;
   /** Apply a parameter change to the host system */
-  setParam(key: string, value: number, currency?: string): void | Promise<void>;
+  setParam(key: string, value: number, scope?: import('./ParameterRegistry.js').ParameterScope): void | Promise<void>;
   /** Optional: adapter pushes events as they happen */
   onEvent?: (handler: (event: EconomicEvent) => void) => void;
 }
@@ -389,7 +411,7 @@ export interface Thresholds {
   smokeTestCritical: number;
   currencyInsulationMax: number;
 
-  // Player Experience (P45, P50)
+  // Participant Experience (P45, P50)
   timeBudgetRatio: number;
   payPowerRatioMax: number;
   payPowerRatioTarget: number;
@@ -475,6 +497,9 @@ export interface AgentEConfig {
   dominantRoles?: string[];           // roles exempt from population caps
   idealDistribution?: Record<string, number>;
 
+  // Parameter registry
+  parameters?: import('./ParameterRegistry.js').RegisteredParameter[];
+
   // Tick configuration
   tickConfig?: Partial<TickConfig>;
 
@@ -505,8 +530,9 @@ export type PersonaType =
   | 'Earner'
   | 'Builder'
   | 'Social'
-  | 'Whale'
-  | 'Influencer';
+  | 'HighValue'
+  | 'Influencer'
+  | string;
 
 export interface PersonaProfile {
   type: PersonaType;

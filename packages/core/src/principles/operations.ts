@@ -1,15 +1,15 @@
-// P51-P54: LiveOps Principles (from Naavik research)
+// P51-P54, P56: Operations Principles (from Naavik research)
 
 import type { Principle, PrincipleResult } from '../types.js';
 
 export const P51_SharkTooth: Principle = {
   id: 'P51',
-  name: 'Shark Tooth Pattern',
-  category: 'liveops',
+  name: 'Cyclical Engagement Pattern',
+  category: 'operations',
   description:
-    'Each event peak should be ≥95% of the previous peak. ' +
-    'If peaks are shrinking (shark tooth becoming flat), event fatigue is setting in. ' +
-    'If valleys are deepening, the off-event economy is failing to sustain engagement.',
+    'Each activity peak should be >=95% of the previous peak. ' +
+    'If peaks are shrinking (cyclical engagement becoming flat), activity fatigue is setting in. ' +
+    'If valleys are deepening, the off-activity economy is failing to sustain engagement.',
   check(metrics, thresholds): PrincipleResult {
     const { sharkToothPeaks, sharkToothValleys } = metrics;
     if (sharkToothPeaks.length < 2) return { violated: false };
@@ -28,13 +28,13 @@ export const P51_SharkTooth: Principle = {
           threshold: thresholds.sharkToothPeakDecay,
         },
         suggestedAction: {
-          parameter: 'rewardRate',
+          parameterType: 'reward',
           direction: 'increase',
           magnitude: 0.10,
           reasoning:
             `Peak engagement dropped to ${(lastPeak / prevPeak * 100).toFixed(0)}% of previous peak ` +
-            `(threshold: ${(thresholds.sharkToothPeakDecay * 100).toFixed(0)}%). Event fatigue detected. ` +
-            'Boost event rewards to restore peak engagement.',
+            `(threshold: ${(thresholds.sharkToothPeakDecay * 100).toFixed(0)}%). Activity fatigue detected. ` +
+            'Boost activity rewards to restore peak engagement.',
         },
         confidence: 0.75,
         estimatedLag: 30,
@@ -50,13 +50,13 @@ export const P51_SharkTooth: Principle = {
           severity: 4,
           evidence: { lastValley, prevValley, ratio: lastValley / prevValley },
           suggestedAction: {
-            parameter: 'productionCost',
+            parameterType: 'cost',
             direction: 'decrease',
             magnitude: 0.10,
             reasoning:
-              'Between-event engagement declining (deepening valleys). ' +
-              'Base economy not sustaining participants between events. ' +
-              'Lower production costs to improve off-event value.',
+              'Between-activity engagement declining (deepening valleys). ' +
+              'Base economy not sustaining participants between activities. ' +
+              'Lower production costs to improve off-activity value.',
           },
           confidence: 0.65,
           estimatedLag: 20,
@@ -71,16 +71,16 @@ export const P51_SharkTooth: Principle = {
 export const P52_EndowmentEffect: Principle = {
   id: 'P52',
   name: 'Endowment Effect',
-  category: 'liveops',
+  category: 'operations',
   description:
     'Participants who never owned premium items do not value them. ' +
-    'Free trial events that let participants experience premium items drive conversions ' +
+    'Free trial activities that let participants experience premium items drive conversions ' +
     'because ownership creates perceived value (endowment effect).',
   check(metrics, _thresholds): PrincipleResult {
     const { avgSatisfaction, churnRate } = metrics;
 
-    // Proxy: if event completion is high but satisfaction is still low,
-    // events are not creating the endowment effect (participants complete but don't value the rewards)
+    // Proxy: if activity completion is high but satisfaction is still low,
+    // activities are not creating the endowment effect (participants complete but don't value the rewards)
     const { eventCompletionRate } = metrics;
     if (isNaN(eventCompletionRate)) return { violated: false };
 
@@ -90,12 +90,12 @@ export const P52_EndowmentEffect: Principle = {
         severity: 4,
         evidence: { eventCompletionRate, avgSatisfaction, churnRate },
         suggestedAction: {
-          parameter: 'rewardRate',
+          parameterType: 'reward',
           direction: 'increase',
           magnitude: 0.15,
           reasoning:
-            `${(eventCompletionRate * 100).toFixed(0)}% event completion but satisfaction only ${avgSatisfaction.toFixed(0)}. ` +
-            'Events not creating perceived value. Increase reward quality/quantity.',
+            `${(eventCompletionRate * 100).toFixed(0)}% activity completion but satisfaction only ${avgSatisfaction.toFixed(0)}. ` +
+            'Activities not creating perceived value. Increase reward quality/quantity.',
         },
         confidence: 0.60,
         estimatedLag: 20,
@@ -108,8 +108,8 @@ export const P52_EndowmentEffect: Principle = {
 
 export const P53_EventCompletionRate: Principle = {
   id: 'P53',
-  name: 'Event Completion Rate Sweet Spot',
-  category: 'liveops',
+  name: 'Activity Completion Rate Sweet Spot',
+  category: 'operations',
   description:
     'Free completion at 60-80% is the sweet spot. ' +
     '<40% = predatory design. >80% = no monetization pressure. ' +
@@ -128,11 +128,11 @@ export const P53_EventCompletionRate: Principle = {
           max: thresholds.eventCompletionMax,
         },
         suggestedAction: {
-          parameter: 'productionCost',
+          parameterType: 'cost',
           direction: 'decrease',
           magnitude: 0.15,
           reasoning:
-            `Event completion rate ${(eventCompletionRate * 100).toFixed(0)}% — predatory territory ` +
+            `Activity completion rate ${(eventCompletionRate * 100).toFixed(0)}% — predatory territory ` +
             `(min: ${(thresholds.eventCompletionMin * 100).toFixed(0)}%). ` +
             'Too hard for free participants. Lower barriers to participation.',
         },
@@ -147,11 +147,11 @@ export const P53_EventCompletionRate: Principle = {
         severity: 3,
         evidence: { eventCompletionRate, max: thresholds.eventCompletionMax },
         suggestedAction: {
-          parameter: 'entryFee',
+          parameterType: 'fee', scope: { tags: ['entry'] },
           direction: 'increase',
           magnitude: 0.05,
           reasoning:
-            `Event completion rate ${(eventCompletionRate * 100).toFixed(0)}% — no monetization pressure ` +
+            `Activity completion rate ${(eventCompletionRate * 100).toFixed(0)}% — no monetization pressure ` +
             `(max: ${(thresholds.eventCompletionMax * 100).toFixed(0)}%). ` +
             'Slightly raise costs to create meaningful premium differentiation.',
         },
@@ -166,10 +166,10 @@ export const P53_EventCompletionRate: Principle = {
 
 export const P54_LiveOpsCadence: Principle = {
   id: 'P54',
-  name: 'LiveOps Cadence',
-  category: 'liveops',
+  name: 'Operational Cadence',
+  category: 'operations',
   description:
-    '>50% of events that are re-wrapped existing content → staleness. ' +
+    '>50% of activities that are re-wrapped existing content → staleness. ' +
     'The cadence must include genuinely new content at regular intervals. ' +
     'This is an advisory principle — AgentE can flag but cannot fix content.',
   check(metrics, _thresholds): PrincipleResult {
@@ -182,7 +182,7 @@ export const P54_LiveOpsCadence: Principle = {
         severity: 3,
         evidence: { velocity, avgSatisfaction, tick: metrics.tick },
         suggestedAction: {
-          parameter: 'rewardRate',
+          parameterType: 'reward',
           direction: 'increase',
           magnitude: 0.10,
           reasoning:
@@ -201,8 +201,8 @@ export const P54_LiveOpsCadence: Principle = {
 
 export const P56_ContentDropShock: Principle = {
   id: 'P56',
-  name: 'Content-Drop Shock',
-  category: 'liveops',
+  name: 'Supply Shock Absorption',
+  category: 'operations',
   description:
     'Every new-item injection shatters existing price equilibria — arbitrage spikes ' +
     'as participants re-price. Build cooldown windows for price discovery before ' +
@@ -223,7 +223,7 @@ export const P56_ContentDropShock: Principle = {
             postDropMax: thresholds.postDropArbitrageMax,
           },
           suggestedAction: {
-            parameter: 'transactionFee',
+            parameterType: 'fee', scope: { tags: ['transaction'] },
             direction: 'decrease',
             magnitude: 0.10,
             reasoning:
@@ -241,7 +241,7 @@ export const P56_ContentDropShock: Principle = {
   },
 };
 
-export const LIVEOPS_PRINCIPLES: Principle[] = [
+export const OPERATIONS_PRINCIPLES: Principle[] = [
   P51_SharkTooth,
   P52_EndowmentEffect,
   P53_EventCompletionRate,

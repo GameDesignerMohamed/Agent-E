@@ -23,7 +23,7 @@ export const P20_DecayPreventsAccumulation: Principle = {
         severity: 4,
         evidence: { totalResources, resourcesPerAgent, velocity },
         suggestedAction: {
-          parameter: 'yieldRate',
+          parameterType: 'yield',
           direction: 'decrease',
           magnitude: 0.10,
           reasoning:
@@ -60,7 +60,7 @@ export const P21_PriceFromGlobalSupply: Principle = {
           severity: 3,
           evidence: { resource, volatility, supply, price: prices[resource] },
           suggestedAction: {
-            parameter: 'transactionFee',
+            parameterType: 'fee', scope: { tags: ['transaction'] },
             direction: 'increase',
             magnitude: 0.05,
             reasoning:
@@ -82,7 +82,7 @@ export const P22_MarketAwarenessPreventsSurplus: Principle = {
   name: 'Market Awareness Prevents Overproduction',
   category: 'feedback',
   description:
-    'Producers who craft without checking market prices will create surpluses ' +
+    'Producers who produce without checking market prices will create surpluses ' +
     'that crash prices. Agents need to see prices before deciding to produce.',
   check(metrics, _thresholds): PrincipleResult {
     const { supplyByResource, prices, productionIndex } = metrics;
@@ -115,7 +115,7 @@ export const P22_MarketAwarenessPreventsSurplus: Principle = {
             productionIndex
           },
           suggestedAction: {
-            parameter: 'productionCost',
+            parameterType: 'cost',
             direction: 'increase',
             magnitude: 0.10,
             reasoning:
@@ -151,7 +151,7 @@ export const P23_ProfitabilityFactorsFeasibility: Principle = {
         severity: 5,
         evidence: { blockedFraction, blockedAgentCount, avgSatisfaction },
         suggestedAction: {
-          parameter: 'productionCost',
+          parameterType: 'cost',
           direction: 'decrease',
           magnitude: 0.15,
           reasoning:
@@ -186,7 +186,7 @@ export const P24_BlockedAgentsDecayFaster: Principle = {
         severity: 5,
         evidence: { blockedFraction, blockedAgentCount, churnRate },
         suggestedAction: {
-          parameter: 'transactionFee',
+          parameterType: 'fee', scope: { tags: ['transaction'] },
           direction: 'decrease',
           magnitude: 0.15,
           reasoning:

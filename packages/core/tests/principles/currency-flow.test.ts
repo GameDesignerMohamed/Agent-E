@@ -25,7 +25,7 @@ describe('P12 — One Primary Faucet', () => {
     expect(result.violated).toBe(true);
     if (result.violated) {
       expect(result.evidence['currency']).toBe('gold');
-      expect(result.suggestedAction.currency).toBe('gold');
+      expect(result.suggestedAction.scope?.currency).toBe('gold');
       expect(result.suggestedAction.direction).toBe('increase');
     }
   });
@@ -42,7 +42,7 @@ describe('P12 — One Primary Faucet', () => {
     expect(result.violated).toBe(true);
     if (result.violated) {
       expect(result.evidence['currency']).toBe('gems');
-      expect(result.suggestedAction.currency).toBe('gems');
+      expect(result.suggestedAction.scope?.currency).toBe('gems');
       expect(result.suggestedAction.direction).toBe('decrease');
     }
   });
@@ -70,7 +70,7 @@ describe('P13 — Pots Self-Regulate', () => {
     expect(result.violated).toBe(true);
     if (result.violated) {
       expect(result.evidence['currency']).toBe('gold');
-      expect(result.suggestedAction.currency).toBe('gold');
+      expect(result.suggestedAction.scope?.currency).toBe('gold');
     }
   });
 
@@ -99,7 +99,7 @@ describe('P14 — Track Actual Injection', () => {
     expect(result.violated).toBe(true);
     if (result.violated) {
       expect(result.evidence['currency']).toBe('gold');
-      expect(result.suggestedAction.currency).toBe('gold');
+      expect(result.suggestedAction.scope?.currency).toBe('gold');
     }
   });
 
@@ -127,7 +127,7 @@ describe('P15 — Pools Need Cap + Decay', () => {
     expect(result.violated).toBe(true);
     if (result.violated) {
       expect(result.evidence['currency']).toBe('gold');
-      expect(result.suggestedAction.currency).toBe('gold');
+      expect(result.suggestedAction.scope?.currency).toBe('gold');
     }
   });
 
@@ -154,7 +154,7 @@ describe('P16 — Withdrawal Penalty Scales', () => {
     const result = P16_WithdrawalPenaltyScales.check(m, t);
     expect(result.violated).toBe(true);
     if (result.violated) {
-      expect(result.suggestedAction.currency).toBe('gold');
+      expect(result.suggestedAction.scope?.currency).toBe('gold');
     }
   });
 
@@ -183,7 +183,7 @@ describe('P32 — Velocity > Supply for Liquidity', () => {
     expect(result.violated).toBe(true);
     if (result.violated) {
       expect(result.evidence['currency']).toBe('gold');
-      expect(result.suggestedAction.currency).toBe('gold');
+      expect(result.suggestedAction.scope?.currency).toBe('gold');
       expect(result.suggestedAction.direction).toBe('decrease');
     }
   });

@@ -4,7 +4,7 @@ import type { Principle, PrincipleResult } from '../types.js';
 
 export const P29_PinchPoint: Principle = {
   id: 'P29',
-  name: 'Pinch Point',
+  name: 'Bottleneck Detection',
   category: 'market_dynamics',
   description:
     'Every economy has a resource that constrains all downstream activity. ' +
@@ -23,7 +23,7 @@ export const P29_PinchPoint: Principle = {
           severity: 7,
           evidence: { resource, supply, demand, status },
           suggestedAction: {
-            parameter: 'productionCost',
+            parameterType: 'cost',
             direction: 'decrease',
             magnitude: 0.15,
             reasoning:
@@ -42,7 +42,7 @@ export const P29_PinchPoint: Principle = {
           severity: 4,
           evidence: { resource, supply, status },
           suggestedAction: {
-            parameter: 'productionCost',
+            parameterType: 'cost',
             direction: 'increase',
             magnitude: 0.10,
             reasoning:
@@ -61,12 +61,12 @@ export const P29_PinchPoint: Principle = {
 
 export const P30_MovingPinchPoint: Principle = {
   id: 'P30',
-  name: 'Moving Pinch Point',
+  name: 'Dynamic Bottleneck Rotation',
   category: 'market_dynamics',
   description:
-    'Agent progression shifts the demand curve. A static pinch point that ' +
+    'Participant progression shifts the demand curve. A static pinch point that ' +
     'works early will be cleared later. The pinch point must move ' +
-    'with agent progression to maintain ongoing scarcity and engagement.',
+    'with participant progression to maintain ongoing scarcity and engagement.',
   check(metrics, _thresholds): PrincipleResult {
     const { capacityUsage, supplyByResource, avgSatisfaction } = metrics;
 
@@ -82,7 +82,7 @@ export const P30_MovingPinchPoint: Principle = {
         severity: 3,
         evidence: { capacityUsage, resourcesPerAgent, avgSatisfaction },
         suggestedAction: {
-          parameter: 'productionCost',
+          parameterType: 'cost',
           direction: 'increase',
           magnitude: 0.10,
           reasoning:
@@ -104,7 +104,7 @@ export const P57_CombinatorialPriceSpace: Principle = {
   category: 'market_dynamics',
   description:
     'N tradeable items generate (N−1)N/2 relative prices. With thousands of items ' +
-    'no single agent can track them all. Design for distributed self-organization, ' +
+    'no single participant can track them all. Design for distributed self-organization, ' +
     'not centralized pricing.',
   check(metrics, thresholds): PrincipleResult {
     const { prices, priceVolatility } = metrics;
@@ -142,7 +142,8 @@ export const P57_CombinatorialPriceSpace: Principle = {
           target: thresholds.relativePriceConvergenceTarget,
         },
         suggestedAction: {
-          parameter: 'transactionFee',
+          parameterType: 'fee',
+          scope: { tags: ['transaction'] },
           direction: 'decrease',
           magnitude: 0.10,
           reasoning:

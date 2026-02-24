@@ -22,14 +22,14 @@ function metricsWithCurrency(tick: number, overrides: Record<string, unknown> = 
 }
 
 const increaseAction: SuggestedAction = {
-  parameter: 'productionCost',
+  parameterType: 'cost',
   direction: 'increase',
   magnitude: 0.15,
   reasoning: 'Test increase',
 };
 
 const decreaseAction: SuggestedAction = {
-  parameter: 'yieldRate',
+  parameterType: 'yield',
   direction: 'decrease',
   magnitude: 0.15,
   reasoning: 'Test decrease',
@@ -100,9 +100,9 @@ describe('Simulator', () => {
     };
 
     const goldAction: SuggestedAction = {
-      parameter: 'productionCost',
+      parameterType: 'cost',
       direction: 'increase',
-      currency: 'gold',
+      scope: { currency: 'gold' },
       magnitude: 0.15,
       reasoning: 'Test gold-scoped action',
     };

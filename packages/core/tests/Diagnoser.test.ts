@@ -113,7 +113,7 @@ describe('Diagnoser', () => {
             severity: 10,
             evidence: {},
             suggestedAction: {
-              parameter: 'productionCost',
+              parameterType: 'cost',
               direction: 'increase',
               magnitude: 0.10,
               reasoning: 'test',
@@ -182,7 +182,7 @@ describe('Diagnoser', () => {
     expect(p33).toBeDefined();
     if (p33) {
       expect(p33.violation.evidence['currency']).toBe('gems');
-      expect(p33.violation.suggestedAction.currency).toBe('gems');
+      expect(p33.violation.suggestedAction.scope?.currency).toBe('gems');
     }
   });
 });

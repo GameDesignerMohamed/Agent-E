@@ -20,7 +20,8 @@ export const P34_ExtractionRatio: Principle = {
         severity: 8,
         evidence: { extractionRatio, threshold: thresholds.extractionRatioRed },
         suggestedAction: {
-          parameter: 'transactionFee',
+          parameterType: 'fee',
+          scope: { tags: ['transaction'] },
           direction: 'increase',
           magnitude: 0.25,
           reasoning:
@@ -39,7 +40,8 @@ export const P34_ExtractionRatio: Principle = {
         severity: 5,
         evidence: { extractionRatio, threshold: thresholds.extractionRatioYellow },
         suggestedAction: {
-          parameter: 'transactionFee',
+          parameterType: 'fee',
+          scope: { tags: ['transaction'] },
           direction: 'increase',
           magnitude: 0.10,
           reasoning:
@@ -73,7 +75,7 @@ export const P47_SmokeTest: Principle = {
         severity: 9,
         evidence: { smokeTestRatio, threshold: thresholds.smokeTestCritical },
         suggestedAction: {
-          parameter: 'rewardRate',
+          parameterType: 'reward',
           direction: 'increase',
           magnitude: 0.20,
           reasoning:
@@ -92,7 +94,7 @@ export const P47_SmokeTest: Principle = {
         severity: 6,
         evidence: { smokeTestRatio, threshold: thresholds.smokeTestWarning },
         suggestedAction: {
-          parameter: 'rewardRate',
+          parameterType: 'reward',
           direction: 'increase',
           magnitude: 0.10,
           reasoning:
@@ -126,7 +128,8 @@ export const P48_CurrencyInsulation: Principle = {
         severity: 6,
         evidence: { currencyInsulation, threshold: thresholds.currencyInsulationMax },
         suggestedAction: {
-          parameter: 'transactionFee',
+          parameterType: 'fee',
+          scope: { tags: ['transaction'] },
           direction: 'increase',
           magnitude: 0.10,
           reasoning:

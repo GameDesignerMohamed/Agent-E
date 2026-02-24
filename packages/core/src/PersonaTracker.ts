@@ -43,13 +43,13 @@ export class PersonaTracker {
   getDistribution(): Record<string, number> {
     const counts: Record<PersonaType, number> = {
       Active: 0, Trader: 0, Collector: 0, Speculator: 0, Earner: 0,
-      Builder: 0, Social: 0, Whale: 0, Influencer: 0,
+      Builder: 0, Social: 0, HighValue: 0, Influencer: 0,
     };
     let total = 0;
 
     for (const [, history] of this.agentHistory) {
       const persona = this.classify(history);
-      counts[persona]++;
+      counts[persona] = (counts[persona] ?? 0) + 1;
       total++;
     }
 
@@ -76,7 +76,7 @@ export class PersonaTracker {
     const spend = avg('spendAmount');
 
     // Simple rule-based classification (replace with ML in production)
-    if (spend > 1000) return 'Whale';
+    if (spend > 1000) return 'HighValue';
     if (txRate > 10) return 'Trader';
     if (uniqueItems > 5 && extraction < 0) return 'Collector'; // buys and holds
     if (extraction > 100) return 'Earner';

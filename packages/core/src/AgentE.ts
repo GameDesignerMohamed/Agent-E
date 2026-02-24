@@ -26,6 +26,8 @@ import { DecisionLog } from './DecisionLog.js';
 import { MetricStore } from './MetricStore.js';
 import { PersonaTracker } from './PersonaTracker.js';
 import { ALL_PRINCIPLES } from './principles/index.js';
+import { ParameterRegistry } from './ParameterRegistry.js';
+import type { RegisteredParameter } from './ParameterRegistry.js';
 
 type EventName = 'decision' | 'alert' | 'rollback' | 'beforeAction' | 'afterAction';
 
@@ -41,9 +43,10 @@ export class AgentE {
   // ── Pipeline ──
   private observer!: Observer;
   private diagnoser: Diagnoser;
-  private simulator = new Simulator();
+  private simulator: Simulator;
   private planner = new Planner();
   private executor = new Executor();
+  private registry = new ParameterRegistry();
 
   // ── State ──
   readonly log = new DecisionLog();
@@ -70,6 +73,7 @@ export class AgentE {
       checkInterval: config.checkInterval ?? 5,
       maxAdjustmentPercent: config.maxAdjustmentPercent ?? 0.15,
       cooldownTicks: config.cooldownTicks ?? 15,
+      parameters: config.parameters ?? [],
     };
 
     this.thresholds = {
@@ -86,12 +90,18 @@ export class AgentE {
 
     this.diagnoser = new Diagnoser(ALL_PRINCIPLES);
 
+    // Register parameters if provided
+    if (config.parameters) {
+      this.registry.registerAll(config.parameters);
+    }
+    this.simulator = new Simulator(this.registry);
+
     // Wire up config callbacks
     if (config.onDecision) this.on('decision', config.onDecision as never);
     if (config.onAlert) this.on('alert', config.onAlert as never);
     if (config.onRollback) this.on('rollback', config.onRollback as never);
 
-    // Lock dominant roles from population suppression by locking arena reward adjustments
+    // Lock dominant roles from population suppression by locking reward parameter adjustments
     // (structural protection — dominant roles' key param won't be suppressed)
     if (config.dominantRoles && config.dominantRoles.length > 0) {
       // Mark dominant roles as protected (used in Diagnoser context)
@@ -201,6 +211,7 @@ export class AgentE {
       simulationResult,
       this.params,
       this.thresholds,
+      this.registry,
     );
 
     if (!plan) {
@@ -228,6 +239,7 @@ export class AgentE {
     // Stage 5: Execute
     await this.executor.apply(plan, this.adapter, this.params);
     this.params[plan.parameter] = plan.targetValue;
+    this.registry.updateValue(plan.parameter, plan.targetValue);
     this.planner.recordApplied(plan, metrics.tick);
 
     const entry = this.log.record(topDiagnosis, plan, 'applied', metrics);
@@ -239,6 +251,7 @@ export class AgentE {
   async apply(plan: ActionPlan): Promise<void> {
     await this.executor.apply(plan, this.adapter, this.params);
     this.params[plan.parameter] = plan.targetValue;
+    this.registry.updateValue(plan.parameter, plan.targetValue);
     this.planner.recordApplied(plan, this.currentTick);
   }
 
@@ -270,6 +283,14 @@ export class AgentE {
 
   removePrinciple(id: string): void {
     this.diagnoser.removePrinciple(id);
+  }
+
+  registerParameter(param: RegisteredParameter): void {
+    this.registry.register(param);
+  }
+
+  getRegistry(): ParameterRegistry {
+    return this.registry;
   }
 
   registerCustomMetric(name: string, fn: (state: EconomyState) => number): void {

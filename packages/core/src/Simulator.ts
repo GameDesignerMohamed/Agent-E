@@ -11,9 +11,15 @@ import type {
 import { emptyMetrics } from './types.js';
 import { Diagnoser } from './Diagnoser.js';
 import { ALL_PRINCIPLES } from './principles/index.js';
+import type { ParameterRegistry, FlowImpact } from './ParameterRegistry.js';
 
 export class Simulator {
   private diagnoser = new Diagnoser(ALL_PRINCIPLES);
+  private registry: ParameterRegistry | undefined;
+
+  constructor(registry?: ParameterRegistry) {
+    this.registry = registry;
+  }
   // Cache beforeViolations for the *current* tick only (one entry max).
   // Using a Map here is intentional but the cache must be bounded — we only
   // care about the tick that is currently being evaluated, so we evict any
@@ -118,7 +124,7 @@ export class Simulator {
     const multiplier = this.actionMultiplier(action);
     const noise = () => 1 + (Math.random() - 0.5) * 0.1;
     const currencies = metrics.currencies;
-    const targetCurrency = action.currency; // may be undefined (= all)
+    const targetCurrency = action.scope?.currency; // may be undefined (= all)
 
     // Per-currency state
     const supplies: Record<string, number> = { ...metrics.totalSupplyByCurrency };
@@ -179,28 +185,53 @@ export class Simulator {
   }
 
   private flowEffect(action: SuggestedAction, metrics: EconomyMetrics, currency: string): number {
-    const { parameter, direction } = action;
+    const { direction } = action;
     const sign = direction === 'increase' ? -1 : 1;
 
     const roleEntries = Object.entries(metrics.populationByRole).sort((a, b) => b[1] - a[1]);
     const dominantRoleCount = roleEntries[0]?.[1] ?? 0;
 
-    if (parameter === 'productionCost') {
-      return sign * (metrics.netFlowByCurrency[currency] ?? 0) * 0.2;
+    // Resolve flow impact from registry if available, else infer from parameterType
+    const resolvedKey = action.resolvedParameter;
+    let impact: FlowImpact | undefined;
+    if (resolvedKey && this.registry) {
+      impact = this.registry.getFlowImpact(resolvedKey);
     }
-    if (parameter === 'transactionFee') {
-      return sign * (metrics.velocityByCurrency[currency] ?? 0) * 10 * 0.1;
+    if (!impact) {
+      impact = this.inferFlowImpact(action.parameterType);
     }
-    if (parameter === 'entryFee') {
-      return sign * dominantRoleCount * 0.5;
+
+    switch (impact) {
+      case 'sink':
+        return sign * (metrics.netFlowByCurrency[currency] ?? 0) * 0.2;
+      case 'faucet':
+        return -sign * dominantRoleCount * 0.3;
+      case 'neutral':
+        return sign * dominantRoleCount * 0.5;
+      case 'mixed':
+        return sign * (metrics.faucetVolumeByCurrency[currency] ?? 0) * 0.15;
+      default:
+        return sign * (metrics.netFlowByCurrency[currency] ?? 0) * 0.1;
     }
-    if (parameter === 'rewardRate') {
-      return -sign * dominantRoleCount * 0.3;
+  }
+
+  /** Infer flow impact from parameter type when registry is unavailable */
+  private inferFlowImpact(parameterType: string): FlowImpact {
+    switch (parameterType) {
+      case 'cost':
+      case 'fee':
+      case 'penalty':
+        return 'sink';
+      case 'reward':
+        return 'faucet';
+      case 'yield':
+        return 'mixed';
+      case 'cap':
+      case 'multiplier':
+        return 'neutral';
+      default:
+        return 'mixed';
     }
-    if (parameter === 'yieldRate') {
-      return sign * (metrics.faucetVolumeByCurrency[currency] ?? 0) * 0.15;
-    }
-    return sign * (metrics.netFlowByCurrency[currency] ?? 0) * 0.1;
   }
 
   private checkImprovement(

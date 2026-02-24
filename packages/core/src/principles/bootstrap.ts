@@ -20,7 +20,7 @@ export const P17_GracePeriodBeforeIntervention: Principle = {
         severity: 7,
         evidence: { tick: metrics.tick, avgSatisfaction: metrics.avgSatisfaction },
         suggestedAction: {
-          parameter: 'entryFee',
+          parameterType: 'fee', scope: { tags: ['entry'] },
           direction: 'decrease',
           magnitude: 0.20,
           reasoning:
@@ -57,7 +57,7 @@ export const P18_FirstProducerNeedsStartingInventory: Principle = {
           severity: 8,
           evidence: { tick: metrics.tick, resource, supply, totalAgents: metrics.totalAgents },
           suggestedAction: {
-            parameter: 'productionCost',
+            parameterType: 'cost',
             direction: 'decrease',
             magnitude: 0.50,
             reasoning:
@@ -111,7 +111,7 @@ export const P19_StartingSupplyExceedsDemand: Principle = {
           resourcesPerAgent
         },
         suggestedAction: {
-          parameter: 'rewardRate',
+          parameterType: 'reward',
           direction: 'increase',
           magnitude: 0.20,
           reasoning:
