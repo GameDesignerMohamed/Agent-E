@@ -6,8 +6,8 @@ import { emptyMetrics } from '../../src/types.js';
 const t = DEFAULT_THRESHOLDS;
 
 describe('P5 — Profitability Is Relative', () => {
-  it('fires when 97 Traders dominate (the V0.4.6 scenario)', () => {
-    // Real V0.4.6 screenshot: 97+50+23+18+9+11 = 208 total agents
+  it('fires when 97 Traders dominate (the original scenario)', () => {
+    // Original scenario: 97+50+23+18+9+11 = 208 total agents
     const total = 208;
     const m = {
       ...emptyMetrics(184),

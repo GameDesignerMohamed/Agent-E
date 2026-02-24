@@ -1,11 +1,11 @@
 {
   "name": "@agent-e/core",
-  "version": "1.5.3",
+  "version": "1.5.4",
   "description": "Autonomous economic balancer SDK — observe, diagnose, simulate, plan, execute. Any digital economy.",
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/AE-Vault/AgentE-v0.git",
+    "url": "git+https://github.com/AE-Vault/AgentE.git",
     "directory": "packages/core"
   },
   "main": "./dist/index.cjs",

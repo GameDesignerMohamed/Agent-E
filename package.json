@@ -4,9 +4,7 @@
   "workspaces": [
     "packages/core",
     "packages/server",
-    "packages/adapter-game",
-    "packages/adapter-defi",
-    "packages/adapter-marketplace"
+    "packages/adapter-game"
   ],
   "scripts": {
     "build": "npm run build --workspaces --if-present",

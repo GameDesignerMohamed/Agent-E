@@ -83,7 +83,7 @@ parameters: [
 ],
 ```
 
-### DeFi Protocol
+### DeFi Protocol (Coming Soon)
 
 ```typescript
 currencies: ['ETH', 'USDC'],
@@ -95,7 +95,7 @@ parameters: [
 ],
 ```
 
-### Marketplace
+### Marketplace (Coming Soon)
 
 ```typescript
 currencies: ['credits'],
@@ -179,13 +179,12 @@ Each principle returns either `{ violated: false }` or a full violation with sev
 |---------|-------------|
 | `@agent-e/core` | The SDK. Zero dependencies. |
 | `@agent-e/adapter-game` | Presets for game economies |
-| `@agent-e/adapter-defi` | Presets for DeFi protocols — coming soon |
-| `@agent-e/adapter-marketplace` | Presets for two-sided marketplaces — coming soon |
+| `@agent-e/server` | HTTP + WebSocket server for game engine integration |
 
 ## Links
 
 - [npm](https://www.npmjs.com/package/@agent-e/core)
-- [GitHub](https://github.com/AE-Vault/AgentE-v0)
+- [GitHub](https://github.com/AE-Vault/AgentE)
 
 ## License
 

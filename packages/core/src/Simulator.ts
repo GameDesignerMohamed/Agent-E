@@ -1,5 +1,5 @@
 // Stage 3: Simulator — forward Monte Carlo projection before any action is applied
-// The single biggest architectural addition in V1 (vs V0's intuition-based adjustments)
+// Monte Carlo forward projection — simulates before any action is applied
 
 import type {
   EconomyMetrics,

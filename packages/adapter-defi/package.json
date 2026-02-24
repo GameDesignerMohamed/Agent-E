@@ -1,8 +1,0 @@
-{
-  "name": "@agent-e/adapter-defi",
-  "version": "1.0.0",
-  "description": "AgentE adapter for DeFi protocols (stub — Phase 4)",
-  "main": "./src/index.ts",
-  "dependencies": { "@agent-e/core": "*" },
-  "devDependencies": { "typescript": "*" }
-}

@@ -375,7 +375,7 @@ describe('V1.4.6 — Observer custom metric warning', () => {
       },
       [],
     );
-    expect(metrics.custom['broken']).toBeNaN();
+    expect(metrics.custom['broken']).toBe(0);
     expect(warnSpy).toHaveBeenCalledWith(
       expect.stringContaining("Custom metric 'broken'"),
       expect.any(Error),

@@ -380,7 +380,7 @@ export class Observer {
         custom[name] = fn(state);
       } catch (err) {
         console.warn(`[AgentE] Custom metric '${name}' threw an error:`, err);
-        custom[name] = NaN;
+        custom[name] = 0;
       }
     }
 
