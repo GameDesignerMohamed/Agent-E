@@ -5,7 +5,7 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/AE-Vault/AgentE-v0.git",
+    "url": "git+https://github.com/AE-Vault/AgentE.git",
     "directory": "packages/adapter-game"
   },
   "main": "./dist/index.cjs",
