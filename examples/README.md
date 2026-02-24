@@ -33,23 +33,23 @@ Every tick, send a JSON object matching this shape:
 ```json
 {
   "tick": 100,
-  "roles": ["Fighter", "Crafter", "Gatherer"],
-  "resources": ["ore", "weapons"],
-  "currencies": ["gold"],
+  "roles": ["role_a", "role_b", "role_c"],
+  "resources": ["resource_x", "resource_y"],
+  "currencies": ["currency_a"],
   "agentBalances": {
-    "agent_1": { "gold": 150 },
-    "agent_2": { "gold": 80 }
+    "agent_1": { "currency_a": 150 },
+    "agent_2": { "currency_a": 80 }
   },
   "agentRoles": {
-    "agent_1": "Fighter",
-    "agent_2": "Crafter"
+    "agent_1": "role_a",
+    "agent_2": "role_b"
   },
   "agentInventories": {
-    "agent_1": { "weapons": 2 },
-    "agent_2": { "ore": 5 }
+    "agent_1": { "resource_x": 2 },
+    "agent_2": { "resource_y": 5 }
   },
   "marketPrices": {
-    "gold": { "ore": 15, "weapons": 50 }
+    "currency_a": { "resource_x": 15, "resource_y": 50 }
   },
   "recentTransactions": []
 }
@@ -82,14 +82,14 @@ Every tick, send a JSON object matching this shape:
 ```json
 {
   "adjustments": [
-    { "key": "craftingCost", "value": 12.5 }
+    { "key": "your_cost_param", "value": 12.5 }
   ],
   "alerts": [
     { "principle": "P1", "name": "Production Must Match Consumption", "severity": 7 }
   ],
   "health": 85,
   "decisions": [
-    { "id": "d_1", "parameter": "craftingCost", "result": "applied" }
+    { "id": "d_1", "parameter": "your_cost_param", "result": "applied" }
   ]
 }
 ```
@@ -104,7 +104,7 @@ npx @agent-e/server
 # Test with curl
 curl -X POST http://localhost:3000/tick \
   -H 'Content-Type: application/json' \
-  -d '{"state":{"tick":0,"roles":["Fighter"],"resources":[],"currencies":["gold"],"agentBalances":{},"agentRoles":{},"agentInventories":{},"marketPrices":{},"recentTransactions":[]}}'
+  -d '{"state":{"tick":0,"roles":["role_a"],"resources":[],"currencies":["currency_a"],"agentBalances":{},"agentRoles":{},"agentInventories":{},"marketPrices":{},"recentTransactions":[]}}'
 ```
 
 ## HTTP vs WebSocket

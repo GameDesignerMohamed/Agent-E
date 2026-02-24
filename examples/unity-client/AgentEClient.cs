@@ -89,23 +89,23 @@ public class AgentEClient : MonoBehaviour
 
         return @"{
             ""tick"": " + tickCounter + @",
-            ""roles"": [""Fighter"", ""Crafter"", ""Gatherer""],
-            ""resources"": [""ore"", ""weapons""],
-            ""currencies"": [""gold""],
+            ""roles"": [""role_a"", ""role_b"", ""role_c""],
+            ""resources"": [""resource_x"", ""resource_y""],
+            ""currencies"": [""currency_a""],
             ""agentBalances"": {
-                ""agent_1"": { ""gold"": 150 },
-                ""agent_2"": { ""gold"": 80 }
+                ""agent_1"": { ""currency_a"": 150 },
+                ""agent_2"": { ""currency_a"": 80 }
             },
             ""agentRoles"": {
-                ""agent_1"": ""Fighter"",
-                ""agent_2"": ""Crafter""
+                ""agent_1"": ""role_a"",
+                ""agent_2"": ""role_b""
             },
             ""agentInventories"": {
-                ""agent_1"": { ""weapons"": 2 },
-                ""agent_2"": { ""ore"": 5 }
+                ""agent_1"": { ""resource_x"": 2 },
+                ""agent_2"": { ""resource_y"": 5 }
             },
             ""marketPrices"": {
-                ""gold"": { ""ore"": 15, ""weapons"": 50 }
+                ""currency_a"": { ""resource_x"": 15, ""resource_y"": 50 }
             },
             ""recentTransactions"": []
         }";
@@ -131,8 +131,8 @@ public class AgentEClient : MonoBehaviour
     private void ApplyAdjustment(string paramKey, float value)
     {
         // Example:
-        // if (paramKey == "craftingCost") economyParams.craftingCost = value;
-        // if (paramKey == "miningYield") economyParams.miningYield = value;
+        // if (paramKey == "your_cost_param") economyParams.costParam = value;
+        // if (paramKey == "your_yield_param") economyParams.yieldParam = value;
         Debug.Log($"[AgentE] Adjust {paramKey} → {value}");
     }
 

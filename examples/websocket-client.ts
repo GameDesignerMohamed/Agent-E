@@ -2,7 +2,7 @@
  * AgentE WebSocket Client Example
  *
  * WebSocket transport for real-time, low-latency communication with AgentE.
- * Better than HTTP for games that tick frequently (>10 ticks/second).
+ * Better than HTTP for economies that tick frequently (>10 ticks/second).
  *
  * Usage:
  *   1. Start the AgentE server: npx @agent-e/server
@@ -145,13 +145,13 @@ async function main() {
   // Send a tick (TODO: replace with your actual game state)
   client.sendTick({
     tick: 0,
-    roles: ['Fighter', 'Crafter'],
-    resources: ['ore', 'weapons'],
-    currencies: ['gold'],
-    agentBalances: { agent_1: { gold: 150 } },
-    agentRoles: { agent_1: 'Fighter' },
-    agentInventories: { agent_1: { weapons: 2 } },
-    marketPrices: { gold: { ore: 15, weapons: 50 } },
+    roles: ['role_a', 'role_b'],
+    resources: ['resource_x', 'resource_y'],
+    currencies: ['currency_a'],
+    agentBalances: { agent_1: { currency_a: 150 } },
+    agentRoles: { agent_1: 'role_a' },
+    agentInventories: { agent_1: { resource_x: 2 } },
+    marketPrices: { currency_a: { resource_x: 15, resource_y: 50 } },
     recentTransactions: [],
   });
 

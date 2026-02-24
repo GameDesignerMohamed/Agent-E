@@ -11,13 +11,13 @@ export const P51_CyclicalEngagement: Principle = {
     'If peaks are shrinking (cyclical engagement becoming flat), activity fatigue is setting in. ' +
     'If valleys are deepening, the off-activity economy is failing to sustain engagement.',
   check(metrics, thresholds): PrincipleResult {
-    const { sharkToothPeaks, sharkToothValleys } = metrics;
-    if (sharkToothPeaks.length < 2) return { violated: false };
+    const { cyclicalPeaks, cyclicalValleys } = metrics;
+    if (cyclicalPeaks.length < 2) return { violated: false };
 
-    const lastPeak = sharkToothPeaks[sharkToothPeaks.length - 1] ?? 0;
-    const prevPeak = sharkToothPeaks[sharkToothPeaks.length - 2] ?? 0;
+    const lastPeak = cyclicalPeaks[cyclicalPeaks.length - 1] ?? 0;
+    const prevPeak = cyclicalPeaks[cyclicalPeaks.length - 2] ?? 0;
 
-    if (prevPeak > 0 && lastPeak / prevPeak < thresholds.sharkToothPeakDecay) {
+    if (prevPeak > 0 && lastPeak / prevPeak < thresholds.cyclicalPeakDecay) {
       return {
         violated: true,
         severity: 5,
@@ -25,7 +25,7 @@ export const P51_CyclicalEngagement: Principle = {
           lastPeak,
           prevPeak,
           ratio: lastPeak / prevPeak,
-          threshold: thresholds.sharkToothPeakDecay,
+          threshold: thresholds.cyclicalPeakDecay,
         },
         suggestedAction: {
           parameterType: 'reward',
@@ -33,7 +33,7 @@ export const P51_CyclicalEngagement: Principle = {
           magnitude: 0.10,
           reasoning:
             `Peak engagement dropped to ${(lastPeak / prevPeak * 100).toFixed(0)}% of previous peak ` +
-            `(threshold: ${(thresholds.sharkToothPeakDecay * 100).toFixed(0)}%). Activity fatigue detected. ` +
+            `(threshold: ${(thresholds.cyclicalPeakDecay * 100).toFixed(0)}%). Activity fatigue detected. ` +
             'Boost activity rewards to restore peak engagement.',
         },
         confidence: 0.75,
@@ -41,10 +41,10 @@ export const P51_CyclicalEngagement: Principle = {
       };
     }
 
-    if (sharkToothValleys.length >= 2) {
-      const lastValley = sharkToothValleys[sharkToothValleys.length - 1] ?? 0;
-      const prevValley = sharkToothValleys[sharkToothValleys.length - 2] ?? 0;
-      if (prevValley > 0 && lastValley / prevValley < thresholds.sharkToothValleyDecay) {
+    if (cyclicalValleys.length >= 2) {
+      const lastValley = cyclicalValleys[cyclicalValleys.length - 1] ?? 0;
+      const prevValley = cyclicalValleys[cyclicalValleys.length - 2] ?? 0;
+      if (prevValley > 0 && lastValley / prevValley < thresholds.cyclicalValleyDecay) {
         return {
           violated: true,
           severity: 4,

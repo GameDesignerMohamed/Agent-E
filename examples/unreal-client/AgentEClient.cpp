@@ -80,23 +80,23 @@ FString UAgentEClient::BuildStateJson()
 
     return FString::Printf(TEXT(R"({
         "tick": %d,
-        "roles": ["Fighter", "Crafter", "Gatherer"],
-        "resources": ["ore", "weapons"],
-        "currencies": ["gold"],
+        "roles": ["role_a", "role_b", "role_c"],
+        "resources": ["resource_x", "resource_y"],
+        "currencies": ["currency_a"],
         "agentBalances": {
-            "agent_1": { "gold": 150 },
-            "agent_2": { "gold": 80 }
+            "agent_1": { "currency_a": 150 },
+            "agent_2": { "currency_a": 80 }
         },
         "agentRoles": {
-            "agent_1": "Fighter",
-            "agent_2": "Crafter"
+            "agent_1": "role_a",
+            "agent_2": "role_b"
         },
         "agentInventories": {
-            "agent_1": { "weapons": 2 },
-            "agent_2": { "ore": 5 }
+            "agent_1": { "resource_x": 2 },
+            "agent_2": { "resource_y": 5 }
         },
         "marketPrices": {
-            "gold": { "ore": 15, "weapons": 50 }
+            "currency_a": { "resource_x": 15, "resource_y": 50 }
         },
         "recentTransactions": []
     })"), TickCounter);

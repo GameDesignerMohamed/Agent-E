@@ -1,12 +1,12 @@
 /**
  * AgentE Browser/Node HTTP Client Example
  *
- * This example shows how to integrate AgentE with any game engine
+ * This example shows how to integrate AgentE with any application
  * that can make HTTP requests. Works in browsers and Node.js.
  *
  * Usage:
  *   1. Start the AgentE server: npx @agent-e/server
- *   2. Call sendTick() from your game loop every N ticks
+ *   2. Call sendTick() from your main loop every N ticks
  *   3. Apply the returned adjustments to your economy parameters
  */
 
@@ -17,30 +17,30 @@ const AGENTE_URL = 'http://localhost:3000';
 
 function buildState() {
   return {
-    tick: 0,                              // TODO: your current game tick
-    roles: ['Fighter', 'Crafter'],        // TODO: all roles in your game
-    resources: ['ore', 'weapons'],        // TODO: all resource types
-    currencies: ['gold'],                 // TODO: all currency types
+    tick: 0,                                  // TODO: your current tick
+    roles: ['role_a', 'role_b'],              // TODO: all roles in your economy
+    resources: ['resource_x', 'resource_y'],  // TODO: all resource types
+    currencies: ['currency_a'],               // TODO: all currency types
 
     // Agent ID → { currency → balance }
     agentBalances: {
-      // TODO: loop over your agents and populate
-      'agent_1': { gold: 150 },
-      'agent_2': { gold: 80 },
+      // TODO: loop over your participants and populate
+      'agent_1': { currency_a: 150 },
+      'agent_2': { currency_a: 80 },
     },
 
     // Agent ID → role name
     agentRoles: {
-      // TODO: populate from your game
-      'agent_1': 'Fighter',
-      'agent_2': 'Crafter',
+      // TODO: populate from your economy
+      'agent_1': 'role_a',
+      'agent_2': 'role_b',
     },
 
     // Agent ID → { resource → quantity }
     agentInventories: {
-      // TODO: populate from your game
-      'agent_1': { weapons: 2, ore: 0 },
-      'agent_2': { ore: 5, weapons: 0 },
+      // TODO: populate from your economy
+      'agent_1': { resource_x: 2, resource_y: 0 },
+      'agent_2': { resource_y: 5, resource_x: 0 },
     },
 
     // Agent ID → satisfaction score (0-100) — OPTIONAL
@@ -51,18 +51,15 @@ function buildState() {
 
     // currency → { resource → price }
     marketPrices: {
-      // TODO: populate from your market/auction house
-      gold: { ore: 15, weapons: 50 },
+      // TODO: populate from your marketplace
+      currency_a: { resource_x: 15, resource_y: 50 },
     },
 
     // Recent economic events (can be empty)
-    recentTransactions: [
-      // TODO: push trade/mint/burn events from your game loop
-      // { type: 'trade', timestamp: Date.now(), actor: 'agent_1', resource: 'weapons', amount: 1, price: 50 },
-    ],
+    recentTransactions: [],
 
     // OPTIONAL: currency → { poolName → amount }
-    // poolSizes: { gold: { arena: 500, bank: 200 } },
+    // poolSizes: { currency_a: { main_pool: 500, reserve: 200 } },
   };
 }
 
@@ -130,12 +127,12 @@ async function diagnose() {
   return data;
 }
 
-// ─── Example game loop integration ─────────────────────────────────────────
+// ─── Example loop integration ─────────────────────────────────────────
 
 // Call sendTick() every 5 game ticks from your update loop:
 //
 // let tickCounter = 0;
-// function gameUpdate() {
+// function update() {
 //   tickCounter++;
 //   if (tickCounter % 5 === 0) {
 //     sendTick().catch(console.error);

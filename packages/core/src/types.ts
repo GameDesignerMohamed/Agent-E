@@ -122,8 +122,8 @@ export interface EconomyMetrics {
   currencyInsulation: number;
 
   // ── Operations (unchanged) ──
-  sharkToothPeaks: number[];
-  sharkToothValleys: number[];
+  cyclicalPeaks: number[];
+  cyclicalValleys: number[];
   eventCompletionRate: number;
 
   // ── V1.1 Metrics (per-currency where applicable) ──
@@ -226,8 +226,8 @@ export function emptyMetrics(tick = 0): EconomyMetrics {
     avgSatisfaction: 100,
     blockedAgentCount: 0,
     timeToValue: 0,
-    sharkToothPeaks: [],
-    sharkToothValleys: [],
+    cyclicalPeaks: [],
+    cyclicalValleys: [],
     eventCompletionRate: 0,
     contentDropAge: 0,
     systems: [],
@@ -425,8 +425,8 @@ export interface Thresholds {
   payPowerRatioTarget: number;
 
   // Operations (P51, P53)
-  sharkToothPeakDecay: number;
-  sharkToothValleyDecay: number;
+  cyclicalPeakDecay: number;
+  cyclicalValleyDecay: number;
   eventCompletionMin: number;
   eventCompletionMax: number;
 

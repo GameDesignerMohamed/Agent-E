@@ -22,8 +22,8 @@ export const DEFAULT_THRESHOLDS: Thresholds = {
   payPowerRatioTarget: 1.5,
 
   // Operations (P51, P53)
-  sharkToothPeakDecay: 0.95,
-  sharkToothValleyDecay: 0.90,
+  cyclicalPeakDecay: 0.95,
+  cyclicalValleyDecay: 0.90,
   eventCompletionMin: 0.40,
   eventCompletionMax: 0.80,
 

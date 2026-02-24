@@ -1,6 +1,6 @@
 # @agent-e/server
 
-Plug-and-play HTTP + WebSocket server for AgentE. Send your game's economy state, get back parameter adjustments.
+Plug-and-play HTTP + WebSocket server for AgentE. Send your economy's state, get back parameter adjustments.
 
 ## Quick Start
 
@@ -23,7 +23,6 @@ const server = new AgentEServer({
     mode: 'autonomous',     // or 'advisor' for recommendations only
     gracePeriod: 50,         // no interventions before tick 50
     checkInterval: 5,        // analyze every 5 ticks
-    dominantRoles: ['Fighter'],
     maxAdjustmentPercent: 0.15,
     cooldownTicks: 15,
   },
@@ -43,13 +42,13 @@ Send economy state, receive parameter adjustments.
 {
   "state": {
     "tick": 100,
-    "roles": ["Fighter", "Crafter"],
-    "resources": ["ore", "weapons"],
-    "currencies": ["gold"],
-    "agentBalances": { "a1": { "gold": 150 } },
-    "agentRoles": { "a1": "Fighter" },
-    "agentInventories": { "a1": { "weapons": 2 } },
-    "marketPrices": { "gold": { "ore": 15 } },
+    "roles": ["role_a", "role_b"],
+    "resources": ["resource_x", "resource_y"],
+    "currencies": ["currency_a"],
+    "agentBalances": { "agent_1": { "currency_a": 150 } },
+    "agentRoles": { "agent_1": "role_a" },
+    "agentInventories": { "agent_1": { "resource_x": 2 } },
+    "marketPrices": { "currency_a": { "resource_x": 15 } },
     "recentTransactions": []
   },
   "events": []
@@ -59,10 +58,10 @@ Send economy state, receive parameter adjustments.
 **Response (200):**
 ```json
 {
-  "adjustments": [{ "key": "craftingCost", "value": 12.5 }],
+  "adjustments": [{ "key": "your_cost_param", "value": 12.5 }],
   "alerts": [{ "principle": "P1", "severity": 7 }],
   "health": 85,
-  "decisions": [{ "id": "d_1", "parameter": "craftingCost", "result": "applied" }]
+  "decisions": [{ "id": "d_1", "parameter": "your_cost_param", "result": "applied" }]
 }
 ```
 
@@ -90,7 +89,7 @@ Query parameters: `?limit=50`, `?since=100`
     "id": "d_1",
     "tick": 100,
     "principle": "P1",
-    "parameter": "craftingCost",
+    "parameter": "your_cost_param",
     "result": "applied",
     "reasoning": "..."
   }]
@@ -102,9 +101,9 @@ Query parameters: `?limit=50`, `?since=100`
 Lock/unlock parameters, change mode.
 
 ```json
-{ "action": "lock", "param": "craftingCost" }
-{ "action": "unlock", "param": "craftingCost" }
-{ "action": "constrain", "param": "miningYield", "min": 0.5, "max": 2.0 }
+{ "action": "lock", "param": "your_cost_param" }
+{ "action": "unlock", "param": "your_cost_param" }
+{ "action": "constrain", "param": "your_yield_param", "min": 0.5, "max": 2.0 }
 { "action": "mode", "mode": "advisor" }
 ```
 
@@ -156,10 +155,10 @@ All incoming state is validated before processing. Invalid state returns detaile
   "validation": {
     "valid": false,
     "errors": [{
-      "path": "agentBalances.a1.gold",
+      "path": "agentBalances.agent_1.currency_a",
       "expected": "number >= 0",
       "received": "string",
-      "message": "agentBalances.a1.gold must be a non-negative number"
+      "message": "agentBalances.agent_1.currency_a must be a non-negative number"
     }],
     "warnings": []
   }
