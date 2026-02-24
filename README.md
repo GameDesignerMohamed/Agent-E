@@ -17,44 +17,31 @@ import { AgentE } from '@agent-e/core';
 
 const agent = new AgentE({
   adapter: {
+    // AgentE calls this every tick.
+    // Return a snapshot of your economy — from YOUR database/API.
     getState: () => ({
-      tick: currentTick,
-
-      // What currencies exist in your economy?
-      currencies: ['currency_a', 'currency_b'],
-
-      // What sub-systems does your economy have? (optional)
-      systems: ['system_1', 'system_2'],
-
-      // Who holds what?
-      agentBalances: {
-        agent_001: { currency_a: 500, currency_b: 20 },
-        agent_002: { currency_a: 120, currency_b: 80 },
-      },
-
-      // What role does each participant play?
-      agentRoles: { agent_001: 'role_a', agent_002: 'role_b' },
-
-      // What do things cost?
-      marketPrices: {
-        currency_a: { resource_x: 10, resource_y: 25 },
-      },
-
-      roles: ['role_a', 'role_b'],
-      resources: ['resource_x', 'resource_y'],
-      recentTransactions: [],
+      tick: getCurrentTick(),
+      currencies: getCurrencies(),       // e.g. ['gold', 'gems']
+      systems: getSystems(),             // e.g. ['crafting', 'arena']
+      roles: getRoles(),                 // e.g. ['warrior', 'merchant']
+      resources: getResources(),         // e.g. ['ore', 'wood']
+      agentBalances: getBalances(),      // agent → currency → amount
+      agentRoles: getAgentRoles(),       // agent → role
+      marketPrices: getPrices(),         // currency → resource → price
+      recentTransactions: getTxns(),
     }),
 
+    // AgentE tells you WHAT to change — you apply it
     setParam: async (param, value, scope) => {
-      // AgentE tells you WHAT to change — you apply it to your system
       applyToYourEconomy(param, value, scope);
     },
   },
 
-  // Register YOUR parameters — whatever they're called in YOUR economy
+  // Register YOUR economy's tunable parameters
   parameters: [
-    { key: 'your_fee_param',    type: 'fee',    flowImpact: 'friction', scope: { system: 'system_1' } },
-    { key: 'your_reward_param', type: 'reward', flowImpact: 'faucet',   scope: { system: 'system_2' } },
+    { key: 'crafting_cost', type: 'cost',   flowImpact: 'sink' },
+    { key: 'arena_reward',  type: 'reward', flowImpact: 'faucet' },
+    { key: 'market_fee',    type: 'fee',    flowImpact: 'friction' },
   ],
 
   mode: 'advisor',
@@ -66,6 +53,8 @@ agent.start();
 // In your loop:
 await agent.tick();
 ```
+
+> **You never hand-type agents.** `getState()` pulls from your existing backend — whether that's 50 players or 5 million. AgentE computes aggregate metrics (Gini, velocity, flow rates) and balances the economy as a whole.
 
 ## What Does That Look Like in Practice?
 
