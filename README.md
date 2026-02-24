@@ -2,7 +2,7 @@
 
 > 60 principles. 5-stage pipeline. One npm install. Any economy.
 
-AgentE observes, diagnoses, simulates, plans, and executes — keeping any digital economy healthy without manual tuning. Games, DeFi protocols, marketplaces, token economies, social platforms — if it has currencies, resources, and participants, AgentE balances it.
+AgentE observes, diagnoses, simulates, plans, and executes — keeping any digital economy healthy without manual tuning. If it has currencies, resources, and participants, AgentE balances it.
 
 ## Install
 
@@ -19,29 +19,44 @@ const agent = new AgentE({
   adapter: {
     getState: () => ({
       tick: currentTick,
-      currencies: ['credits', 'points'],
-      systems: ['marketplace', 'rewards', 'staking'],
+
+      // What currencies exist in your economy?
+      currencies: ['currency_a', 'currency_b'],
+
+      // What sub-systems does your economy have? (optional)
+      systems: ['system_1', 'system_2'],
+
+      // Who holds what?
       agentBalances: {
-        user_001: { credits: 1200, points: 50 },
-        user_002: { credits: 800, points: 120 },
+        agent_001: { currency_a: 500, currency_b: 20 },
+        agent_002: { currency_a: 120, currency_b: 80 },
       },
-      agentRoles: { user_001: 'seller', user_002: 'buyer' },
+
+      // What role does each participant play?
+      agentRoles: { agent_001: 'role_a', agent_002: 'role_b' },
+
+      // What do things cost?
       marketPrices: {
-        credits: { widget: 10, premium_access: 100 },
+        currency_a: { resource_x: 10, resource_y: 25 },
       },
-      roles: ['buyer', 'seller', 'operator'],
-      resources: ['widget', 'premium_access'],
+
+      roles: ['role_a', 'role_b'],
+      resources: ['resource_x', 'resource_y'],
       recentTransactions: [],
     }),
+
     setParam: async (param, value, scope) => {
+      // AgentE tells you WHAT to change — you apply it to your system
       applyToYourEconomy(param, value, scope);
     },
   },
+
+  // Register YOUR parameters — whatever they're called in YOUR economy
   parameters: [
-    { key: 'listingFee', type: 'fee', flowImpact: 'friction', scope: { system: 'marketplace' } },
-    { key: 'referralBonus', type: 'reward', flowImpact: 'faucet', scope: { system: 'rewards' } },
-    { key: 'stakingYield', type: 'yield', flowImpact: 'faucet', scope: { system: 'staking' } },
+    { key: 'your_fee_param',    type: 'fee',    flowImpact: 'friction', scope: { system: 'system_1' } },
+    { key: 'your_reward_param', type: 'reward', flowImpact: 'faucet',   scope: { system: 'system_2' } },
   ],
+
   mode: 'advisor',
   onDecision: (d) => console.log(d),
 });
@@ -51,6 +66,48 @@ agent.start();
 // In your loop:
 await agent.tick();
 ```
+
+## What Does That Look Like in Practice?
+
+The Quick Start above uses placeholder names. Here's what real setups look like:
+
+### Game Economy
+
+```typescript
+currencies: ['gold', 'gems'],
+systems: ['crafting', 'arena', 'marketplace'],
+parameters: [
+  { key: 'craftingCost',  type: 'cost',   flowImpact: 'sink',    scope: { system: 'crafting' } },
+  { key: 'arenaReward',   type: 'reward', flowImpact: 'faucet',  scope: { system: 'arena' } },
+  { key: 'auctionFee',    type: 'fee',    flowImpact: 'friction', scope: { system: 'marketplace' } },
+],
+```
+
+### DeFi Protocol
+
+```typescript
+currencies: ['ETH', 'USDC'],
+systems: ['amm', 'lending', 'staking'],
+parameters: [
+  { key: 'swapFee',       type: 'fee',   flowImpact: 'friction', scope: { system: 'amm' } },
+  { key: 'borrowRate',    type: 'rate',  flowImpact: 'sink',     scope: { system: 'lending' } },
+  { key: 'stakingYield',  type: 'yield', flowImpact: 'faucet',   scope: { system: 'staking' } },
+],
+```
+
+### Marketplace
+
+```typescript
+currencies: ['credits'],
+systems: ['listings', 'promotions', 'referrals'],
+parameters: [
+  { key: 'listingFee',    type: 'fee',    flowImpact: 'friction', scope: { system: 'listings' } },
+  { key: 'promoDiscount', type: 'cost',   flowImpact: 'faucet',   scope: { system: 'promotions' } },
+  { key: 'referralBonus', type: 'reward', flowImpact: 'faucet',   scope: { system: 'referrals' } },
+],
+```
+
+**The parameter names are YOURS. AgentE only cares about the `type` and `flowImpact`.**
 
 ## How It Works
 
@@ -66,33 +123,24 @@ Your Economy → Observer → Diagnoser → Simulator → Planner → Executor �
 
 ## Universal by Design
 
-AgentE is not a game tool, a DeFi tool, or a marketplace tool. It's an **economy tool**. The core SDK has zero domain-specific logic. Domain adapters (game, DeFi, marketplace) provide presets for specific economy types.
+AgentE is not a game tool, a DeFi tool, or a marketplace tool. It's an **economy tool**. The core SDK has zero domain-specific logic.
 
-### Multi-System
+### Parameter Registry
 
-Register multiple systems (marketplace, crafting, staking, etc.) and AgentE tracks per-system flow, activity, and participant distribution independently.
+The core innovation. You register YOUR parameters with semantic metadata:
 
-### Multi-Currency
+- **`type`** — what kind of lever is it? (`cost`, `fee`, `reward`, `yield`, `rate`, `multiplier`, `threshold`, `weight`, `custom`)
+- **`flowImpact`** — what does it do to the flow of currency? (`sink`, `faucet`, `friction`, `redistribution`, `neutral`)
+- **`scope`** — where in your economy does it live? (`{ system?, currency?, tags? }`)
 
-Every currency gets independent tracking: supply, net flow, velocity, inflation, Gini coefficient, faucet/sink volumes, price index, and arbitrage index.
+AgentE's 60 principles target **types**, not names. When a principle says "decrease the `fee` in `system_1`", the registry resolves that to YOUR parameter name.
 
-### Multi-Resource, Multi-Role, Multi-Everything
+### Multi-Everything
 
-Resources, roles, pools, events — all tracked. The Parameter Registry lets you register any parameter with a semantic type and flow impact, and AgentE's 60 principles target types, not names.
-
-## Parameter Registry
-
-The core innovation. Instead of hardcoding parameter names, you register parameters with metadata:
-
-```typescript
-parameters: [
-  { key: 'swapFee', type: 'fee', flowImpact: 'friction', scope: { system: 'amm' } },
-  { key: 'lpReward', type: 'reward', flowImpact: 'faucet', scope: { system: 'amm' } },
-  { key: 'listingFee', type: 'fee', flowImpact: 'friction', scope: { system: 'marketplace' } },
-]
-```
-
-Principles say "increase the `fee` in `amm`" — the registry resolves that to `swapFee`. Your economy's parameter names stay yours.
+- **Multi-System** — register multiple sub-systems, each tracked independently
+- **Multi-Currency** — every currency gets its own supply, velocity, Gini, inflation, faucet/sink metrics
+- **Multi-Resource** — track resources, roles, pools, and market prices across the economy
+- **Opt-in** — only register what your economy has. No pools? Don't register pool parameters. AgentE won't touch what doesn't exist.
 
 ## Modes
 
@@ -104,16 +152,16 @@ Principles say "increase the `fee` in `amm`" — the registry resolves that to `
 ## Developer Controls
 
 ```typescript
-// Lock a parameter
-agent.lock('listingFee');
+// Lock a parameter — AgentE will NEVER adjust it
+agent.lock('your_param_name');
 
-// Constrain a parameter to a range
-agent.constrain('swapFee', { min: 0.001, max: 0.10 });
+// Constrain a parameter to a range — AgentE can adjust it, but only within these bounds
+agent.constrain('another_param', { min: 0.5, max: 2.0 });
 
-// Add a custom principle
+// Add your own principle
 agent.addPrinciple(myCustomPrinciple);
 
-// Veto actions
+// Veto specific actions before they execute
 agent.on('beforeAction', (plan) => {
   if (plan.parameterType === 'reward' && plan.direction === 'increase') return false;
 });
@@ -130,8 +178,8 @@ Each principle returns either `{ violated: false }` or a full violation with sev
 | Package | Description |
 |---------|-------------|
 | `@agent-e/core` | The SDK. Zero dependencies. |
-| `@agent-e/adapter-game` | Presets for game economies (MMO, idle, PvP, survival) |
-| `@agent-e/adapter-defi` | Presets for DeFi protocols (AMM, lending, staking) — coming soon |
+| `@agent-e/adapter-game` | Presets for game economies |
+| `@agent-e/adapter-defi` | Presets for DeFi protocols — coming soon |
 | `@agent-e/adapter-marketplace` | Presets for two-sided marketplaces — coming soon |
 
 ## Links
