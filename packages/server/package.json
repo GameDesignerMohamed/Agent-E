@@ -1,6 +1,6 @@
 {
   "name": "@agent-e/server",
-  "version": "1.4.0",
+  "version": "1.4.1",
   "description": "Plug-and-play HTTP + WebSocket server for AgentE",
   "main": "./dist/index.js",
   "module": "./dist/index.mjs",
