@@ -1,6 +1,6 @@
 {
   "name": "@agent-e/server",
-  "version": "1.4.4",
+  "version": "1.4.5",
   "description": "Ready-to-run HTTP + WebSocket server for AgentE",
   "license": "MIT",
   "repository": {
@@ -19,9 +19,12 @@
     }
   },
   "bin": {
-    "agent-e-server": "./dist/cli.js"
+    "agent-e-server": "dist/cli.js"
   },
-  "files": ["dist", "README.md"],
+  "files": [
+    "dist",
+    "README.md"
+  ],
   "scripts": {
     "build": "tsup",
     "dev": "tsup --watch",
