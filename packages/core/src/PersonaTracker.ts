@@ -15,10 +15,13 @@ interface AgentSignals {
 
 export class PersonaTracker {
   private agentHistory = new Map<string, AgentSignals[]>();
+  private lastSeen = new Map<string, number>();
 
   /** Ingest a state snapshot and update agent signal history */
   update(state: EconomyState): void {
+    const tick = state.tick;
     for (const agentId of Object.keys(state.agentBalances)) {
+      this.lastSeen.set(agentId, tick);
       const history = this.agentHistory.get(agentId) ?? [];
       const inv = state.agentInventories[agentId] ?? {};
       const uniqueItems = Object.values(inv).filter(q => q > 0).length;
@@ -36,6 +39,16 @@ export class PersonaTracker {
       // Keep last 50 ticks of history
       if (history.length > 50) history.shift();
       this.agentHistory.set(agentId, history);
+    }
+
+    // Periodic pruning: remove agents unseen for >100 ticks (every 50 ticks)
+    if (tick % 50 === 0) {
+      for (const [id, lastTick] of this.lastSeen) {
+        if (tick - lastTick > 100) {
+          this.agentHistory.delete(id);
+          this.lastSeen.delete(id);
+        }
+      }
     }
   }
 

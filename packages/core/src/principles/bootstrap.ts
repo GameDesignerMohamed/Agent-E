@@ -116,7 +116,7 @@ export const P19_StartingSupplyExceedsDemand: Principle = {
           magnitude: 0.20,
           reasoning:
             `${mostPopulatedRole} (${population} agents) has insufficient resources (${resourcesPerAgent.toFixed(2)} per agent). ` +
-            'Cold-start scarcity. Boost competitive pool reward to attract participation despite scarcity.',
+            'Cold-start scarcity. Boost pool reward to attract participation despite scarcity.',
         },
         confidence: 0.75,
         estimatedLag: 5,

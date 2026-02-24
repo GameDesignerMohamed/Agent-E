@@ -6,6 +6,7 @@ import type {
   SuggestedAction,
   SimulationResult,
   SimulationOutcome,
+  SimulationConfig,
   Thresholds,
 } from './types.js';
 import { emptyMetrics } from './types.js';
@@ -13,18 +14,29 @@ import { Diagnoser } from './Diagnoser.js';
 import { ALL_PRINCIPLES } from './principles/index.js';
 import type { ParameterRegistry, FlowImpact } from './ParameterRegistry.js';
 
+const DEFAULT_SIM_CONFIG: Required<SimulationConfig> = {
+  sinkMultiplier: 0.20,
+  faucetMultiplier: 0.15,
+  frictionMultiplier: 0.10,
+  frictionVelocityScale: 10,
+  redistributionMultiplier: 0.30,
+  neutralMultiplier: 0.05,
+  minIterations: 100,
+  maxProjectionTicks: 20,
+};
+
 export class Simulator {
   private diagnoser = new Diagnoser(ALL_PRINCIPLES);
   private registry: ParameterRegistry | undefined;
+  private simConfig: Required<SimulationConfig>;
 
-  constructor(registry?: ParameterRegistry) {
+  constructor(registry?: ParameterRegistry, simConfig?: SimulationConfig) {
     this.registry = registry;
+    this.simConfig = { ...DEFAULT_SIM_CONFIG, ...simConfig };
   }
-  // Cache beforeViolations for the *current* tick only (one entry max).
-  // Using a Map here is intentional but the cache must be bounded — we only
-  // care about the tick that is currently being evaluated, so we evict any
-  // entries whose key differs from the incoming tick.
-  private beforeViolationsCache = new Map<number, Set<string>>();
+  // Cache beforeViolations for the *current* tick only.
+  private cachedViolationsTick: number = -1;
+  private cachedViolations: Set<string> = new Set();
 
   /**
    * Simulate the effect of applying `action` to the current economy forward `forwardTicks`.
@@ -60,20 +72,15 @@ export class Simulator {
     const netImprovement = this.checkImprovement(currentMetrics, p50, action);
 
     // Validate: does the action create new principle violations not present before?
-    // Cache beforeViolations per tick to avoid redundant diagnose() calls when
-    // evaluating multiple candidate actions at the same tick.
-    // IMPORTANT: evict stale entries so the cache stays bounded to 1 entry.
+    // Cache beforeViolations per tick to avoid redundant diagnose() calls.
     const tick = currentMetrics.tick;
-    if (this.beforeViolationsCache.size > 0 && !this.beforeViolationsCache.has(tick)) {
-      this.beforeViolationsCache.clear();
-    }
-    let beforeViolations = this.beforeViolationsCache.get(tick);
-    if (!beforeViolations) {
-      beforeViolations = new Set(
+    if (this.cachedViolationsTick !== tick) {
+      this.cachedViolations = new Set(
         this.diagnoser.diagnose(currentMetrics, thresholds).map(d => d.principle.id),
       );
-      this.beforeViolationsCache.set(tick, beforeViolations);
+      this.cachedViolationsTick = tick;
     }
+    const beforeViolations = this.cachedViolations;
     const afterViolations = new Set(
       this.diagnoser.diagnose(p50, thresholds).map(d => d.principle.id),
     );
@@ -203,23 +210,22 @@ export class Simulator {
       impact = this.inferFlowImpact(action.parameterType);
     }
 
+    const cfg = this.simConfig;
     switch (impact) {
       case 'sink':
-        return sign * (metrics.netFlowByCurrency[currency] ?? 0) * 0.2;
+        return sign * (metrics.netFlowByCurrency[currency] ?? 0) * cfg.sinkMultiplier;
       case 'faucet':
-        return -sign * dominantRoleCount * 0.3;
+        return -sign * dominantRoleCount * cfg.redistributionMultiplier;
       case 'neutral':
-        return sign * dominantRoleCount * 0.5;
+        return sign * dominantRoleCount * cfg.neutralMultiplier;
       case 'mixed':
-        return sign * (metrics.faucetVolumeByCurrency[currency] ?? 0) * 0.15;
+        return sign * (metrics.faucetVolumeByCurrency[currency] ?? 0) * cfg.faucetMultiplier;
       case 'friction':
-        // Friction slows flow without removing currency — dampens net flow
-        return sign * (metrics.netFlowByCurrency[currency] ?? 0) * 0.1;
+        return sign * (metrics.netFlowByCurrency[currency] ?? 0) * cfg.frictionMultiplier;
       case 'redistribution':
-        // Redistribution moves currency between participants — near-zero net effect
-        return sign * dominantRoleCount * 0.05;
+        return sign * dominantRoleCount * cfg.neutralMultiplier;
       default:
-        return sign * (metrics.netFlowByCurrency[currency] ?? 0) * 0.1;
+        return sign * (metrics.netFlowByCurrency[currency] ?? 0) * cfg.frictionMultiplier;
     }
   }
 
@@ -245,7 +251,7 @@ export class Simulator {
   private checkImprovement(
     before: EconomyMetrics,
     after: EconomyMetrics,
-    action: SuggestedAction,
+    _action: SuggestedAction,
   ): boolean {
     const satisfactionImproved = after.avgSatisfaction >= before.avgSatisfaction - 2;
 
@@ -262,7 +268,6 @@ export class Simulator {
       return afterGini <= beforeGini + 0.05;
     });
 
-    void action;
     return satisfactionImproved && flowMoreBalanced && notWorseGini;
   }
 

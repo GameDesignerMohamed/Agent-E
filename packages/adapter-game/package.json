@@ -1,6 +1,6 @@
 {
   "name": "@agent-e/adapter-game",
-  "version": "1.4.4",
+  "version": "1.5.2",
   "description": "AgentE adapter for game economies",
   "license": "MIT",
   "repository": {

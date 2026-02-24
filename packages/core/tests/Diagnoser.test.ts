@@ -92,6 +92,12 @@ describe('Diagnoser', () => {
       top10PctShare: 0.35,
       top10PctShareByCurrency: { credits: 0.35 },
       pinchPoints: { goodA: 'optimal' as const, goodB: 'optimal' as const },
+      // V1.5.2: these were NaN (skipped by principles), now 0 → set healthy values
+      extractionRatio: 0.30,
+      smokeTestRatio: 0.50,
+      currencyInsulation: 0.30,
+      newUserDependency: 0.20,
+      eventCompletionRate: 0.60,
     };
 
     const diagnoses = diagnoser.diagnose(m, t);

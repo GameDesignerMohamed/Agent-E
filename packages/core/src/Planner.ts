@@ -160,6 +160,16 @@ export class Planner {
     this.typeCooldowns.clear();
   }
 
+  /** V1.5.2: Reset active plan count (e.g., on system restart) */
+  resetActivePlans(): void {
+    this.activePlanCount = 0;
+  }
+
+  /** V1.5.2: Current active plan count (for diagnostics) */
+  getActivePlanCount(): number {
+    return this.activePlanCount;
+  }
+
   private typeCooldownKey(type: string, scope?: Partial<ParameterScope>): string {
     const parts = [type];
     if (scope?.system) parts.push(`sys:${scope.system}`);

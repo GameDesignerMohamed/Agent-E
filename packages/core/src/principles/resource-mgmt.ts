@@ -26,7 +26,7 @@ export const P35_DestructionCreatesValue: Principle = {
             magnitude: 0.10,
             reasoning:
               `${resource} supply at ${supply} units with low destruction (sink ${sinkVolume}/t). ` +
-              'Resources not being consumed. Lower competitive pool entry to increase resource usage.',
+              'Resources not being consumed. Lower pool entry to increase resource usage.',
           },
           confidence: 0.70,
           estimatedLag: 5,

@@ -11,6 +11,11 @@ interface ActivePlan {
 
 export class Executor {
   private activePlans: ActivePlan[] = [];
+  private maxActiveTicks: number;
+
+  constructor(settlementWindowTicks = 200) {
+    this.maxActiveTicks = settlementWindowTicks;
+  }
 
   async apply(
     plan: ActionPlan,
@@ -41,8 +46,7 @@ export class Executor {
       const rc = plan.rollbackCondition;
 
       // Hard TTL: evict plans that have been active for too long
-      const maxActiveTicks = 200;
-      if (plan.appliedAt !== undefined && metrics.tick - plan.appliedAt > maxActiveTicks) {
+      if (plan.appliedAt !== undefined && metrics.tick - plan.appliedAt > this.maxActiveTicks) {
         settled.push(plan);
         continue;
       }

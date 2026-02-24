@@ -11,6 +11,7 @@ export { MetricStore } from './MetricStore.js';
 export { PersonaTracker } from './PersonaTracker.js';
 export { ParameterRegistry } from './ParameterRegistry.js';
 export type { ParameterType, FlowImpact, ParameterScope, RegisteredParameter, RegistryValidationResult } from './ParameterRegistry.js';
+export type { ExecutionResult } from './Executor.js';
 export { findWorstSystem } from './utils.js';
 export { validateEconomyState } from './StateValidator.js';
 export type { ValidationError, ValidationWarning, ValidationResult } from './StateValidator.js';

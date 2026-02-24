@@ -3,9 +3,9 @@
 
 import type { Principle, PrincipleResult } from '../types.js';
 
-export const P5_ProfitabilityIsCompetitive: Principle = {
+export const P5_ProfitabilityIsRelative: Principle = {
   id: 'P5',
-  name: 'Profitability Is Competitive, Not Absolute',
+  name: 'Profitability Is Relative, Not Absolute',
   category: 'incentive',
   description:
     'Any profitability formula that returns the same number regardless of how many ' +
@@ -90,7 +90,7 @@ export const P7_NonSpecialistsSubsidiseSpecialists: Principle = {
   name: 'Non-Specialists Subsidise Specialists in Zero-Sum Games',
   category: 'incentive',
   description:
-    'In zero-sum pools (competitive pool, staking), the math only works if non-specialists ' +
+    'In zero-sum pools (staking, prize pools, etc.), the math only works if non-specialists ' +
     'overpay relative to specialists. If the pool is >70% specialists, ' +
     'there is no one left to subsidise and the pot drains.',
   check(metrics, _thresholds): PrincipleResult {
@@ -143,7 +143,7 @@ export const P8_RegulatorCannotFightDesign: Principle = {
   description:
     'If the economy is designed to have a majority role (e.g. dominant role exceeds 55%), ' +
     'the regulator must know this and exempt that role from population suppression. ' +
-    'AgentE at tick 1 seeing dominant role exceeds 55% and slashing competitive pool rewards is overreach.',
+    'AgentE at tick 1 seeing dominant role exceeds 55% and slashing pool rewards is overreach.',
   check(metrics, _thresholds): PrincipleResult {
     // This principle is mostly enforced by configuration (dominantRoles).
     // Here we detect a possible signal: dominant role's satisfaction is dropping
@@ -179,7 +179,7 @@ export const P8_RegulatorCannotFightDesign: Principle = {
 };
 
 export const INCENTIVE_PRINCIPLES: Principle[] = [
-  P5_ProfitabilityIsCompetitive,
+  P5_ProfitabilityIsRelative,
   P6_CrowdingMultiplierOnAllRoles,
   P7_NonSpecialistsSubsidiseSpecialists,
   P8_RegulatorCannotFightDesign,

@@ -20,6 +20,13 @@ export class Observer {
   }
 
   compute(state: EconomyState, recentEvents: EconomicEvent[]): EconomyMetrics {
+    if (!state.currencies || state.currencies.length === 0) {
+      console.warn('[AgentE] Warning: state.currencies is empty. Metrics will be zeroed.');
+    }
+    if (!state.agentBalances || Object.keys(state.agentBalances).length === 0) {
+      console.warn('[AgentE] Warning: state.agentBalances is empty.');
+    }
+
     const tick = state.tick;
     const roles = Object.values(state.agentRoles);
     const totalAgents = Object.keys(state.agentBalances).length;
@@ -131,7 +138,7 @@ export class Observer {
       const faucet = faucetVolumeByCurrency[curr] ?? 0;
       const sink = sinkVolumeByCurrency[curr] ?? 0;
       netFlowByCurrency[curr] = faucet - sink;
-      tapSinkRatioByCurrency[curr] = sink > 0 ? faucet / sink : faucet > 0 ? Infinity : 1;
+      tapSinkRatioByCurrency[curr] = sink > 0 ? Math.min(faucet / sink, 100) : faucet > 0 ? 100 : 1;
 
       const prevSupply = this.previousMetrics?.totalSupplyByCurrency?.[curr] ?? totalSupplyByCurrency[curr] ?? 0;
       const currSupply = totalSupplyByCurrency[curr] ?? 0;
@@ -177,7 +184,7 @@ export class Observer {
     const faucetVolume = Object.values(faucetVolumeByCurrency).reduce((s, v) => s + v, 0);
     const sinkVolume = Object.values(sinkVolumeByCurrency).reduce((s, v) => s + v, 0);
     const netFlow = faucetVolume - sinkVolume;
-    const tapSinkRatio = sinkVolume > 0 ? faucetVolume / sinkVolume : faucetVolume > 0 ? Infinity : 1;
+    const tapSinkRatio = sinkVolume > 0 ? Math.min(faucetVolume / sinkVolume, 100) : faucetVolume > 0 ? 100 : 1;
     const velocity = totalSupply > 0 ? tradeEvents.length / totalSupply : 0;
     const prevTotalSupply = this.previousMetrics?.totalSupply ?? totalSupply;
     const inflationRate = prevTotalSupply > 0 ? (totalSupply - prevTotalSupply) / prevTotalSupply : 0;
@@ -224,7 +231,9 @@ export class Observer {
       const pVals = Object.values(resourcePrices);
       priceIndexByCurrency[curr] = pVals.length > 0 ? pVals.reduce((s, p) => s + p, 0) / pVals.length : 0;
     }
-    this.previousPricesByCurrency = JSON.parse(JSON.stringify(pricesByCurrency));
+    this.previousPricesByCurrency = Object.fromEntries(
+      Object.entries(pricesByCurrency).map(([c, p]) => [c, { ...p }])
+    );
 
     // Aggregate prices: use first currency as default
     const prices = pricesByCurrency[defaultCurrency] ?? {};
@@ -252,9 +261,9 @@ export class Observer {
     for (const resource of new Set([...Object.keys(supplyByResource), ...Object.keys(demandSignals)])) {
       const s = supplyByResource[resource] ?? 0;
       const d = demandSignals[resource] ?? 0;
-      if (d > 2 && s / d < 0.5) {
+      if (d > 0 && d > 2 && s / d < 0.5) {
         pinchPoints[resource] = 'scarce';
-      } else if (s > 3 && d > 0 && s / d > 3) {
+      } else if (d > 0 && s > 3 && s / d > 3) {
         pinchPoints[resource] = 'oversupplied';
       } else {
         pinchPoints[resource] = 'optimal';
@@ -317,24 +326,15 @@ export class Observer {
     // ── V1.1 Metrics ──
 
     // ── Per-currency arbitrage index ──
+    // O(n) arbitrage index: standard deviation of log prices
     const arbitrageIndexByCurrency: Record<string, number> = {};
     for (const curr of currencies) {
       const cPrices = pricesByCurrency[curr] ?? {};
-      const priceKeys = Object.keys(cPrices).filter(k => cPrices[k]! > 0);
-      if (priceKeys.length >= 2) {
-        let pairCount = 0;
-        let totalDivergence = 0;
-        for (let i = 0; i < priceKeys.length; i++) {
-          for (let j = i + 1; j < priceKeys.length; j++) {
-            const pA = cPrices[priceKeys[i]!]!;
-            const pB = cPrices[priceKeys[j]!]!;
-            let ratio = pA / pB;
-            ratio = Math.max(0.001, Math.min(1000, ratio));
-            totalDivergence += Math.abs(Math.log(ratio));
-            pairCount++;
-          }
-        }
-        arbitrageIndexByCurrency[curr] = pairCount > 0 ? Math.min(1, totalDivergence / pairCount) : 0;
+      const logPrices = Object.values(cPrices).filter(p => p > 0).map(p => Math.log(p));
+      if (logPrices.length >= 2) {
+        const mean = logPrices.reduce((s, v) => s + v, 0) / logPrices.length;
+        const variance = logPrices.reduce((s, v) => s + (v - mean) ** 2, 0) / logPrices.length;
+        arbitrageIndexByCurrency[curr] = Math.min(1, Math.sqrt(variance));
       } else {
         arbitrageIndexByCurrency[curr] = 0;
       }
@@ -432,10 +432,10 @@ export class Observer {
       prices,
       priceVolatility,
       poolSizes: poolSizesAggregate,
-      extractionRatio: NaN,
-      newUserDependency: NaN,
-      smokeTestRatio: NaN,
-      currencyInsulation: NaN,
+      extractionRatio: 0,
+      newUserDependency: 0,
+      smokeTestRatio: 0,
+      currencyInsulation: 0,
       arbitrageIndex,
       giftTradeRatio,
       disposalTradeRatio,
@@ -457,7 +457,7 @@ export class Observer {
       timeToValue,
       sharkToothPeaks: this.previousMetrics?.sharkToothPeaks ?? [],
       sharkToothValleys: this.previousMetrics?.sharkToothValleys ?? [],
-      eventCompletionRate: NaN,
+      eventCompletionRate: 0,
       contentDropAge,
       systems: state.systems ?? [],
       sources: state.sources ?? [],
@@ -496,5 +496,5 @@ function computeGini(sorted: number[]): number {
   for (let i = 0; i < n; i++) {
     numerator += (2 * (i + 1) - n - 1) * (sorted[i] ?? 0);
   }
-  return Math.abs(numerator) / (n * sum);
+  return Math.min(1, Math.abs(numerator) / (n * sum));
 }

@@ -52,6 +52,10 @@ const BANNED_PATTERNS = [
   { pattern: /\bContentDrop\b/, name: 'ContentDrop' },
   { pattern: /_PinchPoint\b/, name: 'PinchPoint (in variable name)' },
   { pattern: /SpawnWeighting/, name: 'SpawnWeighting' },
+  // V1.5.2 additions (pool terminology)
+  { pattern: /poolHouseCut/, name: 'poolHouseCut' },
+  { pattern: /competitive pool/i, name: 'competitive pool' },
+  { pattern: /ProfitabilityIsCompetitive/, name: 'ProfitabilityIsCompetitive' },
 ];
 
 /** Old principle categories that were replaced. */

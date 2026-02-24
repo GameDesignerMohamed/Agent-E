@@ -64,7 +64,7 @@ export const P13_PotsAreZeroSumAndSelfRegulate: Principle = {
   name: 'Pots Self-Regulate with Correct Multiplier',
   category: 'currency',
   description:
-    'Competitive pot math: winRate × multiplier > (1 - houseCut) drains the pot. ' +
+    'Pool math: winRate × multiplier > (1 - operatorShare) drains the pot. ' +
     'At 65% win rate, multiplier must be ≤ 1.38. We use 1.5 for slight surplus buffer.',
   check(metrics, thresholds): PrincipleResult {
     const { populationByRole } = metrics;
@@ -77,8 +77,8 @@ export const P13_PotsAreZeroSumAndSelfRegulate: Principle = {
         const poolSize = currencyAmounts[curr] ?? 0;
 
         if (dominantCount > 5 && poolSize < 50) {
-          const { poolWinRate, poolHouseCut } = thresholds;
-          const maxSustainableMultiplier = (1 - poolHouseCut) / poolWinRate;
+          const { poolWinRate, poolOperatorShare } = thresholds;
+          const maxSustainableMultiplier = (1 - poolOperatorShare) / poolWinRate;
 
           return {
             violated: true,

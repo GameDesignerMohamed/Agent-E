@@ -28,9 +28,9 @@ export class DecisionLog {
       metricsSnapshot: metrics,
     };
 
-    this.entries.unshift(entry); // newest first
-    if (this.entries.length > this.maxEntries) {
-      this.entries.pop();
+    this.entries.push(entry); // oldest first, newest at end
+    if (this.entries.length > this.maxEntries * 1.5) {
+      this.entries = this.entries.slice(-this.maxEntries);
     }
 
     return entry;
@@ -52,8 +52,10 @@ export class DecisionLog {
       reasoning: reason,
       metricsSnapshot: metrics,
     };
-    this.entries.unshift(entry);
-    if (this.entries.length > this.maxEntries) this.entries.pop();
+    this.entries.push(entry);
+    if (this.entries.length > this.maxEntries * 1.5) {
+      this.entries = this.entries.slice(-this.maxEntries);
+    }
   }
 
   query(filter?: {
@@ -74,7 +76,7 @@ export class DecisionLog {
   }
 
   latest(n = 30): DecisionEntry[] {
-    return this.entries.slice(0, n);
+    return this.entries.slice(-n).reverse();
   }
 
   export(format: 'json' | 'text' = 'json'): string {

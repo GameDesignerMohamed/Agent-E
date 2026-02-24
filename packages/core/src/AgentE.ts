@@ -45,7 +45,7 @@ export class AgentE {
   private diagnoser: Diagnoser;
   private simulator: Simulator;
   private planner = new Planner();
-  private executor = new Executor();
+  private executor!: Executor;
   private registry = new ParameterRegistry();
 
   // ── State ──
@@ -69,6 +69,8 @@ export class AgentE {
       dominantRoles: config.dominantRoles ?? [],
       idealDistribution: config.idealDistribution ?? {},
       validateRegistry: config.validateRegistry ?? true,
+      simulation: config.simulation ?? {},
+      settlementWindowTicks: config.settlementWindowTicks ?? 200,
       tickConfig: config.tickConfig ?? { duration: 1, unit: 'tick' },
       gracePeriod: config.gracePeriod ?? 50,
       checkInterval: config.checkInterval ?? 5,
@@ -103,7 +105,8 @@ export class AgentE {
       for (const e of validation.errors) console.error(`[AgentE] Registry error: ${e}`);
     }
 
-    this.simulator = new Simulator(this.registry);
+    this.executor = new Executor(config.settlementWindowTicks);
+    this.simulator = new Simulator(this.registry, config.simulation);
 
     // Wire up config callbacks
     if (config.onDecision) this.on('decision', config.onDecision as never);
@@ -160,8 +163,8 @@ export class AgentE {
     const currentState = state ?? (await Promise.resolve(this.adapter.getState()));
     this.currentTick = currentState.tick;
 
-    // Drain event buffer
-    const events = [...this.eventBuffer];
+    // Drain event buffer (atomic swap — no window for lost events)
+    const events = this.eventBuffer;
     this.eventBuffer = [];
 
     // Stage 1: Observe
@@ -328,7 +331,9 @@ export class AgentE {
 
   on(event: EventName, handler: (...args: unknown[]) => unknown): this {
     const list = this.handlers.get(event) ?? [];
-    list.push(handler);
+    if (!list.includes(handler)) {
+      list.push(handler);
+    }
     this.handlers.set(event, list);
     return this;
   }
@@ -343,8 +348,12 @@ export class AgentE {
     const list = this.handlers.get(event) ?? [];
     let result: unknown;
     for (const handler of list) {
-      result = handler(...args);
-      if (result === false) return false; // veto
+      try {
+        result = handler(...args);
+        if (result === false) return false; // veto
+      } catch (err) {
+        console.error(`[AgentE] Handler error on '${event}':`, err);
+      }
     }
     return result;
   }

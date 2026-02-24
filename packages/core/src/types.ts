@@ -203,10 +203,10 @@ export function emptyMetrics(tick = 0): EconomyMetrics {
     prices: {},
     priceVolatility: {},
     poolSizes: {},
-    extractionRatio: NaN,
-    newUserDependency: NaN,
-    smokeTestRatio: NaN,
-    currencyInsulation: NaN,
+    extractionRatio: 0,
+    newUserDependency: 0,
+    smokeTestRatio: 0,
+    currencyInsulation: 0,
     arbitrageIndex: 0,
     giftTradeRatio: 0,
     disposalTradeRatio: 0,
@@ -228,7 +228,7 @@ export function emptyMetrics(tick = 0): EconomyMetrics {
     timeToValue: 0,
     sharkToothPeaks: [],
     sharkToothValleys: [],
-    eventCompletionRate: NaN,
+    eventCompletionRate: 0,
     contentDropAge: 0,
     systems: [],
     sources: [],
@@ -443,8 +443,8 @@ export interface Thresholds {
   cooldownTicks: number;
 
   // Currency (P13)
-  poolWinRate: number;              // generic: win rate for competitive pools
-  poolHouseCut: number;             // generic: house cut for competitive pools
+  poolWinRate: number;              // generic: win rate for pools (competitive, liquidity, staking, etc.)
+  poolOperatorShare: number;        // generic: operator's share of pool proceeds
 
   // Population balance (P9)
   roleSwitchFrictionMax: number;
@@ -495,6 +495,19 @@ export interface TickConfig {
 
 // ── AgentE Config ─────────────────────────────────────────────────────────────
 
+// ── Simulation Config ─────────────────────────────────────────────────────────
+
+export interface SimulationConfig {
+  sinkMultiplier?: number;              // default 0.20
+  faucetMultiplier?: number;            // default 0.15
+  frictionMultiplier?: number;          // default 0.10
+  frictionVelocityScale?: number;       // default 10
+  redistributionMultiplier?: number;    // default 0.30
+  neutralMultiplier?: number;           // default 0.05
+  minIterations?: number;               // default 100
+  maxProjectionTicks?: number;          // default 20
+}
+
 export type AgentEMode = 'autonomous' | 'advisor';
 
 export interface AgentEConfig {
@@ -520,6 +533,12 @@ export interface AgentEConfig {
   // Tuning
   maxAdjustmentPercent?: number;
   cooldownTicks?: number;
+
+  // Simulation tuning
+  simulation?: SimulationConfig;
+
+  // Executor settlement window (ticks before plan auto-settles; default: 200)
+  settlementWindowTicks?: number;
 
   // Thresholds overrides (partial — merged with defaults)
   thresholds?: Partial<Thresholds>;

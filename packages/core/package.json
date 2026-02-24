@@ -1,7 +1,7 @@
 {
   "name": "@agent-e/core",
-  "version": "1.5.1",
-  "description": "Autonomous economic balancer — observe, diagnose, simulate, plan, execute",
+  "version": "1.5.2",
+  "description": "Autonomous economic balancer SDK — observe, diagnose, simulate, plan, execute. Any digital economy.",
   "license": "MIT",
   "repository": {
     "type": "git",
@@ -29,11 +29,14 @@
   "keywords": [
     "economy",
     "balancer",
+    "autonomous",
+    "simulation",
     "game-economy",
     "defi",
     "marketplace",
-    "autonomous",
-    "simulation"
+    "token-economy",
+    "multi-currency",
+    "multi-system"
   ],
   "publishConfig": {
     "access": "public"

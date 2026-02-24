@@ -1,6 +1,6 @@
 # @agent-e/core
 
-Autonomous economic balancer SDK. 60 built-in principles, 5-stage pipeline, zero dependencies.
+Autonomous economic balancer SDK. 60 built-in principles, 5-stage pipeline, zero dependencies. Works with any digital economy — games, DeFi, marketplaces, token systems, social platforms.
 
 ## Install
 
@@ -13,40 +13,38 @@ npm install @agent-e/core
 ```typescript
 import { AgentE } from '@agent-e/core';
 
-const adapter = {
-  getState: () => ({
-    tick: currentTick,
-    currencies: ['gold', 'gems'],
-    agentBalances: {
-      player1: { gold: 100, gems: 50 },
-      player2: { gold: 200, gems: 10 },
-    },
-    agentRoles: { /* id → role */ },
-    agentInventories: { /* id → { resource → qty } */ },
-    marketPrices: {
-      gold: { sword: 10, potion: 5 },
-      gems: { sword: 2, potion: 1 },
-    },
-    agentSatisfaction: { /* id → 0-100 */ },
-    poolSizes: { rewardPool: { gold: 500, gems: 100 } },
-    roles: ['warrior', 'mage'],
-    resources: ['sword', 'potion'],
-    recentTransactions: [],
-  }),
-  setParam: async (param, value, currency) => {
-    // currency tells you which economy to adjust
-    applyToYourEconomy(param, value, currency);
-  },
-};
-
 const agent = new AgentE({
-  adapter,
-  mode: 'advisor', // or 'autonomous'
+  adapter: {
+    getState: () => ({
+      tick: currentTick,
+      currencies: ['credits', 'tokens'],
+      systems: ['exchange', 'rewards'],
+      agentBalances: {
+        user_a: { credits: 500, tokens: 20 },
+        user_b: { credits: 300, tokens: 80 },
+      },
+      agentRoles: { user_a: 'provider', user_b: 'consumer' },
+      marketPrices: {
+        credits: { service_a: 10, service_b: 25 },
+      },
+      agentSatisfaction: { user_a: 72, user_b: 85 },
+      poolSizes: { rewardPool: { credits: 5000 } },
+      roles: ['provider', 'consumer'],
+      resources: ['service_a', 'service_b'],
+      recentTransactions: [],
+    }),
+    setParam: async (param, value, scope) => {
+      applyToYourEconomy(param, value, scope);
+    },
+  },
+  parameters: [
+    { key: 'exchangeFee', type: 'fee', flowImpact: 'friction', scope: { system: 'exchange' } },
+    { key: 'dailyReward', type: 'reward', flowImpact: 'faucet', scope: { system: 'rewards' } },
+  ],
+  mode: 'advisor',
 });
 
-agent.connect(adapter).start();
-
-// Call once per tick in your loop:
+agent.start();
 await agent.tick();
 ```
 
@@ -58,16 +56,29 @@ await agent.tick();
 4. **Planner** — Lag-aware, cooldown-aware planning with rollback conditions
 5. **Executor** — Applies actions and monitors for rollback triggers
 
-## Multi-Currency Support
+## Parameter Registry
 
-AgentE tracks each currency independently. Every currency gets its own:
-- Supply, net flow, velocity, inflation rate
-- Gini coefficient, median/mean balance, wealth distribution
-- Faucet/sink volumes, pool sizes
-- Price index, arbitrage index
+Register your economy's parameters with semantic types and flow impacts:
 
-When a principle detects an issue, the violation tells you which currency
-is unhealthy and the suggested action is scoped to that currency.
+```typescript
+parameters: [
+  { key: 'tradeFee',   type: 'fee',    flowImpact: 'friction',       scope: { system: 'trading' } },
+  { key: 'mintReward', type: 'reward', flowImpact: 'faucet',         scope: { system: 'minting' } },
+  { key: 'burnRate',   type: 'rate',   flowImpact: 'sink',           scope: { system: 'burning' } },
+  { key: 'lpYield',    type: 'yield',  flowImpact: 'faucet',         scope: { system: 'liquidity', currency: 'tokens' } },
+  { key: 'platformCut', type: 'fee',   flowImpact: 'sink',           scope: { system: 'marketplace', tags: ['operator'] } },
+]
+```
+
+Principles target types (e.g., "decrease `fee` in `trading`"), and the registry resolves to your concrete parameter name.
+
+## Multi-System, Multi-Currency
+
+AgentE tracks each system and currency independently:
+
+- Per-currency: supply, net flow, velocity, inflation, Gini, wealth distribution, faucet/sink volumes, price index
+- Per-system: flow, activity, participant count
+- Cross-system: arbitrage index, source/sink share analysis
 
 ## Modes
 
@@ -76,36 +87,15 @@ is unhealthy and the suggested action is scoped to that currency.
 | `autonomous` | Full pipeline — executes parameter changes automatically |
 | `advisor` | Full pipeline but stops before execution — emits recommendations via `onDecision` |
 
-## 60 Principles
-
-Organized across 15 categories: supply chain, incentives, population, currency flow, bootstrap, feedback loops, regulator, market dynamics, measurement, statistical, system dynamics, resource management, player experience, open economy, and liveops.
-
-Each principle has a `check(metrics, thresholds)` function that returns either `{ violated: false }` or a violation with severity, evidence, suggested action, confidence, and estimated lag.
-
-## Tick Configuration
-
-```typescript
-const agent = new AgentE({
-  adapter: yourAdapter,
-  tickConfig: {
-    duration: 5,          // one tick = 5 seconds
-    unit: 'second',
-    mediumWindow: 12,     // medium metrics = every 12 ticks (60s)
-    coarseWindow: 120,    // coarse metrics = every 120 ticks (10min)
-  },
-});
-```
-
 ## Developer API
 
 ```typescript
 // Lock a parameter from automated adjustment
-agent.lock('productionCost');          // lock for ALL currencies
-// Future: agent.lock('productionCost', 'gems');  // lock for specific currency
-agent.unlock('productionCost');
+agent.lock('exchangeFee');
+agent.unlock('exchangeFee');
 
 // Constrain a parameter to a range
-agent.constrain('transactionFee', { min: 0.01, max: 0.50 });
+agent.constrain('dailyReward', { min: 1, max: 100 });
 
 // Add a custom principle
 agent.addPrinciple(myPrinciple);
@@ -115,7 +105,7 @@ agent.registerCustomMetric('myMetric', (state) => compute(state));
 
 // Veto actions
 agent.on('beforeAction', (plan) => {
-  if (plan.targetValue > 2.0) return false;
+  if (plan.parameterType === 'reward') return false;
 });
 
 // Query decision history
@@ -135,21 +125,22 @@ import type { Principle } from '@agent-e/core';
 
 const myRule: Principle = {
   id: 'MY_01',
-  name: 'Support Role Population Floor',
+  name: 'Provider Population Floor',
   category: 'population',
-  description: 'Support role share below 5% is a crisis',
+  description: 'Provider role share below 5% is a crisis',
   check(metrics, thresholds) {
-    const share = metrics.roleShares['support'] ?? 0;
+    const share = metrics.roleShares['provider'] ?? 0;
     if (share < 0.05) {
       return {
         violated: true,
         severity: 8,
         evidence: { share },
         suggestedAction: {
-          parameter: 'supportReward',
+          parameterType: 'reward',
+          scope: { tags: ['provider'] },
           direction: 'increase',
           magnitude: 0.25,
-          reasoning: 'Support role population critically low.',
+          reasoning: 'Provider population critically low.',
         },
         confidence: 0.90,
         estimatedLag: 10,
@@ -162,14 +153,23 @@ const myRule: Principle = {
 agent.addPrinciple(myRule);
 ```
 
+## 60 Principles
+
+Organized across 15 categories: supply chain, incentives, population, currency flow, bootstrap, feedback loops, regulator, market dynamics, measurement, statistical, system dynamics, resource management, participant experience, open economy, and operations.
+
 ## Performance
 
 - **O(N) event classification** — single-pass instead of 6 separate filters
+- **O(n) arbitrage index** — log-price standard deviation instead of pairwise
 - **Cached diagnosis** — no redundant principle checks within the same tick
-- **Numerical stability** — clamped inputs to prevent NaN edge cases
+- **Numerical stability** — clamped inputs to prevent NaN/Infinity edge cases
 
 Typical for 1,000 agents, 100 events/tick: ~60ms end-to-end.
 
 ## License
 
 MIT
+
+---
+
+**Built by Oka × Claude — AB Labs**

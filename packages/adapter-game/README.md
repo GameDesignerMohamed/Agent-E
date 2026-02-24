@@ -91,7 +91,7 @@ If you implement `getRecentEvents()`, return events with these types:
 | `produce` | Resource crafted or gathered |
 | `consume` | Resource used up |
 | `role_change` | Agent switched roles |
-| `spawn` | New agent entered economy |
+| `enter` | New agent entered economy |
 | `churn` | Agent left economy |
 
 ## Pushing Events
@@ -113,3 +113,12 @@ onPlayerTrade((trade) => {
   });
 });
 ```
+
+## Links
+
+- [Core Package](https://www.npmjs.com/package/@agent-e/core)
+- [GitHub](https://github.com/AE-Vault/AgentE-v0)
+
+---
+
+**Built by Oka × Claude — AB Labs**

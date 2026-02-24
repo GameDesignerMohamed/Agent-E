@@ -41,7 +41,7 @@ export const DEFAULT_THRESHOLDS: Thresholds = {
 
   // Currency (P13)
   poolWinRate: 0.65,
-  poolHouseCut: 0.10,
+  poolOperatorShare: 0.10,
 
   // Population balance (P9)
   roleSwitchFrictionMax: 0.05,   // >5% of population switching in one period = herd

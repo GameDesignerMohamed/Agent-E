@@ -3,7 +3,10 @@
   "private": true,
   "workspaces": [
     "packages/core",
-    "packages/server"
+    "packages/server",
+    "packages/adapter-game",
+    "packages/adapter-defi",
+    "packages/adapter-marketplace"
   ],
   "scripts": {
     "build": "npm run build --workspaces --if-present",
