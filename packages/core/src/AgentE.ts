@@ -176,7 +176,7 @@ export class AgentE {
       return; // skip this tick, don't crash the loop
     }
     this.store.record(metrics);
-    this.personaTracker.update(currentState);
+    this.personaTracker.update(currentState, events);
     metrics.personaDistribution = this.personaTracker.getDistribution();
 
     // Check rollbacks on active plans

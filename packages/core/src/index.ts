@@ -9,6 +9,7 @@ export { Executor } from './Executor.js';
 export { DecisionLog } from './DecisionLog.js';
 export { MetricStore } from './MetricStore.js';
 export { PersonaTracker } from './PersonaTracker.js';
+export type { PersonaConfig } from './PersonaTracker.js';
 export { ParameterRegistry } from './ParameterRegistry.js';
 export type { ParameterType, FlowImpact, ParameterScope, RegisteredParameter, RegistryValidationResult } from './ParameterRegistry.js';
 export type { ExecutionResult } from './Executor.js';

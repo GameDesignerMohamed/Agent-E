@@ -35,7 +35,7 @@ const BANNED_PATTERNS = [
   { pattern: /\bplayer\b/i, name: 'player' },
   { pattern: /\bspawn\b/i, name: 'spawn' },
   { pattern: /\barena\b/i, name: 'arena' },
-  { pattern: /\bwhale\b/i, name: 'whale' },
+  // 'whale' removed — now a legitimate behavioral archetype (PersonaType) used across finance/crypto/marketplaces
   { pattern: /'productionCost'/, name: "'productionCost'" },
   { pattern: /'transactionFee'/, name: "'transactionFee'" },
   { pattern: /'entryFee'/, name: "'entryFee'" },

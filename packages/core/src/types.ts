@@ -552,16 +552,16 @@ export interface AgentEConfig {
 // ── Persona Types ─────────────────────────────────────────────────────────────
 
 export type PersonaType =
-  | 'Active'
-  | 'Trader'
-  | 'Collector'
-  | 'Speculator'
-  | 'Earner'
-  | 'Builder'
-  | 'Social'
-  | 'HighValue'
-  | 'Influencer'
-  | string;
+  | 'Whale'
+  | 'ActiveTrader'
+  | 'Accumulator'
+  | 'Spender'
+  | 'NewEntrant'
+  | 'AtRisk'
+  | 'Dormant'
+  | 'PowerUser'
+  | 'Passive'
+  | string;           // extensible — adapters can add domain-specific labels
 
 export interface PersonaProfile {
   type: PersonaType;
