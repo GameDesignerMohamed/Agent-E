@@ -110,7 +110,7 @@ export const P14_TrackActualInjection: Principle = {
   name: 'Track Actual Currency Injection, Not Value Creation',
   category: 'currency',
   description:
-    'Counting resource gathering as "currency injected" is misleading. ' +
+    'Counting resource extraction as "currency injected" is misleading. ' +
     'Currency enters through faucet mechanisms (entering, rewards). ' +
     'Fake metrics break every downstream decision.',
   check(metrics, _thresholds): PrincipleResult {

@@ -78,7 +78,7 @@ describe('Observer — per-system and per-source/sink tracking', () => {
       expect(metrics.flowBySystem['marketplace']).toBe(30);
     });
 
-    it('tracks positive flow for enter events in a system', () => {
+    it('does NOT track enter events in per-system flow (enter is global-only faucet)', () => {
       const observer = new Observer();
       const state = makeState();
       const events: EconomicEvent[] = [
@@ -87,7 +87,10 @@ describe('Observer — per-system and per-source/sink tracking', () => {
 
       const metrics = observer.compute(state, events);
 
-      expect(metrics.flowBySystem['onboarding']).toBe(20);
+      // 'enter' no longer counts as a faucet in per-system flow tracking
+      expect(metrics.flowBySystem['onboarding']).toBeUndefined();
+      // But still counted in activity
+      expect(metrics.activityBySystem['onboarding']).toBe(1);
     });
 
     it('tracks negative flow for burn events in a system', () => {
@@ -125,8 +128,8 @@ describe('Observer — per-system and per-source/sink tracking', () => {
 
       const metrics = observer.compute(state, events);
 
-      // net = +100 - 40 + 10 = 70
-      expect(metrics.flowBySystem['marketplace']).toBe(70);
+      // net = +100 - 40 = 60 (enter is no longer counted in per-system flow)
+      expect(metrics.flowBySystem['marketplace']).toBe(60);
     });
 
     it('tracks multiple systems independently', () => {
@@ -238,7 +241,7 @@ describe('Observer — per-system and per-source/sink tracking', () => {
       expect(metrics.flowBySink['daily_reward']).toBeUndefined();
     });
 
-    it('routes enter events to flowBySource by sourceOrSink name', () => {
+    it('does NOT route enter events to flowBySource (enter is global-only faucet)', () => {
       const observer = new Observer();
       const state = makeState();
       const events: EconomicEvent[] = [
@@ -247,7 +250,8 @@ describe('Observer — per-system and per-source/sink tracking', () => {
 
       const metrics = observer.compute(state, events);
 
-      expect(metrics.flowBySource['signup_bonus']).toBe(50);
+      // 'enter' no longer counts as a source in per-source tracking
+      expect(metrics.flowBySource['signup_bonus']).toBeUndefined();
     });
 
     it('routes burn events to flowBySink by sourceOrSink name', () => {

@@ -68,6 +68,7 @@ export class AgentE {
       mode: this.mode,
       dominantRoles: config.dominantRoles ?? [],
       idealDistribution: config.idealDistribution ?? {},
+      validateRegistry: config.validateRegistry ?? true,
       tickConfig: config.tickConfig ?? { duration: 1, unit: 'tick' },
       gracePeriod: config.gracePeriod ?? 50,
       checkInterval: config.checkInterval ?? 5,
@@ -94,6 +95,14 @@ export class AgentE {
     if (config.parameters) {
       this.registry.registerAll(config.parameters);
     }
+
+    // Validate registry on startup (default: true)
+    if (config.validateRegistry !== false && this.registry.size > 0) {
+      const validation = this.registry.validate();
+      for (const w of validation.warnings) console.warn(`[AgentE] Registry warning: ${w}`);
+      for (const e of validation.errors) console.error(`[AgentE] Registry error: ${e}`);
+    }
+
     this.simulator = new Simulator(this.registry);
 
     // Wire up config callbacks

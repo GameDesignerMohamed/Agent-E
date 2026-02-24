@@ -191,11 +191,13 @@ export class Simulator {
     const roleEntries = Object.entries(metrics.populationByRole).sort((a, b) => b[1] - a[1]);
     const dominantRoleCount = roleEntries[0]?.[1] ?? 0;
 
-    // Resolve flow impact from registry if available, else infer from parameterType
-    const resolvedKey = action.resolvedParameter;
+    // Resolve flow impact directly from registry by type+scope (independent of Planner)
     let impact: FlowImpact | undefined;
-    if (resolvedKey && this.registry) {
-      impact = this.registry.getFlowImpact(resolvedKey);
+    if (this.registry) {
+      const resolved = this.registry.resolve(action.parameterType, action.scope);
+      if (resolved) {
+        impact = resolved.flowImpact;
+      }
     }
     if (!impact) {
       impact = this.inferFlowImpact(action.parameterType);
@@ -210,6 +212,12 @@ export class Simulator {
         return sign * dominantRoleCount * 0.5;
       case 'mixed':
         return sign * (metrics.faucetVolumeByCurrency[currency] ?? 0) * 0.15;
+      case 'friction':
+        // Friction slows flow without removing currency — dampens net flow
+        return sign * (metrics.netFlowByCurrency[currency] ?? 0) * 0.1;
+      case 'redistribution':
+        // Redistribution moves currency between participants — near-zero net effect
+        return sign * dominantRoleCount * 0.05;
       default:
         return sign * (metrics.netFlowByCurrency[currency] ?? 0) * 0.1;
     }

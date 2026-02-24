@@ -18,6 +18,7 @@ export class Planner {
   private lockedParams = new Set<string>();
   private constraints = new Map<string, ParameterConstraint>();
   private cooldowns = new Map<string, number>(); // param → last-applied-tick
+  private typeCooldowns = new Map<string, number>(); // type+scope key → last-applied-tick
   private activePlanCount = 0;
 
   lock(param: string): void {
@@ -50,6 +51,10 @@ export class Planner {
     registry?: ParameterRegistry,
   ): ActionPlan | null {
     const action = diagnosis.violation.suggestedAction;
+
+    // Type-level cooldown: prevent re-planning the same parameterType+scope before registry resolution
+    const typeKey = this.typeCooldownKey(action.parameterType, action.scope);
+    if (this.isTypeCooldown(typeKey, metrics.tick, thresholds.cooldownTicks)) return null;
 
     // Resolve parameterType + scope to a concrete key via registry
     let param: string;
@@ -128,6 +133,10 @@ export class Planner {
 
   recordApplied(plan: ActionPlan, tick: number): void {
     this.cooldowns.set(plan.parameter, tick);
+    // Also record type-level cooldown from the diagnosis action
+    const action = plan.diagnosis.violation.suggestedAction;
+    const typeKey = this.typeCooldownKey(action.parameterType, action.scope);
+    this.typeCooldowns.set(typeKey, tick);
     this.activePlanCount++;
   }
 
@@ -148,5 +157,20 @@ export class Planner {
   /** Reset all cooldowns (useful for testing) */
   resetCooldowns(): void {
     this.cooldowns.clear();
+    this.typeCooldowns.clear();
+  }
+
+  private typeCooldownKey(type: string, scope?: Partial<ParameterScope>): string {
+    const parts = [type];
+    if (scope?.system) parts.push(`sys:${scope.system}`);
+    if (scope?.currency) parts.push(`cur:${scope.currency}`);
+    if (scope?.tags?.length) parts.push(`tags:${scope.tags.sort().join(',')}`);
+    return parts.join('|');
+  }
+
+  private isTypeCooldown(typeKey: string, currentTick: number, cooldownTicks: number): boolean {
+    const lastApplied = this.typeCooldowns.get(typeKey);
+    if (lastApplied === undefined) return false;
+    return currentTick - lastApplied < cooldownTicks;
   }
 }

@@ -91,7 +91,7 @@ export class Executor {
   }
 
   private getMetricValue(metrics: EconomyMetrics, metricPath: string): number {
-    // Support dotted paths like 'poolSizes.competitive' or 'custom.myMetric'
+    // Support dotted paths like 'poolSizes.primary' or 'custom.myMetric'
     const parts = metricPath.split('.');
     let value: unknown = metrics;
     for (const part of parts) {

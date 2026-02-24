@@ -17,10 +17,12 @@ export type ParameterType =
 
 /** How a parameter change affects net currency flow */
 export type FlowImpact =
-  | 'sink'       // increasing this parameter drains currency (costs, fees, penalties)
-  | 'faucet'     // increasing this parameter injects currency (rewards, yields)
-  | 'neutral'    // no direct flow effect (caps, multipliers)
-  | 'mixed';     // depends on context
+  | 'sink'             // increasing this parameter drains currency (costs, fees, penalties)
+  | 'faucet'           // increasing this parameter injects currency (rewards, yields)
+  | 'neutral'          // no direct flow effect (caps, multipliers)
+  | 'mixed'            // depends on context
+  | 'friction'         // slows flow without removing currency (cooldowns, lock periods)
+  | 'redistribution';  // moves currency between participants without net change
 
 /** Scope narrows which concrete parameter a type resolves to */
 export interface ParameterScope {
@@ -43,6 +45,17 @@ export interface RegisteredParameter {
   currentValue?: number;
   /** Human-readable description */
   description?: string;
+  /** Priority tiebreaker — higher wins when specificity scores are equal */
+  priority?: number;
+  /** Human-readable label for UIs and logs */
+  label?: string;
+}
+
+/** Result of registry.validate() */
+export interface RegistryValidationResult {
+  valid: boolean;
+  warnings: string[];
+  errors: string[];
 }
 
 // ── Registry ────────────────────────────────────────────────────────────────
@@ -64,28 +77,35 @@ export class ParameterRegistry {
    * Resolve a parameterType + scope to a concrete RegisteredParameter.
    * Returns the best match, or undefined if no match.
    *
-   * Matching rules (in priority order):
-   * 1. Exact type match + all scope fields match
-   * 2. Exact type match + partial scope match (tags overlap)
-   * 3. Exact type match + no scope constraints
-   * 4. undefined (no match)
+   * Matching rules:
+   * 1. Filter candidates by type
+   * 2. Score each by scope specificity (system +10, currency +5, tags +3 each)
+   * 3. Mismatched scope fields disqualify (score = -Infinity)
+   * 4. Ties broken by `priority` (higher wins), then registration order
+   * 5. All disqualified → undefined
    */
   resolve(type: ParameterType, scope?: Partial<ParameterScope>): RegisteredParameter | undefined {
     const candidates = this.findByType(type);
     if (candidates.length === 0) return undefined;
     if (candidates.length === 1) return candidates[0];
 
-    // Score each candidate by scope match quality
-    let bestScore = -1;
+    let bestScore = -Infinity;
+    let bestPriority = -Infinity;
     let best: RegisteredParameter | undefined;
 
     for (const candidate of candidates) {
-      const score = this.scopeMatchScore(candidate.scope, scope);
-      if (score > bestScore) {
+      const score = this.scopeSpecificity(candidate.scope, scope);
+      const prio = candidate.priority ?? 0;
+
+      if (score > bestScore || (score === bestScore && prio > bestPriority)) {
         bestScore = score;
+        bestPriority = prio;
         best = candidate;
       }
     }
+
+    // If the best score is still -Infinity, all candidates were disqualified
+    if (bestScore === -Infinity) return undefined;
 
     return best;
   }
@@ -136,9 +156,51 @@ export class ParameterRegistry {
     return this.parameters.size;
   }
 
+  /**
+   * Validate the registry for common misconfigurations.
+   * Returns warnings (non-fatal) and errors (likely broken).
+   */
+  validate(): RegistryValidationResult {
+    const warnings: string[] = [];
+    const errors: string[] = [];
+
+    // Check for duplicate keys (impossible via Map, but verify types with same scope)
+    const typeMap = new Map<string, RegisteredParameter[]>();
+    for (const param of this.parameters.values()) {
+      const list = typeMap.get(param.type) ?? [];
+      list.push(param);
+      typeMap.set(param.type, list);
+    }
+
+    // Warn: types with multiple entries but no scope differentiation
+    for (const [type, params] of typeMap) {
+      if (params.length > 1) {
+        const unscopedCount = params.filter(p => !p.scope).length;
+        if (unscopedCount > 1) {
+          errors.push(
+            `Type '${type}' has ${unscopedCount} unscoped parameters — resolve() cannot distinguish them`,
+          );
+        }
+      }
+    }
+
+    // Warn: parameters without flowImpact
+    for (const param of this.parameters.values()) {
+      if (!param.flowImpact) {
+        warnings.push(`Parameter '${param.key}' has no flowImpact — Simulator will use inference`);
+      }
+    }
+
+    return {
+      valid: errors.length === 0,
+      warnings,
+      errors,
+    };
+  }
+
   // ── Private ─────────────────────────────────────────────────────────────
 
-  private scopeMatchScore(
+  private scopeSpecificity(
     paramScope?: Partial<ParameterScope>,
     queryScope?: Partial<ParameterScope>,
   ): number {
@@ -152,13 +214,13 @@ export class ParameterRegistry {
     // System match
     if (queryScope.system && paramScope.system) {
       if (queryScope.system === paramScope.system) score += 10;
-      else return -1; // system mismatch = disqualify
+      else return -Infinity; // system mismatch = disqualify
     }
 
     // Currency match
     if (queryScope.currency && paramScope.currency) {
       if (queryScope.currency === paramScope.currency) score += 5;
-      else return -1; // currency mismatch = disqualify
+      else return -Infinity; // currency mismatch = disqualify
     }
 
     // Tag overlap
@@ -167,11 +229,8 @@ export class ParameterRegistry {
       if (overlap > 0) {
         score += overlap * 3;
       } else {
-        return -1; // no tag overlap when both specify tags = disqualify
+        return -Infinity; // no tag overlap when both specify tags = disqualify
       }
-    } else if (queryScope.tags && queryScope.tags.length > 0 && paramScope.tags && paramScope.tags.length > 0) {
-      // Both have tags but no overlap
-      return -1;
     }
 
     return score;

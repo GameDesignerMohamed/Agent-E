@@ -121,7 +121,7 @@ export interface EconomyMetrics {
   smokeTestRatio: number;
   currencyInsulation: number;
 
-  // ── LiveOps (unchanged) ──
+  // ── Operations (unchanged) ──
   sharkToothPeaks: number[];
   sharkToothValleys: number[];
   eventCompletionRate: number;
@@ -134,6 +134,11 @@ export interface EconomyMetrics {
   giftTradeRatio: number;
   disposalTradeRatioByCurrency: Record<string, number>;
   disposalTradeRatio: number;
+
+  // ── Topology (from EconomyState) ──
+  systems: string[];                              // registered systems
+  sources: string[];                              // registered source names
+  sinks: string[];                                // registered sink names
 
   // ── Multi-system metrics ──
   flowBySystem: Record<string, number>;           // system → net flow
@@ -225,6 +230,9 @@ export function emptyMetrics(tick = 0): EconomyMetrics {
     sharkToothValleys: [],
     eventCompletionRate: NaN,
     contentDropAge: 0,
+    systems: [],
+    sources: [],
+    sinks: [],
     flowBySystem: {},
     activityBySystem: {},
     participantsBySystem: {},
@@ -416,7 +424,7 @@ export interface Thresholds {
   payPowerRatioMax: number;
   payPowerRatioTarget: number;
 
-  // LiveOps (P51, P53)
+  // Operations (P51, P53)
   sharkToothPeakDecay: number;
   sharkToothValleyDecay: number;
   eventCompletionMin: number;
@@ -499,6 +507,8 @@ export interface AgentEConfig {
 
   // Parameter registry
   parameters?: import('./ParameterRegistry.js').RegisteredParameter[];
+  /** Run registry.validate() on startup and log warnings/errors (default: true) */
+  validateRegistry?: boolean;
 
   // Tick configuration
   tickConfig?: Partial<TickConfig>;

@@ -9,7 +9,7 @@ export const P9_RoleSwitchingNeedsFriction: Principle = {
   description:
     'If >5% of the population switches roles in a single evaluation period, ' +
     'it is a herd movement, not rational rebalancing. Without friction ' +
-    '(satisfaction cost, cooldown), one good tick causes mass migration.',
+    '(satisfaction cost, minimum interval), one good tick causes mass migration.',
   check(metrics, thresholds): PrincipleResult {
     const { churnByRole, roleShares } = metrics;
 
@@ -42,7 +42,7 @@ export const P9_RoleSwitchingNeedsFriction: Principle = {
   },
 };
 
-export const P10_SpawnWeightingUsesInversePopulation: Principle = {
+export const P10_EntryWeightingUsesInversePopulation: Principle = {
   id: 'P10',
   name: 'Entry Weighting Uses Inverse Population',
   category: 'population',
@@ -178,7 +178,7 @@ export const P46_PersonaDiversity: Principle = {
 
 export const POPULATION_PRINCIPLES: Principle[] = [
   P9_RoleSwitchingNeedsFriction,
-  P10_SpawnWeightingUsesInversePopulation,
+  P10_EntryWeightingUsesInversePopulation,
   P11_TwoTierPressure,
   P46_PersonaDiversity,
 ];

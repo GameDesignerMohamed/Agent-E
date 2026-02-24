@@ -2,7 +2,7 @@
 
 import type { Principle, PrincipleResult } from '../types.js';
 
-export const P29_PinchPoint: Principle = {
+export const P29_BottleneckDetection: Principle = {
   id: 'P29',
   name: 'Bottleneck Detection',
   category: 'market_dynamics',
@@ -59,7 +59,7 @@ export const P29_PinchPoint: Principle = {
   },
 };
 
-export const P30_MovingPinchPoint: Principle = {
+export const P30_DynamicBottleneckRotation: Principle = {
   id: 'P30',
   name: 'Dynamic Bottleneck Rotation',
   category: 'market_dynamics',
@@ -161,7 +161,7 @@ export const P57_CombinatorialPriceSpace: Principle = {
 };
 
 export const MARKET_DYNAMICS_PRINCIPLES: Principle[] = [
-  P29_PinchPoint,
-  P30_MovingPinchPoint,
+  P29_BottleneckDetection,
+  P30_DynamicBottleneckRotation,
   P57_CombinatorialPriceSpace,
 ];

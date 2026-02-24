@@ -2,7 +2,7 @@
 
 import type { Principle, PrincipleResult } from '../types.js';
 
-export const P51_SharkTooth: Principle = {
+export const P51_CyclicalEngagement: Principle = {
   id: 'P51',
   name: 'Cyclical Engagement Pattern',
   category: 'operations',
@@ -73,8 +73,8 @@ export const P52_EndowmentEffect: Principle = {
   name: 'Endowment Effect',
   category: 'operations',
   description:
-    'Participants who never owned premium items do not value them. ' +
-    'Free trial activities that let participants experience premium items drive conversions ' +
+    'Participants who never owned premium assets do not value them. ' +
+    'Free trial activities that let participants experience premium assets drive conversions ' +
     'because ownership creates perceived value (endowment effect).',
   check(metrics, _thresholds): PrincipleResult {
     const { avgSatisfaction, churnRate } = metrics;
@@ -164,16 +164,16 @@ export const P53_EventCompletionRate: Principle = {
   },
 };
 
-export const P54_LiveOpsCadence: Principle = {
+export const P54_OperationalCadence: Principle = {
   id: 'P54',
   name: 'Operational Cadence',
   category: 'operations',
   description:
-    '>50% of activities that are re-wrapped existing content → staleness. ' +
-    'The cadence must include genuinely new content at regular intervals. ' +
-    'This is an advisory principle — AgentE can flag but cannot fix content.',
+    '>50% of activities that are re-wrapped existing supply → stagnation. ' +
+    'The cadence must include genuinely new supply at regular intervals. ' +
+    'This is an advisory principle — AgentE can flag but cannot fix supply.',
   check(metrics, _thresholds): PrincipleResult {
-    // Proxy: declining engagement velocity over time = staleness
+    // Proxy: declining engagement velocity over time = stagnation
     const { velocity, avgSatisfaction } = metrics;
 
     if (velocity < 2 && avgSatisfaction < 55 && metrics.tick > 100) {
@@ -187,8 +187,8 @@ export const P54_LiveOpsCadence: Principle = {
           magnitude: 0.10,
           reasoning:
             'Low velocity and satisfaction after long runtime. ' +
-            'Possible content staleness. Increase rewards as bridge while ' +
-            'new content is developed (developer action required).',
+            'Possible supply stagnation. Increase rewards as bridge while ' +
+            'new supply is developed (developer action required).',
         },
         confidence: 0.40,
         estimatedLag: 30,
@@ -199,18 +199,18 @@ export const P54_LiveOpsCadence: Principle = {
   },
 };
 
-export const P56_ContentDropShock: Principle = {
+export const P56_SupplyShockAbsorption: Principle = {
   id: 'P56',
   name: 'Supply Shock Absorption',
   category: 'operations',
   description:
     'Every new-item injection shatters existing price equilibria — arbitrage spikes ' +
-    'as participants re-price. Build cooldown windows for price discovery before ' +
-    'measuring post-drop economic health.',
+    'as participants re-price. Build stabilization windows for price discovery before ' +
+    'measuring post-injection economic health.',
   check(metrics, thresholds): PrincipleResult {
     const { contentDropAge, arbitrageIndex } = metrics;
 
-    // Only fires during the cooldown window after a content drop
+    // Only fires during the stabilization window after a supply injection
     if (contentDropAge > 0 && contentDropAge <= thresholds.contentDropCooldownTicks) {
       if (arbitrageIndex > thresholds.postDropArbitrageMax) {
         return {
@@ -227,8 +227,8 @@ export const P56_ContentDropShock: Principle = {
             direction: 'decrease',
             magnitude: 0.10,
             reasoning:
-              `Content drop ${contentDropAge} ticks ago — arbitrage at ${arbitrageIndex.toFixed(2)} ` +
-              `exceeds post-drop max (${thresholds.postDropArbitrageMax}). ` +
+              `Supply injection ${contentDropAge} ticks ago — arbitrage at ${arbitrageIndex.toFixed(2)} ` +
+              `exceeds post-injection max (${thresholds.postDropArbitrageMax}). ` +
               'Price discovery struggling. Lower trading friction temporarily.',
           },
           confidence: 0.60,
@@ -242,9 +242,9 @@ export const P56_ContentDropShock: Principle = {
 };
 
 export const OPERATIONS_PRINCIPLES: Principle[] = [
-  P51_SharkTooth,
+  P51_CyclicalEngagement,
   P52_EndowmentEffect,
   P53_EventCompletionRate,
-  P54_LiveOpsCadence,
-  P56_ContentDropShock,
+  P54_OperationalCadence,
+  P56_SupplyShockAbsorption,
 ];

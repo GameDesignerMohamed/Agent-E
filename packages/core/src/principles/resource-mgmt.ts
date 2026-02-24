@@ -43,7 +43,7 @@ export const P40_ReplacementRate: Principle = {
   name: 'Replacement Rate ≥ 2× Consumption',
   category: 'resource',
   description:
-    'Respawn/production rate must be at least 2× consumption rate for equilibrium. ' +
+    'Replacement/production rate must be at least 2× consumption rate for equilibrium. ' +
     'At 1× you drift toward depletion. At 2× you have a buffer for demand spikes.',
   check(metrics, thresholds): PrincipleResult {
     const { productionIndex, sinkVolume } = metrics;

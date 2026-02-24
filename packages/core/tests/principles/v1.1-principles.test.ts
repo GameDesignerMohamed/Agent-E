@@ -3,7 +3,7 @@ import {
   P55_ArbitrageThermometer,
   P59_GiftEconomyNoise,
 } from '../../src/principles/measurement.js';
-import { P56_ContentDropShock } from '../../src/principles/operations.js';
+import { P56_SupplyShockAbsorption } from '../../src/principles/operations.js';
 import { P57_CombinatorialPriceSpace } from '../../src/principles/market-dynamics.js';
 import { P58_NoNaturalNumeraire } from '../../src/principles/currency-flow.js';
 import { P60_SurplusDisposalAsymmetry } from '../../src/principles/supply-chain.js';
@@ -49,7 +49,7 @@ describe('P56 — Content-Drop Shock', () => {
       contentDropAge: 10,   // within cooldown window (default 30)
       arbitrageIndex: 0.50, // above postDropArbitrageMax (default 0.45)
     };
-    const result = P56_ContentDropShock.check(m, t);
+    const result = P56_SupplyShockAbsorption.check(m, t);
     expect(result.violated).toBe(true);
   });
 
@@ -59,7 +59,7 @@ describe('P56 — Content-Drop Shock', () => {
       contentDropAge: 50,   // beyond cooldown window
       arbitrageIndex: 0.60,
     };
-    const result = P56_ContentDropShock.check(m, t);
+    const result = P56_SupplyShockAbsorption.check(m, t);
     expect(result.violated).toBe(false);
   });
 
@@ -69,7 +69,7 @@ describe('P56 — Content-Drop Shock', () => {
       contentDropAge: 10,
       arbitrageIndex: 0.30, // below postDropArbitrageMax
     };
-    const result = P56_ContentDropShock.check(m, t);
+    const result = P56_SupplyShockAbsorption.check(m, t);
     expect(result.violated).toBe(false);
   });
 });

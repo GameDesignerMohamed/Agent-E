@@ -44,6 +44,14 @@ const BANNED_PATTERNS = [
   { pattern: /\bquest\b/i, name: 'quest' },
   { pattern: /\bNPC\b/, name: 'NPC' },
   { pattern: /\bcrafting\b/i, name: 'crafting' },
+  // V1.5.1 additions (Appendix A)
+  { pattern: /\bstaleness\b/i, name: 'staleness' },
+  { pattern: /\bRespawn\b/, name: 'Respawn' },
+  { pattern: /\bSharkTooth\b/, name: 'SharkTooth' },
+  { pattern: /\bLiveOps\b/, name: 'LiveOps' },
+  { pattern: /\bContentDrop\b/, name: 'ContentDrop' },
+  { pattern: /_PinchPoint\b/, name: 'PinchPoint (in variable name)' },
+  { pattern: /SpawnWeighting/, name: 'SpawnWeighting' },
 ];
 
 /** Old principle categories that were replaced. */

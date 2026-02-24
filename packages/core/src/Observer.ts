@@ -74,7 +74,7 @@ export class Observer {
         actorsBySystem[e.system]!.add(e.actor);
 
         const amt = e.amount ?? 0;
-        if (e.type === 'mint' || e.type === 'enter') {
+        if (e.type === 'mint') {
           flowBySystem[e.system] = (flowBySystem[e.system] ?? 0) + amt;
         } else if (e.type === 'burn' || e.type === 'consume') {
           flowBySystem[e.system] = (flowBySystem[e.system] ?? 0) - amt;
@@ -82,7 +82,7 @@ export class Observer {
       }
       if (e.sourceOrSink) {
         const amt = e.amount ?? 0;
-        if (e.type === 'mint' || e.type === 'enter') {
+        if (e.type === 'mint') {
           flowBySource[e.sourceOrSink] = (flowBySource[e.sourceOrSink] ?? 0) + amt;
         } else if (e.type === 'burn' || e.type === 'consume') {
           flowBySink[e.sourceOrSink] = (flowBySink[e.sourceOrSink] ?? 0) + amt;
@@ -459,6 +459,9 @@ export class Observer {
       sharkToothValleys: this.previousMetrics?.sharkToothValleys ?? [],
       eventCompletionRate: NaN,
       contentDropAge,
+      systems: state.systems ?? [],
+      sources: state.sources ?? [],
+      sinks: state.sinks ?? [],
       flowBySystem,
       activityBySystem,
       participantsBySystem,
