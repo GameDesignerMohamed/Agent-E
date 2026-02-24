@@ -1,5 +1,5 @@
 // @agent-e/adapter-game — GameAdapter
-// Translates a game economy's API into AgentE's universal format
+// Translates a game economy's API into AgentE's universal format (V1.3+ multi-currency)
 
 import type { EconomyAdapter, EconomyState, EconomicEvent } from '@agent-e/core';
 
@@ -8,28 +8,30 @@ export interface GameAPI {
   getTick(): number;
   /** All roles present in the game */
   getRoles(): string[];
+  /** All currencies in the game */
+  getCurrencies(): string[];
+  /** All resource types in the game */
+  getResources(): string[];
   /** Agent ID → role name */
   getAgentRoles(): Record<string, string>;
-  /** Agent ID → gold balance */
-  getAgentBalances(): Record<string, number>;
+  /** Agent ID → { currency → balance } */
+  getAgentBalances(): Record<string, Record<string, number>>;
   /** Agent ID → inventory { resource: quantity } */
   getAgentInventories(): Record<string, Record<string, number>>;
   /** Agent ID → satisfaction (0-100) */
   getAgentSatisfaction?(): Record<string, number>;
-  /** resource → current market price */
-  getMarketPrices(): Record<string, number>;
+  /** currency → { resource → price } */
+  getMarketPrices(): Record<string, Record<string, number>>;
   /** Events since last poll */
   getRecentEvents?(): EconomicEvent[];
-  /** Pool name → gold amount (e.g. arenaPot, bankPool) */
-  getPoolSizes?(): Record<string, number>;
-  /** Set an economy parameter (key/value) */
-  setParam(key: string, value: number): void;
+  /** currency → { poolName → amount } */
+  getPoolSizes?(): Record<string, Record<string, number>>;
+  /** Set an economy parameter (key/value), optionally scoped to a currency */
+  setParam(key: string, value: number, currency?: string): void;
 }
 
 export interface GameAdapterConfig {
   api: GameAPI;
-  resources?: string[];
-  currency?: string;
 }
 
 export class GameAdapter implements EconomyAdapter {
@@ -41,12 +43,11 @@ export class GameAdapter implements EconomyAdapter {
   }
 
   getState(): EconomyState {
-    const tick = this.api.getTick();
     return {
-      tick,
+      tick: this.api.getTick(),
       roles: this.api.getRoles(),
-      resources: [],
-      currency: 'gold',
+      resources: this.api.getResources(),
+      currencies: this.api.getCurrencies(),
       agentBalances: this.api.getAgentBalances(),
       agentRoles: this.api.getAgentRoles(),
       agentInventories: this.api.getAgentInventories(),

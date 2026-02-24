@@ -1,238 +1,115 @@
 # @agent-e/adapter-game
 
-**Game economy adapter** for AgentE — preset configurations and helpers for common game economy patterns.
+Game economy adapter for AgentE. Translates your game's API into AgentE's universal multi-currency state format.
 
-This package provides opinionated defaults and utilities for using AgentE in game economies (MMOs, live-service games, multiplayer sims).
+## When to Use This
 
-## Installation
+Use this adapter when you're running AgentE **inside your game process** (not over HTTP). If your game engine can run Node.js/TypeScript, embed AgentE directly:
 
-```bash
-npm install @agent-e/adapter-game @agent-e/core
-```
+```ts
+import { AgentE } from '@agent-e/core';
+import { GameAdapter } from '@agent-e/adapter-game';
 
-## Quick Start
-
-```typescript
-import { GameEconomyAdapter } from '@agent-e/adapter-game';
-
-// Create adapter with game-specific presets
-const adapter = new GameEconomyAdapter({
-  economyType: 'mmo', // 'mmo', 'idle', 'pvp', 'survival'
-  expectedPlayerCount: 1000,
-  sessionLengthMinutes: 30,
+const adapter = new GameAdapter({
+  api: myGameAPI,  // implements GameAPI interface
 });
 
-// Feed your game state
-const gameState = {
-  players: [
-    { id: 'player1', gold: 500, level: 10, role: 'warrior' },
-    { id: 'player2', gold: 300, level: 8, role: 'mage' },
-  ],
-  trades: [
-    { from: 'player1', to: 'player2', item: 'sword', price: 50 },
-  ],
-};
+const agentE = new AgentE({
+  adapter,
+  mode: 'autonomous',
+  gracePeriod: 50,
+  checkInterval: 5,
+});
 
-// Get balancing recommendations
-const actions = adapter.balance(gameState);
+agentE.connect(adapter).start();
 
-console.log(actions);
-// [
-//   {
-//     parameter: 'questReward',
-//     direction: 'increase',
-//     magnitude: 0.15,
-//     reasoning: 'Player progression too slow for session length',
-//     confidence: 0.80
-//   }
-// ]
+// In your game loop:
+function onTick() {
+  agentE.tick();
+}
 ```
 
-## Economy Types
+If your game engine **cannot** run Node.js (Unity, Unreal, Godot), use `@agent-e/server` instead and communicate over HTTP/WebSocket. See the `examples/` directory.
 
-### MMO
+## GameAPI Interface
 
-Optimized for persistent worlds with:
-- Long player retention (months to years)
-- Complex role specialization
-- Player-driven markets
-- Large-scale trading
+Implement this interface to connect your game:
 
-```typescript
-const adapter = new GameEconomyAdapter({ economyType: 'mmo' });
+```ts
+interface GameAPI {
+  getTick(): number;
+  getRoles(): string[];
+  getCurrencies(): string[];
+  getResources(): string[];
+  getAgentRoles(): Record<string, string>;
+  getAgentBalances(): Record<string, Record<string, number>>;
+  getAgentInventories(): Record<string, Record<string, number>>;
+  getMarketPrices(): Record<string, Record<string, number>>;
+  setParam(key: string, value: number, currency?: string): void;
+
+  // Optional
+  getAgentSatisfaction?(): Record<string, number>;
+  getRecentEvents?(): EconomicEvent[];
+  getPoolSizes?(): Record<string, Record<string, number>>;
+}
 ```
 
-**Adjusted thresholds:**
-- Lower Gini tolerance (0.50 → 0.45) — prevent whale domination
-- Higher velocity target (5 → 8) — encourage trading
-- Longer observation windows (10 ticks → 20 ticks)
+### Multi-Currency Support
 
-### Idle/Incremental
+Balances, prices, and pools are all nested by currency:
 
-Optimized for progression-focused games with:
-- Exponential growth curves
-- Prestige/reset mechanics
-- Offline progression
-- Purchase-driven advancement
+```ts
+// Agent balances: agent → currency → amount
+getAgentBalances(): {
+  'player_1': { gold: 150, gems: 10 },
+  'player_2': { gold: 80, gems: 25 },
+}
 
-```typescript
-const adapter = new GameEconomyAdapter({ economyType: 'idle' });
+// Market prices: currency → resource → price
+getMarketPrices(): {
+  gold: { ore: 15, weapons: 50 },
+  gems: { ore: 2, weapons: 8 },
+}
+
+// Pool sizes: currency → pool → amount
+getPoolSizes(): {
+  gold: { arena: 500, bank: 200 },
+  gems: { shop: 1000 },
+}
 ```
 
-**Adjusted thresholds:**
-- Higher inflation tolerance (0.10 → 0.25) — exponential by design
-- Shorter time-to-value (20 ticks → 5 ticks) — fast dopamine loops
-- Lower churn sensitivity — resets are normal
+### Event Types
 
-### PvP
+If you implement `getRecentEvents()`, return events with these types:
 
-Optimized for competitive economies with:
-- Zero-sum resource contests
-- Skill-based matchmaking
-- Seasonal resets
-- Ranked progression
+| Type | Description |
+|------|-------------|
+| `trade` | Player-to-player or auction house trade |
+| `mint` | Currency created (quest reward, daily login) |
+| `burn` | Currency destroyed (repair cost, tax) |
+| `transfer` | Currency moved between agents |
+| `produce` | Resource crafted or gathered |
+| `consume` | Resource used up |
+| `role_change` | Agent switched roles |
+| `spawn` | New agent entered economy |
+| `churn` | Agent left economy |
 
-```typescript
-const adapter = new GameEconomyAdapter({ economyType: 'pvp' });
-```
+## Pushing Events
 
-**Adjusted thresholds:**
-- Strict Gini limits (0.40 critical) — fairness matters
-- High velocity (10+) — active trading meta
-- Low satisfaction tolerance — competitive frustration is acceptable
+For real-time event streaming (instead of polling via `getRecentEvents`):
 
-### Survival
+```ts
+const adapter = new GameAdapter({ api: myGameAPI });
 
-Optimized for scarcity-driven economies with:
-- Resource depletion
-- Harsh death penalties
-- Base building
-- PvE focus
-
-```typescript
-const adapter = new GameEconomyAdapter({ economyType: 'survival' });
-```
-
-**Adjusted thresholds:**
-- High pinch-point tolerance — scarcity is core gameplay
-- Low production rates — resource struggle intended
-- High satisfaction variance — moments of desperation + relief
-
-## Custom Configurations
-
-```typescript
-const adapter = new GameEconomyAdapter({
-  economyType: 'mmo',
-  expectedPlayerCount: 5000,
-  sessionLengthMinutes: 60,
-
-  // Override specific thresholds
-  thresholds: {
-    giniWarning: 0.40,
-    giniCritical: 0.50,
-    inflationRateMax: 0.08,
-  },
-
-  // Custom parameter mappings
-  parameterMappings: {
-    craftingCost: 'recipe_gold_cost',
-    auctionFee: 'marketplace_tax_rate',
-    arenaReward: 'pvp_victory_gold',
-  },
+// Push events as they happen in your game
+onPlayerTrade((trade) => {
+  adapter.pushEvent({
+    type: 'trade',
+    timestamp: currentTick,
+    actor: trade.buyerId,
+    resource: trade.item,
+    amount: trade.quantity,
+    price: trade.price,
+  });
 });
 ```
-
-## API Reference
-
-### `GameEconomyAdapter`
-
-```typescript
-class GameEconomyAdapter {
-  constructor(config: GameEconomyConfig);
-
-  balance(gameState: any): SuggestedAction[];
-
-  // Low-level access
-  getMetrics(): EconomyMetrics;
-  getDiagnoses(): Diagnosis[];
-  simulate(action: SuggestedAction): SimulationResult;
-}
-```
-
-### `GameEconomyConfig`
-
-```typescript
-interface GameEconomyConfig {
-  economyType: 'mmo' | 'idle' | 'pvp' | 'survival';
-  expectedPlayerCount?: number;
-  sessionLengthMinutes?: number;
-  thresholds?: Partial<Thresholds>;
-  parameterMappings?: Record<string, string>;
-}
-```
-
-## Examples
-
-### Full Integration
-
-```typescript
-import { GameEconomyAdapter } from '@agent-e/adapter-game';
-
-const adapter = new GameEconomyAdapter({ economyType: 'mmo' });
-
-// Every game tick (or every 10 ticks for performance)
-function onGameTick() {
-  const actions = adapter.balance({
-    players: getPlayers(),
-    trades: getRecentTrades(),
-    crafts: getRecentCrafts(),
-    deaths: getRecentDeaths(),
-  });
-
-  // Apply the highest-confidence action
-  if (actions.length > 0) {
-    const topAction = actions[0];
-    applyParameterChange(topAction.parameter, topAction.direction, topAction.magnitude);
-
-    console.log(`AgentE: ${topAction.reasoning}`);
-  }
-}
-```
-
-### Monitoring Only (No Auto-Apply)
-
-```typescript
-const adapter = new GameEconomyAdapter({ economyType: 'mmo' });
-
-function checkEconomyHealth() {
-  const metrics = adapter.getMetrics();
-  const diagnoses = adapter.getDiagnoses();
-
-  if (diagnoses.some(d => d.severity >= 7)) {
-    alert('CRITICAL: Economy imbalance detected!');
-    console.log(diagnoses.filter(d => d.severity >= 7));
-  }
-
-  // Log key metrics
-  console.log({
-    gini: metrics.giniCoefficient,
-    velocity: metrics.velocity,
-    inflation: metrics.inflationRate,
-    satisfaction: metrics.avgSatisfaction,
-  });
-}
-```
-
-## License
-
-MIT
-
-## Links
-
-- [Core Package](https://www.npmjs.com/package/@agent-e/core)
-- [Documentation](https://github.com/GameDesignerMohamed/Agent-E)
-- [GitHub](https://github.com/GameDesignerMohamed/Agent-E)
-
----
-
-**Built by Oka × Claude — AB Labs**

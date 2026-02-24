@@ -250,6 +250,14 @@ export class AgentE {
     this.diagnoser.addPrinciple(principle);
   }
 
+  setMode(mode: AgentEMode): void {
+    this.mode = mode;
+  }
+
+  getMode(): AgentEMode {
+    return this.mode;
+  }
+
   removePrinciple(id: string): void {
     this.diagnoser.removePrinciple(id);
   }
