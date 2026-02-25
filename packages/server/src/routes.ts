@@ -78,15 +78,13 @@ export function createRouteHandler(
         const events = payload['events'];
 
         // Validate state (if enabled)
-        if (server.validateState) {
-          const validation = validateEconomyState(state);
-          if (!validation.valid) {
-            json(res, 400, {
-              error: 'invalid_state',
-              validationErrors: validation.errors,
-            }, cors);
-            return;
-          }
+        const validation = server.validateState ? validateEconomyState(state) : null;
+        if (validation && !validation.valid) {
+          json(res, 400, {
+            error: 'invalid_state',
+            validationErrors: validation.errors,
+          }, cors);
+          return;
         }
 
         const result = await server.processTick(
@@ -94,10 +92,7 @@ export function createRouteHandler(
           Array.isArray(events) ? events as import('@agent-e/core').EconomicEvent[] : undefined,
         );
 
-        // Include validation warnings if any
-        const warnings = server.validateState
-          ? validateEconomyState(state).warnings
-          : [];
+        const warnings = validation?.warnings ?? [];
 
         json(res, 200, {
           adjustments: result.adjustments,

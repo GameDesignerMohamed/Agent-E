@@ -539,6 +539,7 @@ export function getDashboardHtml(): string {
   const $app = document.getElementById('app');
 
   // ── Helpers ──────────────────────────────────────
+  function esc(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;'); }
   function pad(n, w) { return String(n).padStart(w || 4, ' '); }
   function fmt(n) { return typeof n === 'number' ? n.toFixed(3) : '—'; }
   function pct(n) { return typeof n === 'number' ? (n * 100).toFixed(0) + '%' : '—'; }
@@ -644,15 +645,15 @@ export function getDashboardHtml(): string {
     let advisorBtns = '';
     if (isAdvisor && d.result === 'skipped_override') {
       advisorBtns = '<span class="advisor-actions">'
-        + '<button class="advisor-btn approve" onclick="window._approve(\\'' + d.id + '\\')">[Approve]</button>'
-        + '<button class="advisor-btn reject" onclick="window._reject(\\'' + d.id + '\\')">[Reject]</button>'
+        + '<button class="advisor-btn approve" onclick="window._approve(\\'' + esc(d.id) + '\\')">[Approve]</button>'
+        + '<button class="advisor-btn reject" onclick="window._reject(\\'' + esc(d.id) + '\\')">[Reject]</button>'
         + '</span>';
     }
 
     return '<span class="t-tick">[Tick ' + pad(d.tick) + ']</span> '
       + resultIcon
-      + '<span class="t-principle">[' + (principle.id || '?') + '] ' + (principle.name || '') + ':</span> '
-      + '<span class="t-param">' + (plan.parameter || '—') + ' </span>'
+      + '<span class="t-principle">[' + esc(principle.id || '?') + '] ' + esc(principle.name || '') + ':</span> '
+      + '<span class="t-param">' + esc(plan.parameter || '—') + ' </span>'
       + '<span class="t-old">' + fmt(plan.currentValue) + '</span>'
       + '<span class="t-arrow"> \\u2192 </span>'
       + '<span class="t-new">' + fmt(plan.targetValue) + '</span>'
@@ -676,8 +677,8 @@ export function getDashboardHtml(): string {
       return '<div class="alert-card">'
         + '<span class="alert-severity ' + sc + '">' + sev + '/10</span>'
         + '<div class="alert-body">'
-        + '<div class="alert-principle">[' + pid + '] ' + name + '</div>'
-        + '<div class="alert-reason">' + reason + '</div>'
+        + '<div class="alert-principle">[' + esc(pid) + '] ' + esc(name) + '</div>'
+        + '<div class="alert-reason">' + esc(reason) + '</div>'
         + '</div></div>';
     }).join('');
   }
@@ -705,10 +706,10 @@ export function getDashboardHtml(): string {
     $violationsBody.innerHTML = sorted.map(function(v) {
       return '<tr>'
         + '<td>' + v.tick + '</td>'
-        + '<td style="color:var(--text-primary);font-family:var(--font-sans)">' + v.principle + '</td>'
+        + '<td style="color:var(--text-primary);font-family:var(--font-sans)">' + esc(v.principle) + '</td>'
         + '<td><span class="alert-severity ' + sevClass(v.severity) + '">' + v.severity + '</span></td>'
-        + '<td>' + v.parameter + '</td>'
-        + '<td>' + v.result + '</td>'
+        + '<td>' + esc(v.parameter) + '</td>'
+        + '<td>' + esc(v.result) + '</td>'
         + '</tr>';
     }).join('');
   }
@@ -734,7 +735,7 @@ export function getDashboardHtml(): string {
     $personaBars.innerHTML = entries.map(function(e) {
       const pctVal = total > 0 ? (e[1] / total * 100) : 0;
       return '<div class="persona-row">'
-        + '<div class="persona-label">' + e[0] + '</div>'
+        + '<div class="persona-label">' + esc(e[0]) + '</div>'
         + '<div class="persona-bar-track"><div class="persona-bar-fill" style="width:' + pctVal + '%"></div></div>'
         + '<div class="persona-pct">' + pctVal.toFixed(0) + '%</div>'
         + '</div>';
@@ -747,12 +748,10 @@ export function getDashboardHtml(): string {
       $registryList.innerHTML = '<div class="empty-state">No parameters registered</div>';
       return;
     }
-    // Show unique parameters from principles
-    const params = new Set();
     $registryList.innerHTML = principles.slice(0, 30).map(function(p) {
       return '<div class="registry-item">'
-        + '<span class="registry-key">[' + p.id + ']</span>'
-        + '<span class="registry-val">' + p.name + '</span>'
+        + '<span class="registry-key">[' + esc(p.id) + ']</span>'
+        + '<span class="registry-val">' + esc(p.name) + '</span>'
         + '</div>';
     }).join('');
   }
