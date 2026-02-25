@@ -3,6 +3,10 @@
 import * as http from 'node:http';
 import {
   AgentE,
+  Observer,
+  Diagnoser,
+  ALL_PRINCIPLES,
+  DEFAULT_THRESHOLDS,
   validateEconomyState,
   type AgentEConfig,
   type EconomyAdapter,
@@ -10,6 +14,7 @@ import {
   type EconomicEvent,
   type Diagnosis,
   type AgentEMode,
+  type Thresholds,
 } from '@agent-e/core';
 import { createRouteHandler } from './routes.js';
 import { createWebSocketHandler } from './websocket.js';
@@ -25,14 +30,14 @@ export interface ServerConfig {
 export interface EnrichedAdjustment {
   parameter: string;
   value: number;
-  currency?: string;
+  scope?: import('@agent-e/core').ParameterScope;
   reasoning: string;
 }
 
 interface QueuedAdjustment {
   key: string;
   value: number;
-  currency?: string;
+  scope: import('@agent-e/core').ParameterScope | undefined;
 }
 
 export class AgentEServer {
@@ -45,6 +50,7 @@ export class AgentEServer {
   private readonly host: string;
   private readonly startedAt = Date.now();
   private cleanupWs: (() => void) | null = null;
+  private readonly thresholds: Thresholds;
   readonly validateState: boolean;
   readonly corsOrigin: string;
 
@@ -72,8 +78,8 @@ export class AgentEServer {
         }
         return this.lastState;
       },
-      setParam: (key: string, value: number) => {
-        this.adjustmentQueue.push({ key, value });
+      setParam: (key: string, value: number, scope?: import('@agent-e/core').ParameterScope) => {
+        this.adjustmentQueue.push({ key, value, scope });
       },
     };
 
@@ -90,6 +96,12 @@ export class AgentEServer {
       ...(agentECfg.thresholds ? { thresholds: agentECfg.thresholds } : {}),
     };
 
+    this.thresholds = {
+      ...DEFAULT_THRESHOLDS,
+      ...(agentECfg.thresholds ?? {}),
+      ...(agentECfg.maxAdjustmentPercent !== undefined ? { maxAdjustmentPercent: agentECfg.maxAdjustmentPercent } : {}),
+      ...(agentECfg.cooldownTicks !== undefined ? { cooldownTicks: agentECfg.cooldownTicks } : {}),
+    };
     this.agentE = new AgentE(agentEConfig);
 
     // Capture alerts during tick
@@ -194,7 +206,7 @@ export class AgentEServer {
       return {
         parameter: adj.key,
         value: adj.value,
-        ...(adj.currency ? { currency: adj.currency } : {}),
+        ...(adj.scope ? { scope: adj.scope } : {}),
         reasoning: decision?.diagnosis.violation.suggestedAction.reasoning ?? '',
       };
     });
@@ -209,20 +221,29 @@ export class AgentEServer {
   }
 
   /**
-   * Run Observer + Diagnoser without side effects (no execution)
+   * Run Observer + Diagnoser on the given state without side effects (no execution).
+   * Computes fresh metrics from the state rather than reading stored metrics.
    */
   diagnoseOnly(state: EconomyState): {
     diagnoses: ReturnType<AgentE['diagnoseNow']>;
     health: number;
   } {
-    // Temporarily save and restore state
-    const prevState = this.lastState;
-    this.lastState = state;
+    const observer = new Observer();
+    const diagnoser = new Diagnoser(ALL_PRINCIPLES);
+    const metrics = observer.compute(state, []);
+    const diagnoses = diagnoser.diagnose(metrics, this.thresholds);
 
-    const diagnoses = this.agentE.diagnoseNow();
-    const health = this.agentE.getHealth();
+    // Compute health from the fresh metrics (same logic as AgentE.getHealth)
+    let health = 100;
+    if (metrics.avgSatisfaction < 65) health -= 15;
+    if (metrics.avgSatisfaction < 50) health -= 10;
+    if (metrics.giniCoefficient > 0.45) health -= 15;
+    if (metrics.giniCoefficient > 0.60) health -= 10;
+    if (Math.abs(metrics.netFlow) > 10) health -= 15;
+    if (Math.abs(metrics.netFlow) > 20) health -= 10;
+    if (metrics.churnRate > 0.05) health -= 15;
+    health = Math.max(0, Math.min(100, health));
 
-    this.lastState = prevState;
     return { diagnoses, health };
   }
 

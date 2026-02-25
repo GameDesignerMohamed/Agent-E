@@ -163,10 +163,11 @@ export class PersonaTracker {
     const whaleThreshold = percentile(holdings, 1 - this.config.whalePercentile);
 
     // Tx frequency for percentile calculation
-    const txRates = agentIds.map(id => {
+    const txRatesUnsorted = agentIds.map(id => {
       const rec = this.agents.get(id)!;
       return rec.snapshots.reduce((s, sn) => s + sn.txCount, 0) / Math.max(1, rec.snapshots.length);
-    }).sort((a, b) => a - b);
+    });
+    const txRates = [...txRatesUnsorted].sort((a, b) => a - b);
 
     const activeTraderThreshold = percentile(txRates, 1 - this.config.activeTraderPercentile);
     const medianTxRate = percentile(txRates, 0.5);
@@ -183,7 +184,7 @@ export class PersonaTracker {
       if (snaps.length === 0) continue;
 
       const latestHoldings = snaps[snaps.length - 1]!.totalHoldings;
-      const agentTxRate = txRates[i]!;
+      const agentTxRate = txRatesUnsorted[i]!;
       const ticksSinceFirst = currentTick - rec.firstSeen;
       const ticksSinceActive = currentTick - rec.lastActive;
 
