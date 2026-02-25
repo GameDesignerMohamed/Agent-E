@@ -12,12 +12,14 @@
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
     "typecheck": "tsc --build --noEmit",
+    "lint": "biome check",
     "prepublishOnly": "npm run build && npm run test"
   },
   "engines": {
     "node": ">=20"
   },
   "devDependencies": {
+    "@biomejs/biome": "^2.4.4",
     "@vitest/coverage-v8": "^4.0.18",
     "tsup": "^8.0.0",
     "typescript": "^5.4.0",

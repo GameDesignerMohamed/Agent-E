@@ -1,8 +1,5 @@
 import { describe, it, expect } from 'vitest';
 import { DEFAULT_THRESHOLDS } from '../src/defaults.js';
-import { ALL_PRINCIPLES } from '../src/principles/index.js';
-import { emptyMetrics } from '../src/types.js';
-import type { Thresholds } from '../src/types.js';
 import * as fs from 'fs';
 import * as path from 'path';
 

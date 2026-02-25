@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from 'vitest';
 import { AgentE } from '../src/AgentE.js';
-import type { EconomyAdapter, EconomyState, EconomicEvent } from '../src/types.js';
+import type { EconomyAdapter, EconomyState, } from '../src/types.js';
 
 function makeState(tick: number): EconomyState {
   return {
@@ -64,8 +64,8 @@ describe('AgentE — event buffer and handler behavior', () => {
       gracePeriod: 0,
     });
 
-    let callCount = 0;
-    const handler = () => { callCount++; };
+    let _callCount = 0;
+    const handler = () => { _callCount++; };
 
     agent.on('decision', handler);
     agent.on('decision', handler); // duplicate

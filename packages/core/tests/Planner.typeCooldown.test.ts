@@ -3,7 +3,7 @@ import { Planner } from '../src/Planner.js';
 import { ParameterRegistry } from '../src/ParameterRegistry.js';
 import { DEFAULT_THRESHOLDS } from '../src/defaults.js';
 import { emptyMetrics } from '../src/types.js';
-import type { Diagnosis, SimulationResult, SuggestedAction, PrincipleViolation, ActionPlan } from '../src/types.js';
+import type { Diagnosis, SimulationResult, SuggestedAction, PrincipleViolation, } from '../src/types.js';
 
 const t = DEFAULT_THRESHOLDS;
 

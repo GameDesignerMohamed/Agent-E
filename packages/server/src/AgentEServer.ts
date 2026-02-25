@@ -7,7 +7,6 @@ import {
   Diagnoser,
   ALL_PRINCIPLES,
   DEFAULT_THRESHOLDS,
-  validateEconomyState,
   type AgentEConfig,
   type EconomyAdapter,
   type EconomyState,

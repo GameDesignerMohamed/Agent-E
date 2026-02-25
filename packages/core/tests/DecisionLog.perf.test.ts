@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { DecisionLog } from '../src/DecisionLog.js';
 import { emptyMetrics } from '../src/types.js';
-import type { Diagnosis, ActionPlan, DecisionResult } from '../src/types.js';
+import type { Diagnosis, ActionPlan, } from '../src/types.js';
 
 function stubDiagnosis(tick: number): Diagnosis {
   return {

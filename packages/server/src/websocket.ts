@@ -114,7 +114,7 @@ export function createWebSocketHandler(
               health: result.health,
               tick: result.tick,
             });
-          } catch (err) {
+          } catch (_err) {
             send(ws, { type: 'error', message: 'Tick processing failed' });
           }
           break;

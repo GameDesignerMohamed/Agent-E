@@ -133,14 +133,14 @@ export function createRouteHandler(
       // GET /decisions — decision log with optional ?limit and ?since
       if (path === '/decisions' && method === 'GET') {
         const rawLimit = parseInt(url.searchParams.get('limit') ?? '100', 10);
-        const limit = Math.min(Math.max(isNaN(rawLimit) ? 100 : rawLimit, 1), 1000);
+        const limit = Math.min(Math.max(Number.isNaN(rawLimit) ? 100 : rawLimit, 1), 1000);
         const sinceParam = url.searchParams.get('since');
         const agentE = server.getAgentE();
 
         let decisions;
         if (sinceParam) {
           const since = parseInt(sinceParam, 10);
-          if (isNaN(since)) {
+          if (Number.isNaN(since)) {
             json(res, 400, { error: 'Invalid "since" parameter — must be a number' }, cors);
             return;
           }
@@ -190,7 +190,7 @@ export function createRouteHandler(
               typeof (c as Record<string, unknown>)['max'] === 'number'
             ) {
               const constraint = c as { param: string; min: number; max: number };
-              if (!isFinite(constraint.min) || !isFinite(constraint.max)) {
+              if (!Number.isFinite(constraint.min) || !Number.isFinite(constraint.max)) {
                 json(res, 400, { error: 'Constraint bounds must be finite numbers' }, cors);
                 return;
               }
@@ -268,6 +268,7 @@ export function createRouteHandler(
       if (path === '/' && method === 'GET' && server.serveDashboard) {
         setCorsHeaders(res, cors);
         res.setHeader('Content-Security-Policy', "default-src 'self'; script-src 'unsafe-inline' https://cdn.jsdelivr.net; style-src 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; connect-src 'self' ws: wss:; img-src 'self' data:");
+        res.setHeader('Cache-Control', 'public, max-age=60');
         res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
         res.end(getDashboardHtml());
         return;

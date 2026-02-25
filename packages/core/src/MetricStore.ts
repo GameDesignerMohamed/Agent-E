@@ -185,7 +185,7 @@ export class MetricStore {
     const last = snapshots[snapshots.length - 1]!;
     // Average numeric scalars, take last for maps/arrays
     const avg = (key: keyof EconomyMetrics): number => {
-      const vals = snapshots.map(s => s[key] as number).filter(v => !isNaN(v));
+      const vals = snapshots.map(s => s[key] as number).filter(v => !Number.isNaN(v));
       return vals.length > 0 ? vals.reduce((a, b) => a + b, 0) / vals.length : 0;
     };
 
@@ -201,7 +201,7 @@ export class MetricStore {
       for (const k of allKeys) {
         const vals = snapshots
           .map(s => (s[key] as Record<string, number>)?.[k])
-          .filter((v): v is number => typeof v === 'number' && !isNaN(v));
+          .filter((v): v is number => typeof v === 'number' && !Number.isNaN(v));
         result[k] = vals.length > 0 ? vals.reduce((a, b) => a + b, 0) / vals.length : 0;
       }
       return result;
