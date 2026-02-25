@@ -173,7 +173,6 @@ Each principle returns either `{ violated: false }` or a full violation with sev
 ## Links
 
 - [npm](https://www.npmjs.com/package/@agent-e/core)
-- [GitHub](https://github.com/AE-Vault/AgentE)
 
 ## License
 
@@ -181,4 +180,4 @@ MIT
 
 ---
 
-**Built by Oka × Claude — AB Labs**
+**Built by Mohamed AbdelKhalek × Claude — Animoca Labs**
