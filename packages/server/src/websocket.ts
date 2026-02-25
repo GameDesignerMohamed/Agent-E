@@ -22,11 +22,14 @@ export interface WebSocketHandle {
   broadcast: (data: Record<string, unknown>) => void;
 }
 
+const MAX_WS_PAYLOAD = 1_048_576; // 1 MB
+const MAX_WS_CONNECTIONS = 100;
+
 export function createWebSocketHandler(
   httpServer: http.Server,
   server: AgentEServer,
 ): WebSocketHandle {
-  const wss = new WebSocketServer({ server: httpServer });
+  const wss = new WebSocketServer({ server: httpServer, maxPayload: MAX_WS_PAYLOAD });
 
   // Heartbeat: ping every 30s, disconnect if no pong within 10s
   const aliveMap = new WeakMap<WebSocket, boolean>();
@@ -46,6 +49,10 @@ export function createWebSocketHandler(
   }, 30_000);
 
   wss.on('connection', (ws) => {
+    if (wss.clients.size > MAX_WS_CONNECTIONS) {
+      ws.close(1013, 'Server at capacity');
+      return;
+    }
     console.log('[AgentE Server] Client connected');
     aliveMap.set(ws, true);
 

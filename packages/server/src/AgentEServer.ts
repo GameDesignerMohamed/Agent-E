@@ -60,7 +60,7 @@ export class AgentEServer {
     this.port = config.port ?? 3100;
     this.host = config.host ?? '0.0.0.0';
     this.validateState = config.validateState ?? true;
-    this.corsOrigin = config.corsOrigin ?? '*';
+    this.corsOrigin = config.corsOrigin ?? 'http://localhost:3100';
     this.serveDashboard = config.serveDashboard ?? true;
 
     // Build a "remote" adapter — state comes from HTTP/WS, not polled

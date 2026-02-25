@@ -37,7 +37,7 @@
     "access": "public"
   },
   "dependencies": {
-    "@agent-e/core": "*"
+    "@agent-e/core": "^1.6.1"
   },
   "devDependencies": {
     "tsup": "*",

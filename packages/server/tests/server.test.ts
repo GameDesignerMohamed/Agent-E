@@ -163,7 +163,7 @@ describe('HTTP: POST /diagnose', () => {
 describe('HTTP: CORS', () => {
   it('includes CORS headers in response', async () => {
     const res = await fetch(`${baseUrl}/health`);
-    expect(res.headers.get('access-control-allow-origin')).toBe('*');
+    expect(res.headers.get('access-control-allow-origin')).toBe('http://localhost:3100');
   });
 });
 

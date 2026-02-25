@@ -6,7 +6,14 @@ import { validateEconomyState } from '@agent-e/core';
 import type { AgentEServer } from './AgentEServer.js';
 import { getDashboardHtml } from './dashboard.js';
 
+function setSecurityHeaders(res: http.ServerResponse): void {
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('X-Frame-Options', 'DENY');
+  res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+}
+
 function setCorsHeaders(res: http.ServerResponse, origin: string): void {
+  setSecurityHeaders(res);
   res.setHeader('Access-Control-Allow-Origin', origin);
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
@@ -125,13 +132,19 @@ export function createRouteHandler(
 
       // GET /decisions — decision log with optional ?limit and ?since
       if (path === '/decisions' && method === 'GET') {
-        const limit = parseInt(url.searchParams.get('limit') ?? '100', 10);
-        const since = url.searchParams.get('since');
+        const rawLimit = parseInt(url.searchParams.get('limit') ?? '100', 10);
+        const limit = Math.min(Math.max(isNaN(rawLimit) ? 100 : rawLimit, 1), 1000);
+        const sinceParam = url.searchParams.get('since');
         const agentE = server.getAgentE();
 
         let decisions;
-        if (since) {
-          decisions = agentE.getDecisions({ since: parseInt(since, 10) });
+        if (sinceParam) {
+          const since = parseInt(sinceParam, 10);
+          if (isNaN(since)) {
+            json(res, 400, { error: 'Invalid "since" parameter — must be a number' }, cors);
+            return;
+          }
+          decisions = agentE.getDecisions({ since });
         } else {
           decisions = agentE.log.latest(limit);
         }
@@ -177,6 +190,14 @@ export function createRouteHandler(
               typeof (c as Record<string, unknown>)['max'] === 'number'
             ) {
               const constraint = c as { param: string; min: number; max: number };
+              if (!isFinite(constraint.min) || !isFinite(constraint.max)) {
+                json(res, 400, { error: 'Constraint bounds must be finite numbers' }, cors);
+                return;
+              }
+              if (constraint.min > constraint.max) {
+                json(res, 400, { error: 'Constraint min cannot exceed max' }, cors);
+                return;
+              }
               server.constrain(constraint.param, { min: constraint.min, max: constraint.max });
             }
           }
@@ -246,6 +267,7 @@ export function createRouteHandler(
       // GET / — Dashboard HTML
       if (path === '/' && method === 'GET' && server.serveDashboard) {
         setCorsHeaders(res, cors);
+        res.setHeader('Content-Security-Policy', "default-src 'self'; script-src 'unsafe-inline' https://cdn.jsdelivr.net; style-src 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; connect-src 'self' ws: wss:; img-src 'self' data:");
         res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
         res.end(getDashboardHtml());
         return;
