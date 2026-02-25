@@ -14,10 +14,13 @@
     "typecheck": "tsc --build --noEmit",
     "prepublishOnly": "npm run build && npm run test"
   },
+  "engines": {
+    "node": ">=18"
+  },
   "devDependencies": {
-    "@vitest/coverage-v8": "^2.0.0",
+    "@vitest/coverage-v8": "^4.0.18",
     "tsup": "^8.0.0",
     "typescript": "^5.4.0",
-    "vitest": "^2.0.0"
+    "vitest": "^4.0.18"
   }
 }
