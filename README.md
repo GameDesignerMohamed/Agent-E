@@ -162,6 +162,21 @@ Built-in knowledge base across 15 categories: supply chain, incentives, populati
 
 Each principle returns either `{ violated: false }` or a full violation with severity, evidence, suggested action (parameterType + scope), confidence score, and estimated lag.
 
+## Dashboard
+
+Real-time charts, decision feed, alerts — no extra setup.
+
+```typescript
+import { startServer } from '@agent-e/server';
+
+startServer({ port: 3100 });
+// Open http://localhost:3100
+```
+
+Health, Gini, net flow, and satisfaction charts update live via WebSocket. Decision feed shows every adjustment as it happens. In `advisor` mode, approve or reject recommendations directly from the UI.
+
+Disable with `serveDashboard: false` if you only want the API.
+
 ## Packages
 
 | Package | Description |
