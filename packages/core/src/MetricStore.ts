@@ -120,6 +120,50 @@ export class MetricStore {
     return { metric: q.metric as string, resolution, points };
   }
 
+  /** Summarized recent history for dashboard charts */
+  recentHistory(count = 100): Array<{
+    tick: number;
+    health: number;
+    giniCoefficient: number;
+    totalSupply: number;
+    netFlow: number;
+    velocity: number;
+    inflationRate: number;
+    avgSatisfaction: number;
+    churnRate: number;
+    totalAgents: number;
+    priceIndex: number;
+  }> {
+    const all = this.fine.toArray();
+    const slice = all.slice(-count);
+    return slice.map(m => {
+      // Compute health inline (same formula as AgentE.getHealth())
+      let health = 100;
+      if (m.avgSatisfaction < 65) health -= 15;
+      if (m.avgSatisfaction < 50) health -= 10;
+      if (m.giniCoefficient > 0.45) health -= 15;
+      if (m.giniCoefficient > 0.60) health -= 10;
+      if (Math.abs(m.netFlow) > 10) health -= 15;
+      if (Math.abs(m.netFlow) > 20) health -= 10;
+      if (m.churnRate > 0.05) health -= 15;
+      health = Math.max(0, Math.min(100, health));
+
+      return {
+        tick: m.tick,
+        health,
+        giniCoefficient: m.giniCoefficient,
+        totalSupply: m.totalSupply,
+        netFlow: m.netFlow,
+        velocity: m.velocity,
+        inflationRate: m.inflationRate,
+        avgSatisfaction: m.avgSatisfaction,
+        churnRate: m.churnRate,
+        totalAgents: m.totalAgents,
+        priceIndex: m.priceIndex,
+      };
+    });
+  }
+
   /** Check if fine and coarse resolution metrics diverge significantly */
   divergenceDetected(): boolean {
     const f = this.fine.last();

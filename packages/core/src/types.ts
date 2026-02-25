@@ -359,7 +359,8 @@ export type DecisionResult =
   | 'skipped_simulation_failed'
   | 'skipped_locked'
   | 'skipped_override'
-  | 'rolled_back';
+  | 'rolled_back'
+  | 'rejected';
 
 export interface DecisionEntry {
   id: string;

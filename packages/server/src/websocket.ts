@@ -17,10 +17,15 @@ function send(ws: WebSocket, data: Record<string, unknown>): void {
   }
 }
 
+export interface WebSocketHandle {
+  cleanup: () => void;
+  broadcast: (data: Record<string, unknown>) => void;
+}
+
 export function createWebSocketHandler(
   httpServer: http.Server,
   server: AgentEServer,
-): () => void {
+): WebSocketHandle {
   const wss = new WebSocketServer({ server: httpServer });
 
   // Heartbeat: ping every 30s, disconnect if no pong within 10s
@@ -163,9 +168,20 @@ export function createWebSocketHandler(
     });
   });
 
-  // Return cleanup function
-  return () => {
-    clearInterval(heartbeatInterval);
-    wss.close();
+  function broadcast(data: Record<string, unknown>): void {
+    const payload = JSON.stringify(data);
+    for (const ws of wss.clients) {
+      if (ws.readyState === WebSocket.OPEN) {
+        ws.send(payload);
+      }
+    }
+  }
+
+  return {
+    cleanup: () => {
+      clearInterval(heartbeatInterval);
+      wss.close();
+    },
+    broadcast,
   };
 }

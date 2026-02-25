@@ -31,6 +31,93 @@ const server = new AgentEServer({
 await server.start();
 ```
 
+## Dashboard
+
+The server includes a built-in developer dashboard at `GET /`. Start the server and open `http://localhost:3100` in your browser.
+
+The dashboard shows:
+- **Health & Metrics** — real-time line charts for economy health, gini, net flow, satisfaction
+- **Decision Feed** — terminal-style log of every AgentE decision
+- **Active Alerts** — live violation cards sorted by severity
+- **Violation History** — sortable table of all past violations
+- **Persona Distribution** — horizontal bar chart of agent archetypes
+- **Parameter Registry** — tracked principles
+
+The dashboard connects via WebSocket for real-time updates, with HTTP polling fallback when WebSocket is unavailable.
+
+To disable the dashboard:
+
+```ts
+const server = new AgentEServer({
+  serveDashboard: false,
+});
+```
+
+## Advisor Mode
+
+In advisor mode, AgentE recommends parameter changes but does not apply them. Use the dashboard or HTTP API to approve or reject recommendations.
+
+```ts
+const server = new AgentEServer({
+  agentE: { mode: 'advisor' },
+});
+```
+
+### GET /pending
+
+List pending recommendations waiting for approval.
+
+```bash
+curl http://localhost:3100/pending
+```
+
+```json
+{
+  "mode": "advisor",
+  "pending": [{ "id": "decision_100_trade_tax", "tick": 100, ... }],
+  "count": 1
+}
+```
+
+### POST /approve
+
+Approve a pending recommendation. AgentE will apply the parameter change.
+
+```bash
+curl -X POST http://localhost:3100/approve \
+  -H 'Content-Type: application/json' \
+  -d '{"decisionId": "decision_100_trade_tax"}'
+```
+
+### POST /reject
+
+Reject a pending recommendation with an optional reason.
+
+```bash
+curl -X POST http://localhost:3100/reject \
+  -H 'Content-Type: application/json' \
+  -d '{"decisionId": "decision_100_trade_tax", "reason": "too aggressive"}'
+```
+
+### GET /metrics
+
+Latest metrics snapshot plus recent history for charting.
+
+```json
+{
+  "latest": { "tick": 100, "giniCoefficient": 0.35, ... },
+  "history": [{ "tick": 1, "health": 100, "giniCoefficient": 0.0, ... }, ...]
+}
+```
+
+### GET /metrics/personas
+
+Persona distribution from the latest metrics.
+
+```json
+{ "distribution": { "Whale": 3, "ActiveTrader": 12, ... }, "total": 50 }
+```
+
 ## API Reference
 
 ### POST /tick

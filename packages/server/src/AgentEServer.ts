@@ -17,7 +17,7 @@ import {
   type Thresholds,
 } from '@agent-e/core';
 import { createRouteHandler } from './routes.js';
-import { createWebSocketHandler } from './websocket.js';
+import { createWebSocketHandler, type WebSocketHandle } from './websocket.js';
 
 export interface ServerConfig {
   port?: number;
@@ -25,6 +25,7 @@ export interface ServerConfig {
   agentE?: Partial<Omit<AgentEConfig, 'adapter'>>;
   validateState?: boolean;
   corsOrigin?: string;
+  serveDashboard?: boolean;
 }
 
 export interface EnrichedAdjustment {
@@ -50,15 +51,17 @@ export class AgentEServer {
   private readonly host: string;
   private readonly thresholds: Thresholds;
   private readonly startedAt = Date.now();
-  private cleanupWs: (() => void) | null = null;
+  private wsHandle: WebSocketHandle | null = null;
   readonly validateState: boolean;
   readonly corsOrigin: string;
+  readonly serveDashboard: boolean;
 
   constructor(config: ServerConfig = {}) {
     this.port = config.port ?? 3100;
     this.host = config.host ?? '0.0.0.0';
     this.validateState = config.validateState ?? true;
     this.corsOrigin = config.corsOrigin ?? '*';
+    this.serveDashboard = config.serveDashboard ?? true;
 
     // Build a "remote" adapter — state comes from HTTP/WS, not polled
     const adapter: EconomyAdapter = {
@@ -118,7 +121,7 @@ export class AgentEServer {
 
   async start(): Promise<void> {
     // Wire up WebSocket upgrade
-    this.cleanupWs = createWebSocketHandler(this.server, this);
+    this.wsHandle = createWebSocketHandler(this.server, this);
 
     return new Promise((resolve) => {
       this.server.listen(this.port, this.host, () => {
@@ -131,7 +134,7 @@ export class AgentEServer {
 
   async stop(): Promise<void> {
     this.agentE.stop();
-    if (this.cleanupWs) this.cleanupWs();
+    if (this.wsHandle) this.wsHandle.cleanup();
     return new Promise((resolve, reject) => {
       this.server.close((err) => {
         if (err) reject(err);
@@ -261,5 +264,9 @@ export class AgentEServer {
 
   constrain(param: string, bounds: { min: number; max: number }): void {
     this.agentE.constrain(param, bounds);
+  }
+
+  broadcast(data: Record<string, unknown>): void {
+    if (this.wsHandle) this.wsHandle.broadcast(data);
   }
 }

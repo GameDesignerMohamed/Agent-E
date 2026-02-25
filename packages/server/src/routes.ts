@@ -4,6 +4,7 @@
 import type * as http from 'node:http';
 import { validateEconomyState } from '@agent-e/core';
 import type { AgentEServer } from './AgentEServer.js';
+import { getDashboardHtml } from './dashboard.js';
 
 function setCorsHeaders(res: http.ServerResponse, origin: string): void {
   res.setHeader('Access-Control-Allow-Origin', origin);
@@ -243,6 +244,125 @@ export function createRouteHandler(
             evidence: d.violation.evidence,
             suggestedAction: d.violation.suggestedAction,
           })),
+        }, cors);
+        return;
+      }
+
+      // GET / — Dashboard HTML
+      if (path === '/' && method === 'GET' && server.serveDashboard) {
+        setCorsHeaders(res, cors);
+        res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
+        res.end(getDashboardHtml());
+        return;
+      }
+
+      // GET /metrics — Latest metrics + history for dashboard charts
+      if (path === '/metrics' && method === 'GET') {
+        const agentE = server.getAgentE();
+        const latest = agentE.store.latest();
+        const history = agentE.store.recentHistory(100);
+        json(res, 200, { latest, history }, cors);
+        return;
+      }
+
+      // GET /metrics/personas — Persona distribution
+      if (path === '/metrics/personas' && method === 'GET') {
+        const agentE = server.getAgentE();
+        const latest = agentE.store.latest();
+        const dist = latest.personaDistribution || {};
+        const total = Object.values(dist).reduce((s: number, v) => s + (v as number), 0);
+        json(res, 200, { distribution: dist, total }, cors);
+        return;
+      }
+
+      // POST /approve — Approve advisor recommendation
+      if (path === '/approve' && method === 'POST') {
+        const body = await readBody(req);
+        let parsed: unknown;
+        try { parsed = JSON.parse(body); } catch {
+          json(res, 400, { error: 'Invalid JSON' }, cors);
+          return;
+        }
+        const payload = parsed as Record<string, unknown>;
+        const decisionId = payload['decisionId'] as string;
+        if (!decisionId) {
+          json(res, 400, { error: 'missing_decision_id' }, cors);
+          return;
+        }
+
+        const agentE = server.getAgentE();
+        if (agentE.getMode() !== 'advisor') {
+          json(res, 400, { error: 'not_in_advisor_mode' }, cors);
+          return;
+        }
+
+        const entry = agentE.log.getById(decisionId);
+        if (!entry) {
+          json(res, 404, { error: 'decision_not_found' }, cors);
+          return;
+        }
+        if (entry.result !== 'skipped_override') {
+          json(res, 409, { error: 'decision_not_pending', currentResult: entry.result }, cors);
+          return;
+        }
+
+        await agentE.apply(entry.plan);
+        agentE.log.updateResult(decisionId, 'applied');
+        server.broadcast({ type: 'advisor_action', action: 'approved', decisionId });
+        json(res, 200, {
+          ok: true,
+          parameter: entry.plan.parameter,
+          value: entry.plan.targetValue,
+        }, cors);
+        return;
+      }
+
+      // POST /reject — Reject advisor recommendation
+      if (path === '/reject' && method === 'POST') {
+        const body = await readBody(req);
+        let parsed: unknown;
+        try { parsed = JSON.parse(body); } catch {
+          json(res, 400, { error: 'Invalid JSON' }, cors);
+          return;
+        }
+        const payload = parsed as Record<string, unknown>;
+        const decisionId = payload['decisionId'] as string;
+        const reason = (payload['reason'] as string) || undefined;
+        if (!decisionId) {
+          json(res, 400, { error: 'missing_decision_id' }, cors);
+          return;
+        }
+
+        const agentE = server.getAgentE();
+        if (agentE.getMode() !== 'advisor') {
+          json(res, 400, { error: 'not_in_advisor_mode' }, cors);
+          return;
+        }
+
+        const entry = agentE.log.getById(decisionId);
+        if (!entry) {
+          json(res, 404, { error: 'decision_not_found' }, cors);
+          return;
+        }
+        if (entry.result !== 'skipped_override') {
+          json(res, 409, { error: 'decision_not_pending', currentResult: entry.result }, cors);
+          return;
+        }
+
+        agentE.log.updateResult(decisionId, 'rejected', reason);
+        server.broadcast({ type: 'advisor_action', action: 'rejected', decisionId, reason });
+        json(res, 200, { ok: true, decisionId }, cors);
+        return;
+      }
+
+      // GET /pending — List pending advisor recommendations
+      if (path === '/pending' && method === 'GET') {
+        const agentE = server.getAgentE();
+        const pending = agentE.log.query({ result: 'skipped_override' });
+        json(res, 200, {
+          mode: agentE.getMode(),
+          pending,
+          count: pending.length,
         }, cors);
         return;
       }

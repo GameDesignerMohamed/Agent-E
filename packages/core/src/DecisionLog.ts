@@ -75,6 +75,18 @@ export class DecisionLog {
     });
   }
 
+  getById(id: string): DecisionEntry | undefined {
+    return this.entries.find(e => e.id === id);
+  }
+
+  updateResult(id: string, newResult: DecisionResult, reasoning?: string): boolean {
+    const entry = this.entries.find(e => e.id === id);
+    if (!entry) return false;
+    entry.result = newResult;
+    if (reasoning !== undefined) entry.reasoning = reasoning;
+    return true;
+  }
+
   latest(n = 30): DecisionEntry[] {
     return this.entries.slice(-n).reverse();
   }
