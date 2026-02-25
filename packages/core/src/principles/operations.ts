@@ -82,7 +82,7 @@ export const P52_EndowmentEffect: Principle = {
     // Proxy: if activity completion is high but satisfaction is still low,
     // activities are not creating the endowment effect (participants complete but don't value the rewards)
     const { eventCompletionRate } = metrics;
-    if (isNaN(eventCompletionRate)) return { violated: false };
+    if (Number.isNaN(eventCompletionRate)) return { violated: false };
 
     if (eventCompletionRate > 0.90 && avgSatisfaction < 60) {
       return {
@@ -116,7 +116,7 @@ export const P53_EventCompletionRate: Principle = {
     '100% free = zero reason to ever spend.',
   check(metrics, thresholds): PrincipleResult {
     const { eventCompletionRate } = metrics;
-    if (isNaN(eventCompletionRate)) return { violated: false };
+    if (Number.isNaN(eventCompletionRate)) return { violated: false };
 
     if (eventCompletionRate < thresholds.eventCompletionMin) {
       return {

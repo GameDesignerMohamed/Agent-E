@@ -15,7 +15,6 @@ import type {
   MetricQuery,
   MetricQueryResult,
 } from './types.js';
-import { emptyMetrics } from './types.js';
 import { DEFAULT_THRESHOLDS, DEFAULT_TICK_CONFIG } from './defaults.js';
 import { Observer } from './Observer.js';
 import { Diagnoser } from './Diagnoser.js';

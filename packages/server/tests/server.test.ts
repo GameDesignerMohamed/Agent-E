@@ -167,6 +167,103 @@ describe('HTTP: CORS', () => {
   });
 });
 
+// ── Dashboard Route Tests ────────────────────────────────────────────────────
+
+describe('HTTP: GET / (Dashboard)', () => {
+  it('returns HTML with Cache-Control header', async () => {
+    const res = await fetch(`${baseUrl}/`);
+    expect(res.status).toBe(200);
+    expect(res.headers.get('content-type')).toContain('text/html');
+    expect(res.headers.get('cache-control')).toBe('public, max-age=60');
+    expect(res.headers.get('content-security-policy')).toBeTruthy();
+    const body = await res.text();
+    expect(body).toContain('AgentE Dashboard');
+  });
+});
+
+describe('HTTP: GET /metrics', () => {
+  it('returns latest metrics and history array', async () => {
+    const res = await fetch(`${baseUrl}/metrics`);
+    expect(res.status).toBe(200);
+    const data = await res.json();
+    expect(data).toHaveProperty('latest');
+    expect(data).toHaveProperty('history');
+    expect(Array.isArray(data.history)).toBe(true);
+    expect(data.latest).toHaveProperty('tick');
+  });
+});
+
+describe('HTTP: GET /metrics/personas', () => {
+  it('returns persona distribution and total', async () => {
+    const res = await fetch(`${baseUrl}/metrics/personas`);
+    expect(res.status).toBe(200);
+    const data = await res.json();
+    expect(data).toHaveProperty('distribution');
+    expect(data).toHaveProperty('total');
+    expect(typeof data.total).toBe('number');
+  });
+});
+
+describe('HTTP: GET /pending', () => {
+  it('returns pending list with mode and count', async () => {
+    const res = await fetch(`${baseUrl}/pending`);
+    expect(res.status).toBe(200);
+    const data = await res.json();
+    expect(data).toHaveProperty('mode');
+    expect(data).toHaveProperty('pending');
+    expect(data).toHaveProperty('count');
+    expect(Array.isArray(data.pending)).toBe(true);
+  });
+});
+
+describe('HTTP: POST /approve', () => {
+  it('returns 400 when missing decisionId', async () => {
+    const res = await fetch(`${baseUrl}/approve`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({}),
+    });
+    expect(res.status).toBe(400);
+    const data = await res.json();
+    expect(data.error).toBe('missing_decision_id');
+  });
+
+  it('returns 400 when not in advisor mode', async () => {
+    const res = await fetch(`${baseUrl}/approve`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ decisionId: 'fake_id' }),
+    });
+    expect(res.status).toBe(400);
+    const data = await res.json();
+    expect(data.error).toBe('not_in_advisor_mode');
+  });
+});
+
+describe('HTTP: POST /reject', () => {
+  it('returns 400 when missing decisionId', async () => {
+    const res = await fetch(`${baseUrl}/reject`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({}),
+    });
+    expect(res.status).toBe(400);
+    const data = await res.json();
+    expect(data.error).toBe('missing_decision_id');
+  });
+
+  it('returns 400 when not in advisor mode', async () => {
+    const res = await fetch(`${baseUrl}/reject`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ decisionId: 'fake_id' }),
+    });
+    expect(res.status).toBe(400);
+    const data = await res.json();
+    expect(data.error).toBe('not_in_advisor_mode');
+  });
+});
+
 // ── WebSocket Tests ─────────────────────────────────────────────────────────
 
 function connectWs(): Promise<WebSocket> {

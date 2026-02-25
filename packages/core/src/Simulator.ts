@@ -276,7 +276,7 @@ export class Simulator {
     const base = { ...outcomes[0]! };
 
     const avg = (key: keyof EconomyMetrics): number => {
-      const vals = outcomes.map(o => o[key] as number).filter(v => typeof v === 'number' && !isNaN(v));
+      const vals = outcomes.map(o => o[key] as number).filter(v => typeof v === 'number' && !Number.isNaN(v));
       return vals.length > 0 ? vals.reduce((a, b) => a + b, 0) / vals.length : 0;
     };
 
@@ -292,7 +292,7 @@ export class Simulator {
       for (const k of allKeys) {
         const vals = outcomes
           .map(o => (o[key] as Record<string, number>)?.[k])
-          .filter((v): v is number => typeof v === 'number' && !isNaN(v));
+          .filter((v): v is number => typeof v === 'number' && !Number.isNaN(v));
         result[k] = vals.length > 0 ? vals.reduce((a, b) => a + b, 0) / vals.length : 0;
       }
       return result;

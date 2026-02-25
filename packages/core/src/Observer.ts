@@ -1,7 +1,6 @@
 // Stage 1: Observer — translates raw EconomyState into EconomyMetrics
 
 import type { EconomyState, EconomyMetrics, EconomicEvent, TickConfig } from './types.js';
-import { emptyMetrics } from './types.js';
 import { DEFAULT_TICK_CONFIG } from './defaults.js';
 
 export class Observer {
@@ -9,7 +8,6 @@ export class Observer {
   private previousPricesByCurrency: Record<string, Record<string, number>> = {};
   private customMetricFns: Record<string, (state: EconomyState) => number> = {};
   private anchorBaselineByCurrency: Record<string, { currencyPerPeriod: number; itemsPerCurrency: number }> = {};
-  private tickConfig: TickConfig;
 
   constructor(tickConfig?: Partial<TickConfig>) {
     this.tickConfig = { ...DEFAULT_TICK_CONFIG, ...tickConfig };

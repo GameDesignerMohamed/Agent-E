@@ -12,7 +12,7 @@ export const P34_ExtractionRatio: Principle = {
     'Above 65%, any slowdown in new users collapses the economy.',
   check(metrics, thresholds): PrincipleResult {
     const { extractionRatio } = metrics;
-    if (isNaN(extractionRatio)) return { violated: false }; // not tracked for this economy
+    if (Number.isNaN(extractionRatio)) return { violated: false }; // not tracked for this economy
 
     if (extractionRatio > thresholds.extractionRatioRed) {
       return {
@@ -67,7 +67,7 @@ export const P47_SmokeTest: Principle = {
     'Real utility (resources in the economy serve distinct utility functions) must anchor value.',
   check(metrics, thresholds): PrincipleResult {
     const { smokeTestRatio } = metrics;
-    if (isNaN(smokeTestRatio)) return { violated: false };
+    if (Number.isNaN(smokeTestRatio)) return { violated: false };
 
     if (smokeTestRatio < thresholds.smokeTestCritical) {
       return {
@@ -120,7 +120,7 @@ export const P48_CurrencyInsulation: Principle = {
     'internal economies. Good design insulates the two.',
   check(metrics, thresholds): PrincipleResult {
     const { currencyInsulation } = metrics;
-    if (isNaN(currencyInsulation)) return { violated: false };
+    if (Number.isNaN(currencyInsulation)) return { violated: false };
 
     if (currencyInsulation > thresholds.currencyInsulationMax) {
       return {

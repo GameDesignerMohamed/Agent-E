@@ -113,7 +113,7 @@ export const P3_BootstrapCapitalCoversFirstTransaction: Principle = {
     'anything first. Producer starting with low currency but needing more to accept raw material hand-off ' +
     'blocks the entire supply chain from tick 1.',
   check(metrics, _thresholds): PrincipleResult {
-    const { populationByRole, supplyByResource, prices, totalAgents } = metrics;
+    const { populationByRole, supplyByResource, prices } = metrics;
 
     // Proxy: if there are agents but supply of ANY produced resource is zero
     // despite positive prices for inputs, bootstrap likely failed
