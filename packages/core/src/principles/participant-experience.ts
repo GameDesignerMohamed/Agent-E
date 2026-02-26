@@ -9,7 +9,7 @@ export const P33_FairNotEqual: Principle = {
   description:
     'Gini = 0 is boring — everyone has the same and there is nothing to strive for. ' +
     'Healthy inequality from skill/effort is fine. Inequality from money (pay-to-win) ' +
-    'is toxic. Target Gini 0.3-0.45: meaningful spread, not oligarchy.',
+    'is toxic. Below 0.10 Gini = too flat; above configurable thresholds = oligarchy.',
   check(metrics, thresholds): PrincipleResult {
     for (const curr of metrics.currencies) {
       const giniCoefficient = metrics.giniCoefficientByCurrency[curr] ?? 0;
@@ -155,9 +155,8 @@ export const P45_TimeBudget: Principle = {
   name: 'Time Budget',
   category: 'participant_experience',
   description:
-    'required_time ≤ available_time × 0.8. If the economy requires more engagement ' +
-    'than participants can realistically give, it is a disguised paywall. ' +
-    'The 0.8 buffer accounts for real life.',
+    'timeToValue > 30 with satisfaction < 55 suggests excessive time demand. ' +
+    'Proxy metric — does not measure individual available time.',
   check(metrics, thresholds): PrincipleResult {
     const { timeToValue, avgSatisfaction } = metrics;
 

@@ -141,40 +141,48 @@ export const P8_RegulatorCannotFightDesign: Principle = {
   name: 'Regulator Cannot Fight the Design',
   category: 'incentive',
   description:
-    'If the economy is designed to have a majority role (e.g. dominant role exceeds 55%), ' +
-    'the regulator must know this and exempt that role from population suppression. ' +
-    'AgentE at tick 1 seeing dominant role exceeds 55% and slashing pool rewards is overreach.',
-  check(metrics, _thresholds): PrincipleResult {
-    // This principle is mostly enforced by configuration (dominantRoles).
-    // Here we detect a possible signal: dominant role's satisfaction is dropping
-    // while their share is also dropping — both together suggest regulator overreach.
+    'If a role dominates above 30%, classify as structural (in dominantRoles config) or pathological. ' +
+    'Structural dominance gets no intervention. Pathological dominance gets crowding pressure.',
+  check(metrics, thresholds): PrincipleResult {
     const { roleShares, avgSatisfaction } = metrics;
+    const dominant = Object.entries(roleShares).sort((a, b) => b[1] - a[1])[0];
+    if (!dominant) return { violated: false };
 
-    // If average satisfaction is low (<45) and some role dominates,
-    // it may be suppression causing satisfaction decay
-    if (avgSatisfaction < 45) {
-      const dominantRole = Object.entries(roleShares).sort((a, b) => b[1] - a[1])[0];
-      if (dominantRole && dominantRole[1] > 0.30) {
-        return {
-          violated: true,
-          severity: 4,
-          evidence: { dominantRole: dominantRole[0], share: dominantRole[1], avgSatisfaction },
-          suggestedAction: {
-            parameterType: 'reward',
-            direction: 'increase',
-            magnitude: 0.10,
-            reasoning:
-              `Low satisfaction with ${dominantRole[0]} dominant. ` +
-              'Regulator may be suppressing a structurally necessary role. ' +
-              'Ease pressure on dominant role rewards.',
-          },
-          confidence: 0.55,
-          estimatedLag: 8,
-        };
-      }
+    const [dominantRole, dominantShare] = dominant;
+    if (dominantShare <= 0.30) return { violated: false };
+
+    const isStructural = thresholds.dominantRoles?.includes(dominantRole) ?? false;
+
+    if (isStructural) {
+      return {
+        violated: true,
+        severity: 3,
+        evidence: { role: dominantRole, share: dominantShare, classification: 'structural' },
+        suggestedAction: {
+          parameterType: 'rate',
+          direction: 'set',
+          magnitude: 0,
+          reasoning: `${dominantRole} dominance (${(dominantShare * 100).toFixed(0)}%) is by design. No intervention.`,
+        },
+        confidence: 0.85,
+      };
     }
 
-    return { violated: false };
+    // Pathological (absorbed from P28)
+    return {
+      violated: true,
+      severity: 7,
+      evidence: { role: dominantRole, share: dominantShare, classification: 'pathological', avgSatisfaction },
+      suggestedAction: {
+        parameterType: 'reward',
+        scope: { tags: [dominantRole] },
+        direction: 'decrease',
+        magnitude: 0.10,
+        reasoning: `${dominantRole} at ${(dominantShare * 100).toFixed(0)}% is not a designed majority — apply crowding pressure.`,
+      },
+      confidence: 0.70,
+      estimatedLag: 12,
+    };
   },
 };
 

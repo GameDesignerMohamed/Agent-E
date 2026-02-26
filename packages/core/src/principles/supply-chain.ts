@@ -159,7 +159,7 @@ export const P4_MaterialsFlowFasterThanCooldown: Principle = {
     'If producers produce every 5 ticks but only receive raw materials every 10 ticks, ' +
     'they starve regardless of supply levels.',
   check(metrics, _thresholds): PrincipleResult {
-    const { supplyByResource, populationByRole, velocity, totalAgents } = metrics;
+    const { supplyByResource, populationByRole, velocity, velocityByCurrency, totalAgents } = metrics;
 
     // Check total raw material supply vs total population
     const totalSupply = Object.values(supplyByResource).reduce((s, v) => s + v, 0);
@@ -169,21 +169,42 @@ export const P4_MaterialsFlowFasterThanCooldown: Principle = {
     const roleEntries = Object.entries(populationByRole);
     const totalRoles = roleEntries.length;
 
-    // If there's significant population imbalance and low velocity, may indicate flow issues
-    if (totalRoles >= 2 && velocity < 5 && avgSupplyPerAgent < 0.5) {
-      return {
-        violated: true,
-        severity: 5,
-        evidence: { avgSupplyPerAgent, velocity, totalRoles },
-        suggestedAction: {
-          parameterType: 'yield',
-          direction: 'increase',
-          magnitude: 0.15,
-          reasoning: 'Low supply per agent with stagnant velocity. Increase yield to compensate.',
-        },
-        confidence: 0.65,
-        estimatedLag: 8,
-      };
+    // Per-currency velocity check — any stagnant currency is a violation
+    if (totalRoles >= 2 && avgSupplyPerAgent < 0.5) {
+      for (const [currency, currVelocity] of Object.entries(velocityByCurrency)) {
+        if (currVelocity < 5) {
+          return {
+            violated: true,
+            severity: 5,
+            evidence: { currency, currVelocity, avgSupplyPerAgent, totalRoles },
+            suggestedAction: {
+              parameterType: 'yield',
+              scope: { currency },
+              direction: 'increase',
+              magnitude: 0.15,
+              reasoning: `${currency} velocity is ${currVelocity.toFixed(1)} — materials not flowing. Increase yield to compensate.`,
+            },
+            confidence: 0.70,
+            estimatedLag: 8,
+          };
+        }
+      }
+      // Fallback: if no per-currency data, check aggregate
+      if (Object.keys(velocityByCurrency).length === 0 && velocity < 5) {
+        return {
+          violated: true,
+          severity: 5,
+          evidence: { avgSupplyPerAgent, velocity, totalRoles },
+          suggestedAction: {
+            parameterType: 'yield',
+            direction: 'increase',
+            magnitude: 0.15,
+            reasoning: 'Low supply per agent with stagnant velocity. Increase yield to compensate.',
+          },
+          confidence: 0.65,
+          estimatedLag: 8,
+        };
+      }
     }
 
     // Too much supply piling up: materials accumulating faster than being consumed

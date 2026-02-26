@@ -55,6 +55,7 @@ describe('Diagnoser', () => {
 
   it('returns no violations for a healthy economy', () => {
     const diagnoser = new Diagnoser(ALL_PRINCIPLES);
+    const healthyThresholds = { ...t, dominantRoles: ['consumer'] };
     const m = {
       ...emptyMetrics(200),
       tick: 200,
@@ -100,7 +101,7 @@ describe('Diagnoser', () => {
       eventCompletionRate: 0.60,
     };
 
-    const diagnoses = diagnoser.diagnose(m, t);
+    const diagnoses = diagnoser.diagnose(m, healthyThresholds);
     const high = diagnoses.filter(d => d.violation.severity >= 6);
     expect(high.length).toBe(0);
   });

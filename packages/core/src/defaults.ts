@@ -75,6 +75,9 @@ export const DEFAULT_THRESHOLDS: Thresholds = {
   priceDiscoveryWindowTicks: 20,
   giftTradeFilterRatio: 0.15,
   disposalTradeWeightDiscount: 0.5,
+
+  // Structural dominance (P8)
+  dominantRoles: [],
 };
 
 export const PERSONA_HEALTHY_RANGES: Record<string, { min: number; max: number }> = {

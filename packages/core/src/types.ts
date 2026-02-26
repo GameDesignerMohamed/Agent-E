@@ -479,6 +479,9 @@ export interface Thresholds {
   priceDiscoveryWindowTicks: number;      // P57: ticks to allow for distributed price discovery
   giftTradeFilterRatio: number;           // P59: max gift-trade fraction before filtering kicks in
   disposalTradeWeightDiscount: number;    // P60: multiplier applied to disposal-trade price signals (0–1)
+
+  // Structural dominance (P8)
+  dominantRoles: string[];                // roles that are dominant by design — exempt from crowding pressure
 }
 
 // ── Tick Configuration ───────────────────────────────────────────────────────

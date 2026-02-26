@@ -7,9 +7,9 @@ export const P17_GracePeriodBeforeIntervention: Principle = {
   name: 'Grace Period Before Intervention',
   category: 'bootstrap',
   description:
-    'Any intervention before tick 50 is premature. The economy needs time to ' +
-    'bootstrap with designed distributions. AgentE intervening at tick 1 against ' +
-    'dominant role exceeds 55% (designed) killed the economy instantly.',
+    'Any intervention before tick 30 is premature. The economy needs time to ' +
+    'bootstrap with designed distributions. Early intervention against designed ' +
+    'dominance can kill the economy instantly.',
   check(metrics, _thresholds): PrincipleResult {
     // This principle is enforced in the AgentE pipeline itself (gracePeriod config).
     // Here we flag if grace period appears to have ended too early by checking:

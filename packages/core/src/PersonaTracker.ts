@@ -31,6 +31,9 @@ export interface PersonaConfig {
 
   /** Rolling history window size (ticks). Default: 50 */
   historyWindow: number;
+
+  /** Ticks between full reclassification. Default: 10 */
+  reclassifyInterval: number;
 }
 
 const DEFAULT_PERSONA_CONFIG: PersonaConfig = {
@@ -41,6 +44,7 @@ const DEFAULT_PERSONA_CONFIG: PersonaConfig = {
   atRiskDropThreshold: 0.5,
   powerUserMinSystems: 3,
   historyWindow: 50,
+  reclassifyInterval: 10,
 };
 
 // ── Per-agent rolling signals ──
@@ -64,6 +68,8 @@ interface AgentRecord {
 export class PersonaTracker {
   private agents = new Map<string, AgentRecord>();
   private config: PersonaConfig;
+  private cachedDistribution: Record<string, number> = {};
+  private lastClassifiedTick = -Infinity;
 
   constructor(config?: Partial<PersonaConfig>) {
     this.config = { ...DEFAULT_PERSONA_CONFIG, ...config };
@@ -74,6 +80,7 @@ export class PersonaTracker {
    * Call this once per tick BEFORE getDistribution().
    */
   update(state: EconomyState, events?: EconomicEvent[]): void {
+    if (!state.agentBalances) return;
     const tick = state.tick;
     const txByAgent = new Map<string, { count: number; volume: number; systems: Set<string> }>();
 
@@ -145,8 +152,20 @@ export class PersonaTracker {
   /**
    * Classify all tracked agents and return the population distribution.
    * Returns { Whale: 0.05, ActiveTrader: 0.18, Passive: 0.42, ... }
+   * Caches results and only reclassifies at `reclassifyInterval` boundaries.
    */
-  getDistribution(): Record<string, number> {
+  getDistribution(currentTick?: number): Record<string, number> {
+    const tick = currentTick ?? 0;
+    if (tick - this.lastClassifiedTick < this.config.reclassifyInterval
+        && Object.keys(this.cachedDistribution).length > 0) {
+      return this.cachedDistribution;
+    }
+    this.lastClassifiedTick = tick;
+    this.cachedDistribution = this._classify();
+    return this.cachedDistribution;
+  }
+
+  private _classify(): Record<string, number> {
     const agentIds = [...this.agents.keys()];
     const total = agentIds.length;
     if (total === 0) return {};

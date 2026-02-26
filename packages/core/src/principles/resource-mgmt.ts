@@ -94,9 +94,9 @@ export const P49_IdleAssetTax: Principle = {
   name: 'Idle Asset Tax',
   category: 'resource',
   description:
-    'Appreciating assets without holding cost → wealth concentration. ' +
-    'If hoarding an asset makes you richer just by holding it, everyone hoards. ' +
-    'Decay rates, storage costs, or expiry are "idle asset taxes" that force circulation.',
+    'Concentrated idle wealth (Gini >0.55, top 10% >60%, velocity <5). ' +
+    'Raises transaction fees as proxy holding tax. ' +
+    'Decay/storage/expiry requires developer implementation.',
   check(metrics, _thresholds): PrincipleResult {
     const { giniCoefficient, top10PctShare, velocity } = metrics;
 

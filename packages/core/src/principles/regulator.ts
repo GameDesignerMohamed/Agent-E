@@ -93,9 +93,8 @@ export const P27_AdjustmentsNeedCooldowns: Principle = {
   name: 'Adjustments Need Cooldowns',
   category: 'regulator',
   description:
-    'Adjusting the same parameter twice in a window causes oscillation. ' +
-    'Minimum 15 ticks between same-parameter adjustments. ' +
-    'This is enforced in the Planner but checked here as a diagnostic.',
+    'High churn + low satisfaction may indicate oscillation from rapid adjustments. ' +
+    'Cooldown enforcement is structural (Planner). This is a symptom detector.',
   check(metrics, _thresholds): PrincipleResult {
     // This principle is enforced structurally by the Planner.
     // As a diagnostic, we flag if churn rate is high AND satisfaction is volatile
@@ -177,9 +176,8 @@ export const P38_CommunicationPreventsRevolt: Principle = {
   name: 'Communication Prevents Revolt',
   category: 'regulator',
   description:
-    'Every adjustment must be logged with reasoning. ' +
-    'An adjustment made without explanation to participants causes revolt. ' +
-    'AgentE logs every decision — this principle checks that logging is active.',
+    'High churn may indicate unexplained changes. Logging enforcement is structural ' +
+    '(DecisionLog). Flags high churn as signal to review recent decisions.',
   check(metrics, _thresholds): PrincipleResult {
     // This is structurally enforced by DecisionLog. As a diagnostic,
     // we check if churn spiked without any corresponding logged decision.
@@ -211,6 +209,6 @@ export const REGULATOR_PRINCIPLES: Principle[] = [
   P25_CorrectLeversForCorrectProblems,
   P26_ContinuousPressureBeatsThresholdCuts,
   P27_AdjustmentsNeedCooldowns,
-  P28_StructuralDominanceIsNotPathological,
+  // P28 merged into P8 (v1.6.7)
   P38_CommunicationPreventsRevolt,
 ];

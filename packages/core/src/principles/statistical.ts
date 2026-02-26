@@ -54,9 +54,8 @@ export const P43_SimulationMinimum: Principle = {
   name: 'Simulation Minimum (100 Iterations)',
   category: 'statistical',
   description:
-    'Fewer than 100 Monte Carlo iterations produces unreliable predictions. ' +
-    'The variance of a 10-iteration simulation is so high that you might as well ' +
-    'be guessing. This principle enforces the minimum in the Simulator.',
+    'Wild inflation swings (>30%) may indicate insufficient simulation data. ' +
+    'Minimum iteration enforcement is structural (Simulator config). Symptom detector.',
   check(metrics, thresholds): PrincipleResult {
     // This is enforced structurally by the Simulator (iterations >= 100).
     // As a diagnostic: if inflationRate is oscillating wildly, it may indicate

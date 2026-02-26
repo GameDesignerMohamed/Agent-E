@@ -152,7 +152,7 @@ export const P15_PoolsNeedCapAndDecay: Principle = {
   description:
     'Any pool (bank, reward pool) without a cap accumulates infinitely. ' +
     'A pool at 42% of total supply means 42% of the economy is frozen. ' +
-    'Cap at 5%, decay at 2%/tick.',
+    'Cap configurable (default 10%). Violation fires at 2× cap share of total supply.',
   check(metrics, thresholds): PrincipleResult {
     const { poolCapPercent } = thresholds;
 
@@ -193,9 +193,8 @@ export const P16_WithdrawalPenaltyScales: Principle = {
   name: 'Withdrawal Penalty Scales with Lock Duration',
   category: 'currency',
   description:
-    'A 50-tick lock period with a penalty calculated as /100 means agents can ' +
-    'exit after 1 tick and keep 99% of accrued yield. ' +
-    'Penalty must scale linearly: (1 - ticksStaked/lockDuration) × yield.',
+    'Depleted pool with estimated high staking signals early-withdrawal abuse. ' +
+    'Symptom detector — penalty formula is developer responsibility.',
   check(metrics, _thresholds): PrincipleResult {
     for (const [poolName, currencyAmounts] of Object.entries(metrics.poolSizesByCurrency)) {
       for (const curr of metrics.currencies) {

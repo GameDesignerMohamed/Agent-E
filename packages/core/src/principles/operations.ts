@@ -73,9 +73,8 @@ export const P52_EndowmentEffect: Principle = {
   name: 'Endowment Effect',
   category: 'operations',
   description:
-    'Participants who never owned premium assets do not value them. ' +
-    'Free trial activities that let participants experience premium assets drive conversions ' +
-    'because ownership creates perceived value (endowment effect).',
+    'High completion (>90%) + low satisfaction (<60) suggests activities not creating ' +
+    'perceived value. May indicate missing endowment effect.',
   check(metrics, _thresholds): PrincipleResult {
     const { avgSatisfaction, churnRate } = metrics;
 
@@ -169,9 +168,8 @@ export const P54_OperationalCadence: Principle = {
   name: 'Operational Cadence',
   category: 'operations',
   description:
-    '>50% of activities that are re-wrapped existing supply → stagnation. ' +
-    'The cadence must include genuinely new supply at regular intervals. ' +
-    'This is an advisory principle — AgentE can flag but cannot fix supply.',
+    'Low velocity (<2) + low satisfaction after tick 100 = supply stagnation. ' +
+    'Advisory signal for developer to audit content freshness.',
   check(metrics, _thresholds): PrincipleResult {
     // Proxy: declining engagement velocity over time = stagnation
     const { velocity, avgSatisfaction } = metrics;

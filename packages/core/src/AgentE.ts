@@ -166,17 +166,20 @@ export class AgentE {
     const events = this.eventBuffer;
     this.eventBuffer = [];
 
+    // PersonaTracker ingests events first (needed as fallback for Observer)
+    this.personaTracker.update(currentState, events);
+    const personaDist = this.personaTracker.getDistribution(currentState.tick);
+
     // Stage 1: Observe
     let metrics: EconomyMetrics;
     try {
-      metrics = this.observer.compute(currentState, events);
+      metrics = this.observer.compute(currentState, events, personaDist);
     } catch (err) {
       console.error(`[AgentE] Observer.compute() failed at tick ${currentState.tick}:`, err);
       return; // skip this tick, don't crash the loop
     }
     this.store.record(metrics);
-    this.personaTracker.update(currentState, events);
-    metrics.personaDistribution = this.personaTracker.getDistribution();
+    metrics.personaDistribution = personaDist;
 
     // Check rollbacks on active plans
     const { rolledBack, settled } = await this.executor.checkRollbacks(metrics, this.adapter);

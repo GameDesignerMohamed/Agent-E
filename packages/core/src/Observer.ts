@@ -18,7 +18,7 @@ export class Observer {
     this.customMetricFns[name] = fn;
   }
 
-  compute(state: EconomyState, recentEvents: EconomicEvent[]): EconomyMetrics {
+  compute(state: EconomyState, recentEvents: EconomicEvent[], personaDistribution?: Record<string, number>): EconomyMetrics {
     if (!state.currencies || state.currencies.length === 0) {
       console.warn('[AgentE] Warning: state.currencies is empty. Metrics will be zeroed.');
     }
@@ -203,6 +203,18 @@ export class Observer {
     }
     for (const [role, count] of Object.entries(populationByRole)) {
       roleShares[role] = count / Math.max(1, totalAgents);
+    }
+
+    // Persona fallback: when developer didn't provide meaningful roles, use PersonaTracker
+    const uniqueRoles = new Set(Object.values(state.agentRoles));
+    const rolesEmpty = uniqueRoles.size <= 1;
+    if (rolesEmpty && personaDistribution && Object.keys(personaDistribution).length > 0) {
+      for (const [persona, fraction] of Object.entries(personaDistribution)) {
+        populationByRole[persona] = Math.round(fraction * totalAgents);
+      }
+      for (const [role, count] of Object.entries(populationByRole)) {
+        roleShares[role] = count / Math.max(1, totalAgents);
+      }
     }
 
     const churnByRole: Record<string, number> = {};
