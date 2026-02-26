@@ -154,18 +154,8 @@ export const P8_RegulatorCannotFightDesign: Principle = {
     const isStructural = thresholds.dominantRoles?.includes(dominantRole) ?? false;
 
     if (isStructural) {
-      return {
-        violated: true,
-        severity: 3,
-        evidence: { role: dominantRole, share: dominantShare, classification: 'structural' },
-        suggestedAction: {
-          parameterType: 'rate',
-          direction: 'set',
-          magnitude: 0,
-          reasoning: `${dominantRole} dominance (${(dominantShare * 100).toFixed(0)}%) is by design. No intervention.`,
-        },
-        confidence: 0.85,
-      };
+      // By design — not a violation
+      return { violated: false };
     }
 
     // Pathological (absorbed from P28)

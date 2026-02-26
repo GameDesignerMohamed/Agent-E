@@ -209,6 +209,9 @@ export class Observer {
     const uniqueRoles = new Set(Object.values(state.agentRoles));
     const rolesEmpty = uniqueRoles.size <= 1;
     if (rolesEmpty && personaDistribution && Object.keys(personaDistribution).length > 0) {
+      // Clear single-role entries to avoid inflating totals past 1.0
+      for (const key of Object.keys(populationByRole)) delete populationByRole[key];
+      for (const key of Object.keys(roleShares)) delete roleShares[key];
       for (const [persona, fraction] of Object.entries(personaDistribution)) {
         populationByRole[persona] = Math.round(fraction * totalAgents);
       }

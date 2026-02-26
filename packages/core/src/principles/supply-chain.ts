@@ -169,25 +169,30 @@ export const P4_MaterialsFlowFasterThanCooldown: Principle = {
     const roleEntries = Object.entries(populationByRole);
     const totalRoles = roleEntries.length;
 
-    // Per-currency velocity check — any stagnant currency is a violation
+    // Per-currency velocity check — collect ALL stagnant currencies
     if (totalRoles >= 2 && avgSupplyPerAgent < 0.5) {
+      const stagnantCurrencies: { currency: string; currVelocity: number }[] = [];
       for (const [currency, currVelocity] of Object.entries(velocityByCurrency)) {
         if (currVelocity < 5) {
-          return {
-            violated: true,
-            severity: 5,
-            evidence: { currency, currVelocity, avgSupplyPerAgent, totalRoles },
-            suggestedAction: {
-              parameterType: 'yield',
-              scope: { currency },
-              direction: 'increase',
-              magnitude: 0.15,
-              reasoning: `${currency} velocity is ${currVelocity.toFixed(1)} — materials not flowing. Increase yield to compensate.`,
-            },
-            confidence: 0.70,
-            estimatedLag: 8,
-          };
+          stagnantCurrencies.push({ currency, currVelocity });
         }
+      }
+      if (stagnantCurrencies.length > 0) {
+        const worst = stagnantCurrencies.reduce((a, b) => a.currVelocity < b.currVelocity ? a : b);
+        return {
+          violated: true,
+          severity: 5,
+          evidence: { stagnantCurrencies, worst: worst.currency, avgSupplyPerAgent, totalRoles },
+          suggestedAction: {
+            parameterType: 'yield',
+            scope: { currency: worst.currency },
+            direction: 'increase',
+            magnitude: 0.15,
+            reasoning: `${stagnantCurrencies.length} currencies stagnant (worst: ${worst.currency} at ${worst.currVelocity.toFixed(1)}). Increase yield to compensate.`,
+          },
+          confidence: 0.70,
+          estimatedLag: 8,
+        };
       }
       // Fallback: if no per-currency data, check aggregate
       if (Object.keys(velocityByCurrency).length === 0 && velocity < 5) {

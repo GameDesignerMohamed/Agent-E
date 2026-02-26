@@ -123,53 +123,8 @@ export const P27_AdjustmentsNeedCooldowns: Principle = {
   },
 };
 
-export const P28_StructuralDominanceIsNotPathological: Principle = {
-  id: 'P28',
-  name: 'Structural Dominance ≠ Pathological Monopoly',
-  category: 'regulator',
-  description:
-    'A designed dominant role (majority exceeds 55%) should not trigger population suppression. ' +
-    'AgentE must distinguish between "this role is dominant BY DESIGN" (configured via ' +
-    'dominantRoles) and "this role took over unexpectedly".',
-  check(metrics, _thresholds): PrincipleResult {
-    // This is enforced by the dominantRoles config.
-    // As a check: if the most dominant role has high satisfaction,
-    // it's likely structural (they're thriving in their designed role), not pathological.
-    const { roleShares, avgSatisfaction } = metrics;
-
-    const dominant = Object.entries(roleShares).sort((a, b) => b[1] - a[1])[0];
-    if (!dominant) return { violated: false };
-
-    const [dominantRole, dominantShare] = dominant;
-    // Healthy structural dominance: high share + high satisfaction
-    if (dominantShare > 0.40 && avgSatisfaction > 70) {
-      // Not a violation — this is healthy structural dominance
-      return { violated: false };
-    }
-
-    // Pathological: high share + low satisfaction (agents trapped, not thriving)
-    if (dominantShare > 0.40 && avgSatisfaction < 50) {
-      return {
-        violated: true,
-        severity: 5,
-        evidence: { dominantRole, dominantShare, avgSatisfaction },
-        suggestedAction: {
-          parameterType: 'cost',
-          direction: 'decrease',
-          magnitude: 0.10,
-          reasoning:
-            `${dominantRole} dominant (${(dominantShare * 100).toFixed(0)}%) with low satisfaction. ` +
-            'Pathological dominance — agents trapped, not thriving. ' +
-            'Ease costs to allow role switching.',
-        },
-        confidence: 0.65,
-        estimatedLag: 15,
-      };
-    }
-
-    return { violated: false };
-  },
-};
+/** @deprecated Merged into P8_RegulatorCannotFightDesign in v1.6.7. Use P8 instead. */
+export { P8_RegulatorCannotFightDesign as P28_StructuralDominanceIsNotPathological } from './incentives.js';
 
 export const P38_CommunicationPreventsRevolt: Principle = {
   id: 'P38',
