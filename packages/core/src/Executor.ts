@@ -94,11 +94,14 @@ export class Executor {
     return { rolledBack, settled };
   }
 
+  private static readonly UNSAFE_KEYS = new Set(['__proto__', 'constructor', 'prototype']);
+
   private getMetricValue(metrics: EconomyMetrics, metricPath: string): number {
     // Support dotted paths like 'poolSizes.primary' or 'custom.myMetric'
     const parts = metricPath.split('.');
     let value: unknown = metrics;
     for (const part of parts) {
+      if (Executor.UNSAFE_KEYS.has(part)) return NaN;
       if (value !== null && typeof value === 'object') {
         value = (value as Record<string, unknown>)[part];
       } else {

@@ -24,6 +24,19 @@ export interface WebSocketHandle {
 
 const MAX_WS_PAYLOAD = 1_048_576; // 1 MB
 const MAX_WS_CONNECTIONS = 100;
+const MIN_TICK_INTERVAL_MS = 100; // rate limit: max 10 ticks/sec per connection
+
+/** Strips prototype-polluting keys from parsed JSON objects (recursive). */
+function sanitizeJson(obj: unknown): unknown {
+  if (obj === null || typeof obj !== 'object') return obj;
+  if (Array.isArray(obj)) return obj.map(sanitizeJson);
+  const clean: Record<string, unknown> = {};
+  for (const [key, val] of Object.entries(obj as Record<string, unknown>)) {
+    if (key === '__proto__' || key === 'constructor' || key === 'prototype') continue;
+    clean[key] = sanitizeJson(val);
+  }
+  return clean;
+}
 
 export function createWebSocketHandler(
   httpServer: http.Server,
@@ -48,13 +61,26 @@ export function createWebSocketHandler(
     }
   }, 30_000);
 
-  wss.on('connection', (ws) => {
+  wss.on('connection', (ws, req) => {
     if (wss.clients.size > MAX_WS_CONNECTIONS) {
       ws.close(1013, 'Server at capacity');
       return;
     }
+
+    // Auth check: if apiKey is configured, require it via query param or protocol header
+    if (server.apiKey) {
+      const url = new URL(req.url ?? '/', `http://${req.headers.host ?? 'localhost'}`);
+      const token = url.searchParams.get('token') ?? req.headers['authorization']?.replace('Bearer ', '');
+      if (token !== server.apiKey) {
+        ws.close(1008, 'Unauthorized');
+        return;
+      }
+    }
+
     console.log('[AgentE Server] Client connected');
     aliveMap.set(ws, true);
+
+    let lastTickTime = 0;
 
     ws.on('pong', () => {
       aliveMap.set(ws, true);
@@ -67,7 +93,7 @@ export function createWebSocketHandler(
     ws.on('message', async (raw) => {
       let msg: IncomingMessage;
       try {
-        msg = JSON.parse(raw.toString()) as IncomingMessage;
+        msg = sanitizeJson(JSON.parse(raw.toString())) as IncomingMessage;
       } catch {
         send(ws, { type: 'error', message: 'Malformed JSON' });
         return;
@@ -80,6 +106,13 @@ export function createWebSocketHandler(
 
       switch (msg.type) {
         case 'tick': {
+          const now = Date.now();
+          if (now - lastTickTime < MIN_TICK_INTERVAL_MS) {
+            send(ws, { type: 'error', message: 'Rate limited — min 100ms between ticks' });
+            break;
+          }
+          lastTickTime = now;
+
           const state = msg['state'];
           const events = msg['events'];
 
@@ -170,7 +203,7 @@ export function createWebSocketHandler(
         }
 
         default:
-          send(ws, { type: 'error', message: `Unknown message type: "${msg.type}"` });
+          send(ws, { type: 'error', message: `Unknown message type: "${String(msg.type).slice(0, 100)}"` });
       }
     });
   });

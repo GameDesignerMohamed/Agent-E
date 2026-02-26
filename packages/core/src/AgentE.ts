@@ -53,6 +53,7 @@ export class AgentE {
   private personaTracker = new PersonaTracker();
   private params: Record<string, number> = {};
   private eventBuffer: EconomicEvent[] = [];
+  private static readonly MAX_EVENT_BUFFER = 10_000;
   private isRunning = false;
   private isPaused = false;
   private currentTick = 0;
@@ -127,7 +128,7 @@ export class AgentE {
 
     // Wire up event stream if adapter supports it
     if (adapter.onEvent) {
-      adapter.onEvent(event => this.eventBuffer.push(event));
+      adapter.onEvent(event => this.ingest(event));
     }
 
     return this;
@@ -384,6 +385,9 @@ export class AgentE {
   // ── Ingest events directly (event-driven mode) ───────────────────────────
 
   ingest(event: EconomicEvent): void {
+    if (this.eventBuffer.length >= AgentE.MAX_EVENT_BUFFER) {
+      this.eventBuffer.shift(); // evict oldest
+    }
     this.eventBuffer.push(event);
   }
 }

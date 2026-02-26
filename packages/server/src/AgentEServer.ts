@@ -25,6 +25,8 @@ export interface ServerConfig {
   validateState?: boolean;
   corsOrigin?: string;
   serveDashboard?: boolean;
+  /** API key for authenticating mutation routes. When set, POST routes and WebSocket require `Authorization: Bearer <key>`. */
+  apiKey?: string;
 }
 
 export interface EnrichedAdjustment {
@@ -54,10 +56,12 @@ export class AgentEServer {
   readonly validateState: boolean;
   readonly corsOrigin: string;
   readonly serveDashboard: boolean;
+  readonly apiKey: string | undefined;
 
   constructor(config: ServerConfig = {}) {
     this.port = config.port ?? 3100;
-    this.host = config.host ?? '0.0.0.0';
+    this.host = config.host ?? '127.0.0.1';
+    this.apiKey = config.apiKey;
     this.validateState = config.validateState ?? true;
     this.corsOrigin = config.corsOrigin ?? 'http://localhost:3100';
     this.serveDashboard = config.serveDashboard ?? true;

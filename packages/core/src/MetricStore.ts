@@ -5,10 +5,13 @@ import type { EconomyMetrics, MetricResolution, MetricQuery, MetricQueryResult, 
 import { emptyMetrics } from './types.js';
 import { DEFAULT_TICK_CONFIG } from './defaults.js';
 
+const UNSAFE_KEYS = new Set(['__proto__', 'constructor', 'prototype']);
+
 function getNestedValue(obj: Record<string, unknown>, path: string): number {
   const parts = path.split('.');
   let val: unknown = obj;
   for (const part of parts) {
+    if (UNSAFE_KEYS.has(part)) return NaN;
     if (val !== null && typeof val === 'object') {
       val = (val as Record<string, unknown>)[part];
     } else {

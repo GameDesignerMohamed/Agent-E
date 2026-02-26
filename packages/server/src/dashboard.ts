@@ -539,7 +539,7 @@ export function getDashboardHtml(): string {
   const $app = document.getElementById('app');
 
   // ── Helpers ──────────────────────────────────────
-  function esc(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;'); }
+  function esc(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;').replace(/\\\\/g,'&#92;'); }
   function pad(n, w) { return String(n).padStart(w || 4, ' '); }
   function fmt(n) { return typeof n === 'number' ? n.toFixed(3) : '—'; }
   function pct(n) { return typeof n === 'number' ? (n * 100).toFixed(0) + '%' : '—'; }
@@ -911,7 +911,7 @@ export function getDashboardHtml(): string {
   window._approve = function(id) {
     postJSON('/approve', { decisionId: id }).then(function(data) {
       if (data.ok) {
-        addTerminalLine('<span class="t-tick">[Advisor]</span> <span class="t-ok">\\u2705 Approved ' + id + '</span>');
+        addTerminalLine('<span class="t-tick">[Advisor]</span> <span class="t-ok">\\u2705 Approved ' + esc(id) + '</span>');
       }
     }).catch(function() {});
   };
@@ -920,7 +920,7 @@ export function getDashboardHtml(): string {
     var reason = prompt('Rejection reason (optional):');
     postJSON('/reject', { decisionId: id, reason: reason || undefined }).then(function(data) {
       if (data.ok) {
-        addTerminalLine('<span class="t-tick">[Advisor]</span> <span class="t-fail">\\u274c Rejected ' + id + '</span>');
+        addTerminalLine('<span class="t-tick">[Advisor]</span> <span class="t-fail">\\u274c Rejected ' + esc(id) + '</span>');
       }
     }).catch(function() {});
   };

@@ -12,15 +12,36 @@ function setSecurityHeaders(res: http.ServerResponse): void {
   res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
 }
 
-function setCorsHeaders(res: http.ServerResponse, origin: string): void {
+function setCorsHeaders(res: http.ServerResponse, allowedOrigin: string, requestOrigin?: string): void {
   setSecurityHeaders(res);
+  // If configured as '*', allow all; otherwise validate request origin
+  const origin = allowedOrigin === '*' ? '*'
+    : (requestOrigin === allowedOrigin ? allowedOrigin : allowedOrigin);
   res.setHeader('Access-Control-Allow-Origin', origin);
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
 }
 
-function json(res: http.ServerResponse, status: number, data: unknown, origin: string): void {
-  setCorsHeaders(res, origin);
+/** Strips prototype-polluting keys from parsed JSON objects (recursive). */
+function sanitizeJson(obj: unknown): unknown {
+  if (obj === null || typeof obj !== 'object') return obj;
+  if (Array.isArray(obj)) return obj.map(sanitizeJson);
+  const clean: Record<string, unknown> = {};
+  for (const [key, val] of Object.entries(obj as Record<string, unknown>)) {
+    if (key === '__proto__' || key === 'constructor' || key === 'prototype') continue;
+    clean[key] = sanitizeJson(val);
+  }
+  return clean;
+}
+
+function checkAuth(req: http.IncomingMessage, apiKey: string | undefined): boolean {
+  if (!apiKey) return true; // no key configured = open
+  const header = req.headers['authorization'];
+  return header === `Bearer ${apiKey}`;
+}
+
+function json(res: http.ServerResponse, status: number, data: unknown, origin: string, reqOrigin?: string): void {
+  setCorsHeaders(res, origin, reqOrigin);
   res.writeHead(status, { 'Content-Type': 'application/json' });
   res.end(JSON.stringify(data));
 }
@@ -49,6 +70,7 @@ export function createRouteHandler(
   server: AgentEServer,
 ): (req: http.IncomingMessage, res: http.ServerResponse) => void {
   const cors = server.corsOrigin;
+  const apiKey = server.apiKey;
 
   return async (req, res) => {
     const url = new URL(req.url ?? '/', `http://${req.headers.host ?? 'localhost'}`);
@@ -66,10 +88,14 @@ export function createRouteHandler(
     try {
       // POST /tick — validate state, run tick, return adjustments/alerts/health
       if (path === '/tick' && method === 'POST') {
+        if (!checkAuth(req, apiKey)) {
+          json(res, 401, { error: 'Unauthorized' }, cors);
+          return;
+        }
         const body = await readBody(req);
         let parsed: unknown;
         try {
-          parsed = JSON.parse(body);
+          parsed = sanitizeJson(JSON.parse(body));
         } catch {
           json(res, 400, { error: 'Invalid JSON' }, cors);
           return;
@@ -155,10 +181,14 @@ export function createRouteHandler(
 
       // POST /config — batch lock/unlock/constrain/mode
       if (path === '/config' && method === 'POST') {
+        if (!checkAuth(req, apiKey)) {
+          json(res, 401, { error: 'Unauthorized' }, cors);
+          return;
+        }
         const body = await readBody(req);
         let parsed: unknown;
         try {
-          parsed = JSON.parse(body);
+          parsed = sanitizeJson(JSON.parse(body));
         } catch {
           json(res, 400, { error: 'Invalid JSON' }, cors);
           return;
@@ -180,8 +210,9 @@ export function createRouteHandler(
           }
         }
 
-        // Constrain parameters
+        // Constrain parameters — validate ALL before applying any
         if (Array.isArray(config['constrain'])) {
+          const validated: { param: string; min: number; max: number }[] = [];
           for (const c of config['constrain'] as unknown[]) {
             if (
               c && typeof c === 'object' &&
@@ -198,8 +229,11 @@ export function createRouteHandler(
                 json(res, 400, { error: 'Constraint min cannot exceed max' }, cors);
                 return;
               }
-              server.constrain(constraint.param, { min: constraint.min, max: constraint.max });
+              validated.push(constraint);
             }
+          }
+          for (const constraint of validated) {
+            server.constrain(constraint.param, { min: constraint.min, max: constraint.max });
           }
         }
 
@@ -229,10 +263,14 @@ export function createRouteHandler(
 
       // POST /diagnose — standalone Observer+Diagnoser (no side effects)
       if (path === '/diagnose' && method === 'POST') {
+        if (!checkAuth(req, apiKey)) {
+          json(res, 401, { error: 'Unauthorized' }, cors);
+          return;
+        }
         const body = await readBody(req);
         let parsed: unknown;
         try {
-          parsed = JSON.parse(body);
+          parsed = sanitizeJson(JSON.parse(body));
         } catch {
           json(res, 400, { error: 'Invalid JSON' }, cors);
           return;
@@ -295,9 +333,13 @@ export function createRouteHandler(
 
       // POST /approve — Approve advisor recommendation
       if (path === '/approve' && method === 'POST') {
+        if (!checkAuth(req, apiKey)) {
+          json(res, 401, { error: 'Unauthorized' }, cors);
+          return;
+        }
         const body = await readBody(req);
         let parsed: unknown;
-        try { parsed = JSON.parse(body); } catch {
+        try { parsed = sanitizeJson(JSON.parse(body)); } catch {
           json(res, 400, { error: 'Invalid JSON' }, cors);
           return;
         }
@@ -337,9 +379,13 @@ export function createRouteHandler(
 
       // POST /reject — Reject advisor recommendation
       if (path === '/reject' && method === 'POST') {
+        if (!checkAuth(req, apiKey)) {
+          json(res, 401, { error: 'Unauthorized' }, cors);
+          return;
+        }
         const body = await readBody(req);
         let parsed: unknown;
-        try { parsed = JSON.parse(body); } catch {
+        try { parsed = sanitizeJson(JSON.parse(body)); } catch {
           json(res, 400, { error: 'Invalid JSON' }, cors);
           return;
         }

@@ -1,10 +1,16 @@
 // Full-transparency decision logging
 // Every decision AgentE makes is logged with diagnosis, plan, simulation proof, and outcome
 
+import { randomBytes } from 'node:crypto';
 import type { DecisionEntry, DecisionResult, Diagnosis, ActionPlan, EconomyMetrics } from './types.js';
+
+function randomHex(bytes: number): string {
+  return randomBytes(bytes).toString('hex');
+}
 
 export class DecisionLog {
   private entries: DecisionEntry[] = [];
+  private idIndex = new Map<string, DecisionEntry>();
   private maxEntries: number;
 
   constructor(maxEntries = 1000) {
@@ -18,7 +24,7 @@ export class DecisionLog {
     metrics: EconomyMetrics,
   ): DecisionEntry {
     const entry: DecisionEntry = {
-      id: `decision_${metrics.tick}_${plan.parameter}`,
+      id: `decision_${metrics.tick}_${plan.parameter}_${randomHex(4)}`,
       tick: metrics.tick,
       timestamp: Date.now(),
       diagnosis,
@@ -29,8 +35,10 @@ export class DecisionLog {
     };
 
     this.entries.push(entry); // oldest first, newest at end
+    this.idIndex.set(entry.id, entry);
     if (this.entries.length > this.maxEntries * 1.5) {
-      this.entries = this.entries.slice(-this.maxEntries);
+      const evicted = this.entries.splice(0, this.entries.length - this.maxEntries);
+      for (const e of evicted) this.idIndex.delete(e.id);
     }
 
     return entry;
@@ -43,7 +51,7 @@ export class DecisionLog {
     reason: string,
   ): void {
     const entry: DecisionEntry = {
-      id: `skip_${metrics.tick}_${diagnosis.principle.id}`,
+      id: `skip_${metrics.tick}_${diagnosis.principle.id}_${randomHex(4)}`,
       tick: metrics.tick,
       timestamp: Date.now(),
       diagnosis,
@@ -53,8 +61,10 @@ export class DecisionLog {
       metricsSnapshot: metrics,
     };
     this.entries.push(entry);
+    this.idIndex.set(entry.id, entry);
     if (this.entries.length > this.maxEntries * 1.5) {
-      this.entries = this.entries.slice(-this.maxEntries);
+      const evicted = this.entries.splice(0, this.entries.length - this.maxEntries);
+      for (const e of evicted) this.idIndex.delete(e.id);
     }
   }
 
@@ -76,11 +86,11 @@ export class DecisionLog {
   }
 
   getById(id: string): DecisionEntry | undefined {
-    return this.entries.find(e => e.id === id);
+    return this.idIndex.get(id);
   }
 
   updateResult(id: string, newResult: DecisionResult, reasoning?: string): boolean {
-    const entry = this.entries.find(e => e.id === id);
+    const entry = this.idIndex.get(id);
     if (!entry) return false;
     entry.result = newResult;
     if (reasoning !== undefined) entry.reasoning = reasoning;
