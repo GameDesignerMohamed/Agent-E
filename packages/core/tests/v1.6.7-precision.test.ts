@@ -3,6 +3,7 @@ import { PersonaTracker } from '../src/PersonaTracker.js';
 import { Observer } from '../src/Observer.js';
 import { P4_MaterialsFlowFasterThanCooldown } from '../src/principles/supply-chain.js';
 import { P8_RegulatorCannotFightDesign } from '../src/principles/incentives.js';
+import { P28_StructuralDominanceIsNotPathological } from '../src/principles/regulator.js';
 import { REGULATOR_PRINCIPLES } from '../src/principles/regulator.js';
 import { DEFAULT_THRESHOLDS } from '../src/defaults.js';
 import { emptyMetrics } from '../src/types.js';
@@ -42,9 +43,28 @@ describe('P4 — Per-Currency Velocity', () => {
     const result = P4_MaterialsFlowFasterThanCooldown.check(m, t);
     expect(result.violated).toBe(true);
     if (result.violated) {
-      expect(result.evidence['currency']).toBe('gems');
-      expect(result.evidence['currVelocity']).toBe(0.3);
+      // Multi-currency evidence: worst currency targeted
+      expect(result.evidence['worst']).toBe('gems');
+      expect(result.evidence['stagnantCurrencies']).toHaveLength(1);
       expect(result.suggestedAction.scope?.currency).toBe('gems');
+    }
+  });
+
+  it('reports ALL stagnant currencies in evidence', () => {
+    const m = {
+      ...emptyMetrics(50),
+      totalAgents: 30,
+      supplyByResource: { materialA: 5 },
+      populationByRole: { extractor: 10, producer: 20 },
+      velocity: 2,
+      velocityByCurrency: { gold: 1.0, gems: 0.3, silver: 2.5 },
+    };
+    const result = P4_MaterialsFlowFasterThanCooldown.check(m, t);
+    expect(result.violated).toBe(true);
+    if (result.violated) {
+      const stagnant = result.evidence['stagnantCurrencies'] as { currency: string }[];
+      expect(stagnant).toHaveLength(3); // all three < 5
+      expect(result.evidence['worst']).toBe('gems'); // lowest velocity
     }
   });
 
@@ -77,7 +97,7 @@ describe('P4 — Per-Currency Velocity', () => {
     const result = P4_MaterialsFlowFasterThanCooldown.check(m, t);
     expect(result.violated).toBe(true);
     if (result.violated) {
-      expect(result.evidence['currency']).toBe('stakingToken');
+      expect(result.evidence['worst']).toBe('stakingToken');
     }
   });
 
@@ -218,7 +238,7 @@ describe('Observer — persona fallback for populationByRole', () => {
 // ─── P8/P28 Merge ───────────────────────────────────────────────────────────
 
 describe('P8 — Regulator Cannot Fight Design (with P28 merge)', () => {
-  it('structural role gets classification: structural, no intervention', () => {
+  it('structural role returns violated: false (by design, not a problem)', () => {
     const thresholds: Thresholds = { ...t, dominantRoles: ['Warrior'] };
     const m = {
       ...emptyMetrics(100),
@@ -226,12 +246,7 @@ describe('P8 — Regulator Cannot Fight Design (with P28 merge)', () => {
       avgSatisfaction: 70,
     };
     const result = P8_RegulatorCannotFightDesign.check(m, thresholds);
-    expect(result.violated).toBe(true);
-    if (result.violated) {
-      expect(result.evidence['classification']).toBe('structural');
-      expect(result.suggestedAction.magnitude).toBe(0);
-      expect(result.severity).toBe(3);
-    }
+    expect(result.violated).toBe(false);
   });
 
   it('non-structural role > 30% gets classification: pathological', () => {
@@ -263,5 +278,32 @@ describe('P8 — Regulator Cannot Fight Design (with P28 merge)', () => {
   it('P28 is no longer in active REGULATOR_PRINCIPLES', () => {
     const ids = REGULATOR_PRINCIPLES.map(p => p.id);
     expect(ids).not.toContain('P28');
+  });
+
+  it('P28 deprecated export aliases to P8', () => {
+    expect(P28_StructuralDominanceIsNotPathological).toBe(P8_RegulatorCannotFightDesign);
+  });
+});
+
+// ─── Observer: persona fallback clears original role entries ─────────────────
+
+describe('Observer — persona fallback does not inflate roleShares', () => {
+  it('clears single-role entry before adding persona data', () => {
+    const obs = new Observer();
+    const state = makeState(10, {
+      agentRoles: { a1: 'player', a2: 'player', a3: 'player' },
+      agentBalances: { a1: { gold: 100 }, a2: { gold: 50 }, a3: { gold: 200 } },
+    });
+    const personaDist = { Accumulator: 0.33, ActiveTrader: 0.33, Passive: 0.34 };
+    const m = obs.compute(state, [], personaDist);
+
+    // The original 'player' entry must be gone
+    expect(m.populationByRole['player']).toBeUndefined();
+    expect(m.roleShares['player']).toBeUndefined();
+
+    // roleShares must sum to <= 1.0 (rounding tolerance)
+    const totalShare = Object.values(m.roleShares).reduce((s, v) => s + v, 0);
+    expect(totalShare).toBeLessThanOrEqual(1.01);
+    expect(totalShare).toBeGreaterThan(0);
   });
 });
