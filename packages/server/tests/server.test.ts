@@ -264,6 +264,167 @@ describe('HTTP: POST /reject', () => {
   });
 });
 
+// ── Auth Tests (separate server with apiKey) ────────────────────────────────
+
+describe('Auth: API key enforcement', () => {
+  let authServer: AgentEServer;
+  let authUrl: string;
+
+  beforeAll(async () => {
+    authServer = new AgentEServer({
+      port: 0,
+      apiKey: 'test-secret-key',
+      agentE: { gracePeriod: 0, checkInterval: 1 },
+    });
+    await authServer.start();
+    const addr = authServer.getAddress();
+    authUrl = `http://127.0.0.1:${addr.port}`;
+  });
+
+  afterAll(async () => {
+    await authServer.stop();
+  });
+
+  it('POST /tick returns 401 without auth header', async () => {
+    const res = await fetch(`${authUrl}/tick`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ state: validState() }),
+    });
+    expect(res.status).toBe(401);
+    const data = await res.json();
+    expect(data.error).toBe('Unauthorized');
+  });
+
+  it('POST /tick succeeds with valid Bearer token', async () => {
+    const res = await fetch(`${authUrl}/tick`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer test-secret-key',
+      },
+      body: JSON.stringify({ state: validState() }),
+    });
+    expect(res.status).toBe(200);
+  });
+
+  it('POST /config returns 401 without auth', async () => {
+    const res = await fetch(`${authUrl}/config`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ lock: ['craftingCost'] }),
+    });
+    expect(res.status).toBe(401);
+  });
+
+  it('POST /diagnose returns 401 without auth', async () => {
+    const res = await fetch(`${authUrl}/diagnose`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ state: validState() }),
+    });
+    expect(res.status).toBe(401);
+  });
+
+  it('POST /approve returns 401 without auth', async () => {
+    const res = await fetch(`${authUrl}/approve`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ decisionId: 'x' }),
+    });
+    expect(res.status).toBe(401);
+  });
+
+  it('POST /reject returns 401 without auth', async () => {
+    const res = await fetch(`${authUrl}/reject`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ decisionId: 'x' }),
+    });
+    expect(res.status).toBe(401);
+  });
+
+  it('GET routes remain open (no auth needed)', async () => {
+    const health = await fetch(`${authUrl}/health`);
+    expect(health.status).toBe(200);
+
+    const principles = await fetch(`${authUrl}/principles`);
+    expect(principles.status).toBe(200);
+
+    const decisions = await fetch(`${authUrl}/decisions`);
+    expect(decisions.status).toBe(200);
+  });
+
+  it('WebSocket rejects connection without token', async () => {
+    const addr = authServer.getAddress();
+    const ws = new WebSocket(`ws://127.0.0.1:${addr.port}`);
+    const code = await new Promise<number>((resolve) => {
+      ws.on('close', (c) => resolve(c));
+      ws.on('error', () => {}); // suppress
+    });
+    expect(code).toBe(1008); // Unauthorized
+  });
+
+  it('WebSocket accepts connection with token query param', async () => {
+    const addr = authServer.getAddress();
+    const ws = new WebSocket(`ws://127.0.0.1:${addr.port}?token=test-secret-key`);
+    await new Promise<void>((resolve, reject) => {
+      ws.on('open', () => resolve());
+      ws.on('error', reject);
+    });
+    ws.close();
+  });
+});
+
+// ── Error Edge Cases ────────────────────────────────────────────────────────
+
+describe('HTTP: Error handling', () => {
+  it('returns 404 for unknown routes', async () => {
+    const res = await fetch(`${baseUrl}/nonexistent`);
+    expect(res.status).toBe(404);
+    const data = await res.json();
+    expect(data.error).toBe('Not found');
+  });
+
+  it('POST /tick returns 400 for invalid JSON body', async () => {
+    const res = await fetch(`${baseUrl}/tick`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: '{not valid json',
+    });
+    expect(res.status).toBe(400);
+    const data = await res.json();
+    expect(data.error).toBe('Invalid JSON');
+  });
+
+  it('POST /config returns 400 for invalid JSON body', async () => {
+    const res = await fetch(`${baseUrl}/config`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: 'broken{',
+    });
+    expect(res.status).toBe(400);
+    const data = await res.json();
+    expect(data.error).toBe('Invalid JSON');
+  });
+
+  it('POST /diagnose returns 400 for invalid JSON body', async () => {
+    const res = await fetch(`${baseUrl}/diagnose`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: '}{bad',
+    });
+    expect(res.status).toBe(400);
+  });
+
+  it('GET /decisions returns 400 for invalid since param', async () => {
+    const res = await fetch(`${baseUrl}/decisions?since=abc`);
+    expect(res.status).toBe(400);
+    const data = await res.json();
+    expect(data.error).toContain('Invalid');
+  });
+});
+
 // ── WebSocket Tests ─────────────────────────────────────────────────────────
 
 function connectWs(): Promise<WebSocket> {
