@@ -8,6 +8,7 @@ export class Observer {
   private previousPricesByCurrency: Record<string, Record<string, number>> = {};
   private customMetricFns: Record<string, (state: EconomyState) => number> = {};
   private anchorBaselineByCurrency: Record<string, { currencyPerPeriod: number; itemsPerCurrency: number }> = {};
+  private tickConfig: TickConfig;
 
   constructor(tickConfig?: Partial<TickConfig>) {
     this.tickConfig = { ...DEFAULT_TICK_CONFIG, ...tickConfig };
