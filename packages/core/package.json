@@ -1,6 +1,6 @@
 {
   "name": "@agent-e/core",
-  "version": "1.6.7",
+  "version": "1.6.8",
   "description": "Autonomous economic balancer SDK — observe, diagnose, simulate, plan, execute. Any digital economy.",
   "license": "MIT",
   "repository": {
