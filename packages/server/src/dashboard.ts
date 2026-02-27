@@ -309,6 +309,15 @@ export function getDashboardHtml(): string {
   .t-pending-icon { color: var(--warning); }
   .t-pending-val { color: var(--warning); font-variant-numeric: tabular-nums; }
 
+  /* -- LLM line colors (V1.8.1) -- */
+  .t-narration-icon { color: #a78bfa; }
+  .t-narration { color: #c4b5fd; }
+  .t-explanation-icon { color: #60a5fa; }
+  .t-explanation { color: #93c5fd; }
+  .t-anomaly-icon { color: #f59e0b; }
+  .t-anomaly-label { color: #fbbf24; }
+  .t-anomaly { color: #fcd34d; }
+
   /* -- Advisor Inline Buttons -- */
   .advisor-btn {
     display: none;
@@ -687,7 +696,7 @@ export function getDashboardHtml(): string {
 <header class="header" id="header">
   <div class="header-left">
     <span class="header-logo">AgentE</span>
-    <span class="header-version">v1.8.0</span>
+    <span class="header-version">v1.8.1</span>
   </div>
   <div class="header-right">
     <div class="kpi-pill">
@@ -1023,6 +1032,31 @@ export function getDashboardHtml(): string {
         : '<span class="t-new">' + fmt(plan.targetValue) + '</span>')
       + '<span class="t-meta">  sev ' + severity + ', conf ' + confStr + '</span>'
       + advisorBtns;
+  }
+
+  // -- LLM line renderers (V1.8.1) --
+  function narrationToTerminal(msg) {
+    return '<span class="t-tick">[Tick ' + pad(msg.tick) + ']</span> '
+      + '<span class="t-narration-icon">\\u{1F9E0} </span>'
+      + '<span class="t-narration">"' + esc(msg.text) + '"</span>';
+  }
+
+  function explanationToTerminal(msg) {
+    return '<span class="t-tick">[Tick ' + pad(msg.tick) + ']</span> '
+      + '<span class="t-explanation-icon">\\u{1F4A1} </span>'
+      + '<span class="t-explanation">"' + esc(msg.text) + '"</span>';
+  }
+
+  function anomalyToTerminal(msg) {
+    var metricsStr = '';
+    if (msg.metrics && msg.metrics.length > 0) {
+      var m = msg.metrics[0];
+      metricsStr = m.name + ' ' + m.deviation.toFixed(1) + '\\u03C3 — ';
+    }
+    return '<span class="t-tick">[Tick ' + pad(msg.tick) + ']</span> '
+      + '<span class="t-anomaly-icon">\\u{1F50D} </span>'
+      + '<span class="t-anomaly-label">Anomaly detected: </span>'
+      + '<span class="t-anomaly">' + esc(metricsStr) + '"' + esc(msg.text) + '"</span>';
   }
 
   // -- Alerts --
@@ -1363,6 +1397,19 @@ export function getDashboardHtml(): string {
             });
             $hPending.textContent = pendingDecisions.length;
           }
+          break;
+
+        // V1.8.1: LLM feed events
+        case 'narration':
+          addTerminalLine(narrationToTerminal(msg));
+          break;
+
+        case 'explanation':
+          addTerminalLine(explanationToTerminal(msg));
+          break;
+
+        case 'anomaly':
+          addTerminalLine(anomalyToTerminal(msg));
           break;
       }
     };

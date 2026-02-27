@@ -156,6 +156,38 @@ agent.on('beforeAction', (plan) => {
 });
 ```
 
+## LLM Intelligence Layer
+
+AgentE explains its decisions in plain English. Optional — bring your own LLM provider. Zero cost to AgentE.
+
+```typescript
+const agent = new AgentE({
+  adapter,
+  llm: {
+    provider: myLLMProvider, // any backend — Claude, Llama, Ollama, etc.
+    features: {
+      diagnosisNarration: true,
+      planExplanation: true,
+      anomalyInterpretation: true,
+    },
+  },
+});
+
+agent.on('narration',   (n) => console.log(n.narration));
+agent.on('explanation', (e) => console.log(e.explanation));
+agent.on('anomaly',     (a) => console.log(a.interpretation));
+```
+
+Three capabilities:
+
+- **Diagnosis Narration** — when a violation fires, the LLM explains it in plain language. *"Inflation is spiking at 12% because faucets are outpacing sinks by 3:1."*
+- **Plan Explanation** — before applying a fix, the LLM explains what will change, what the simulation predicts, and what could go wrong.
+- **Anomaly Interpretation** — detects statistical anomalies the principles don't cover. Rolling mean + stddev, then asks the LLM to interpret unexplained deviations.
+
+The engine works identically with or without an LLM. All three features are no-ops when no provider is configured. The LLM never makes decisions — it only narrates what the engine already computed.
+
+**Recommended:** Claude Sonnet 4.6 via the Anthropic SDK. Also works with any open-source model (Llama, Mistral) or self-hosted backend (Ollama, vLLM).
+
 ## 60 Principles
 
 Built-in knowledge base across 15 categories: supply chain, incentives, population, currency flow, bootstrap, feedback loops, regulator, market dynamics, measurement, statistical, system dynamics, resource management, participant experience, open economy, and operations.

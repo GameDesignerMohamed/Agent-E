@@ -115,6 +115,62 @@ export class AgentEServer {
       this.alerts.push(diagnosis as Diagnosis);
     });
 
+    // V1.8.1: Forward LLM events to WebSocket clients
+    this.agentE.on('narration', (n: unknown) => {
+      const narration = n as {
+        diagnosis: Diagnosis;
+        narration: string;
+        confidence: number;
+      };
+      const tick = this.lastState?.tick ?? 0;
+      this.broadcast({
+        type: 'narration',
+        tick,
+        text: narration.narration,
+        principle: narration.diagnosis.principle.name,
+        severity: narration.diagnosis.violation.severity,
+        confidence: narration.confidence,
+      });
+    });
+
+    this.agentE.on('explanation', (e: unknown) => {
+      const explanation = e as {
+        plan: { parameter: string; currentValue: number; targetValue: number };
+        explanation: string;
+        expectedOutcome: string;
+        risks: string;
+      };
+      this.broadcast({
+        type: 'explanation',
+        tick: this.lastState?.tick ?? 0,
+        text: explanation.explanation,
+        parameter: explanation.plan.parameter,
+        direction: explanation.plan.targetValue > explanation.plan.currentValue ? 'increase' : 'decrease',
+        expectedOutcome: explanation.expectedOutcome,
+        risks: explanation.risks,
+      });
+    });
+
+    this.agentE.on('anomaly', (a: unknown) => {
+      const anomaly = a as {
+        tick: number;
+        anomalies: Array<{ metric: string; deviation: number; currentValue: number }>;
+        interpretation: string;
+        severity: 'low' | 'medium' | 'high';
+      };
+      this.broadcast({
+        type: 'anomaly',
+        tick: anomaly.tick,
+        text: anomaly.interpretation,
+        metrics: anomaly.anomalies.map(m => ({
+          name: m.metric,
+          deviation: m.deviation,
+          currentValue: m.currentValue,
+        })),
+        severity: anomaly.severity,
+      });
+    });
+
     this.agentE.connect(adapter).start();
 
     // Create HTTP server
