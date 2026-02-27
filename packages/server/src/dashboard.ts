@@ -645,8 +645,8 @@ export function getDashboardHtml(): string {
     let advisorBtns = '';
     if (isAdvisor && d.result === 'skipped_override') {
       advisorBtns = '<span class="advisor-actions">'
-        + '<button class="advisor-btn approve" onclick="window._approve(\\'' + esc(d.id) + '\\')">[Approve]</button>'
-        + '<button class="advisor-btn reject" onclick="window._reject(\\'' + esc(d.id) + '\\')">[Reject]</button>'
+        + '<button class="advisor-btn approve" data-action="approve" data-id="' + esc(d.id) + '">[Approve]</button>'
+        + '<button class="advisor-btn reject" data-action="reject" data-id="' + esc(d.id) + '">[Reject]</button>'
         + '</span>';
     }
 
@@ -907,23 +907,29 @@ export function getDashboardHtml(): string {
     };
   }
 
-  // ── Advisor actions ──────────────────────────────
-  window._approve = function(id) {
-    postJSON('/approve', { decisionId: id }).then(function(data) {
-      if (data.ok) {
-        addTerminalLine('<span class="t-tick">[Advisor]</span> <span class="t-ok">\\u2705 Approved ' + esc(id) + '</span>');
-      }
-    }).catch(function() {});
-  };
+  // ── Advisor actions (event delegation — no inline onclick) ──
+  document.addEventListener('click', function(e) {
+    var btn = e.target.closest('[data-action]');
+    if (!btn) return;
+    var action = btn.getAttribute('data-action');
+    var id = btn.getAttribute('data-id');
+    if (!id) return;
 
-  window._reject = function(id) {
-    var reason = prompt('Rejection reason (optional):');
-    postJSON('/reject', { decisionId: id, reason: reason || undefined }).then(function(data) {
-      if (data.ok) {
-        addTerminalLine('<span class="t-tick">[Advisor]</span> <span class="t-fail">\\u274c Rejected ' + esc(id) + '</span>');
-      }
-    }).catch(function() {});
-  };
+    if (action === 'approve') {
+      postJSON('/approve', { decisionId: id }).then(function(data) {
+        if (data.ok) {
+          addTerminalLine('<span class="t-tick">[Advisor]</span> <span class="t-ok">\\u2705 Approved ' + esc(id) + '</span>');
+        }
+      }).catch(function() {});
+    } else if (action === 'reject') {
+      var reason = prompt('Rejection reason (optional):');
+      postJSON('/reject', { decisionId: id, reason: reason || undefined }).then(function(data) {
+        if (data.ok) {
+          addTerminalLine('<span class="t-tick">[Advisor]</span> <span class="t-fail">\\u274c Rejected ' + esc(id) + '</span>');
+        }
+      }).catch(function() {});
+    }
+  });
 
   // ── Init ─────────────────────────────────────────
   initCharts();

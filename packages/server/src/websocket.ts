@@ -2,6 +2,7 @@
 // Same port via HTTP upgrade. JSON messages with `type` field.
 
 import type * as http from 'node:http';
+import { timingSafeEqual } from 'node:crypto';
 import { WebSocketServer, WebSocket } from 'ws';
 import { validateEconomyState, type EconomyState, type EconomicEvent } from '@agent-e/core';
 import type { AgentEServer } from './AgentEServer.js';
@@ -80,7 +81,7 @@ export function createWebSocketHandler(
     if (server.apiKey) {
       const url = new URL(req.url ?? '/', `http://${req.headers.host ?? 'localhost'}`);
       const token = url.searchParams.get('token') ?? req.headers['authorization']?.replace('Bearer ', '');
-      if (token !== server.apiKey) {
+      if (!token || token.length !== server.apiKey.length || !timingSafeEqual(Buffer.from(token), Buffer.from(server.apiKey))) {
         ws.close(1008, 'Unauthorized');
         return;
       }
