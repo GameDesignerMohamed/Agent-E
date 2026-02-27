@@ -4,8 +4,9 @@
 import type * as http from 'node:http';
 import { timingSafeEqual } from 'node:crypto';
 import { WebSocketServer, WebSocket } from 'ws';
-import { validateEconomyState, type EconomyState, type EconomicEvent } from '@agent-e/core';
+import { validateEconomyState, type EconomyState } from '@agent-e/core';
 import type { AgentEServer } from './AgentEServer.js';
+import { validateEvent } from './validation.js';
 
 interface IncomingMessage {
   type: string;
@@ -27,20 +28,6 @@ const MAX_WS_PAYLOAD = 1_048_576; // 1 MB
 const MAX_WS_CONNECTIONS = 100;
 const MIN_TICK_INTERVAL_MS = 100; // rate limit: max 10 ticks/sec per connection
 const GLOBAL_MIN_TICK_INTERVAL_MS = 50; // global rate limit: max 20 ticks/sec across all connections
-
-/** Valid EconomicEvent type values — must match core EconomicEventType union. */
-const VALID_EVENT_TYPES = new Set([
-  'trade', 'mint', 'burn', 'transfer', 'produce', 'consume', 'role_change', 'enter', 'churn',
-]);
-
-/** Validates an event has the required shape before ingestion. */
-function validateEvent(e: unknown): e is EconomicEvent {
-  if (!e || typeof e !== 'object') return false;
-  const ev = e as Record<string, unknown>;
-  return typeof ev['type'] === 'string' && VALID_EVENT_TYPES.has(ev['type'])
-    && typeof ev['timestamp'] === 'number'
-    && typeof ev['actor'] === 'string';
-}
 
 /** Strips prototype-polluting keys from parsed JSON objects (recursive). */
 function sanitizeJson(obj: unknown): unknown {
@@ -81,7 +68,7 @@ export function createWebSocketHandler(
   }, 30_000);
 
   wss.on('connection', (ws, req) => {
-    if (wss.clients.size >= MAX_WS_CONNECTIONS) {
+    if (wss.clients.size > MAX_WS_CONNECTIONS) {
       ws.close(1013, 'Server at capacity');
       return;
     }
@@ -101,7 +88,9 @@ export function createWebSocketHandler(
     // query params may be logged in proxy/server access logs.
     if (server.apiKey) {
       const url = new URL(req.url ?? '/', `http://${req.headers.host ?? 'localhost'}`);
-      const token = req.headers['authorization']?.replace('Bearer ', '') ?? url.searchParams.get('token');
+      const authHeader = req.headers['authorization'];
+      const token = (authHeader?.startsWith('Bearer ') ? authHeader.slice(7) : undefined)
+        ?? url.searchParams.get('token');
       if (!token || token.length !== server.apiKey.length || !timingSafeEqual(Buffer.from(token), Buffer.from(server.apiKey))) {
         ws.close(1008, 'Unauthorized');
         return;

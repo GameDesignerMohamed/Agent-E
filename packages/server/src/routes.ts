@@ -6,6 +6,7 @@ import { timingSafeEqual, randomBytes } from 'node:crypto';
 import { validateEconomyState } from '@agent-e/core';
 import type { AgentEServer } from './AgentEServer.js';
 import { getDashboardHtml } from './dashboard.js';
+import { validateEvent } from './validation.js';
 
 function setSecurityHeaders(res: http.ServerResponse): void {
   res.setHeader('X-Content-Type-Options', 'nosniff');
@@ -45,20 +46,6 @@ function sanitizeJson(obj: unknown): unknown {
     clean[key] = sanitizeJson(val);
   }
   return clean;
-}
-
-/** Valid EconomicEvent type values — must match core EconomicEventType union. */
-const VALID_EVENT_TYPES = new Set([
-  'trade', 'mint', 'burn', 'transfer', 'produce', 'consume', 'role_change', 'enter', 'churn',
-]);
-
-/** Validates an event has the required shape before ingestion. */
-function validateEvent(e: unknown): e is import('@agent-e/core').EconomicEvent {
-  if (!e || typeof e !== 'object') return false;
-  const ev = e as Record<string, unknown>;
-  return typeof ev['type'] === 'string' && VALID_EVENT_TYPES.has(ev['type'])
-    && typeof ev['timestamp'] === 'number'
-    && typeof ev['actor'] === 'string';
 }
 
 function checkAuth(req: http.IncomingMessage, apiKey: string | undefined): boolean {
@@ -232,8 +219,8 @@ export function createRouteHandler(
         }
 
         // Strip metricsSnapshot from responses to avoid leaking full economy state
-        const sanitized = decisions.map((d: Record<string, unknown>) => {
-          const { metricsSnapshot: _, ...rest } = d as Record<string, unknown> & { metricsSnapshot?: unknown };
+        const sanitized = decisions.map(d => {
+          const { metricsSnapshot: _, ...rest } = d;
           return rest;
         });
         respond(200, { decisions: sanitized });
@@ -382,7 +369,7 @@ export function createRouteHandler(
         res.setHeader('Content-Security-Policy', `default-src 'self'; script-src 'nonce-${nonce}' https://cdn.jsdelivr.net; style-src 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; connect-src 'self' ws: wss:; img-src 'self' data:`);
         res.setHeader('Cache-Control', 'no-cache, private');
         res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
-        res.end(getDashboardHtml(nonce, apiKey));
+        res.end(getDashboardHtml(nonce));
         return;
       }
 
