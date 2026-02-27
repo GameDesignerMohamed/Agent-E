@@ -167,6 +167,12 @@ export class MetricStore {
     });
   }
 
+  /** V1.8: Return the last N raw metric snapshots (for LLM trend context) */
+  recentSnapshots(count = 10): EconomyMetrics[] {
+    const all = this.fine.toArray();
+    return all.slice(-count);
+  }
+
   /** Check if fine and coarse resolution metrics diverge significantly */
   divergenceDetected(): boolean {
     const f = this.fine.last();

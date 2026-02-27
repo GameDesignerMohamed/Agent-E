@@ -518,6 +518,9 @@ export interface AgentEConfig {
   adapter: EconomyAdapter;
   mode?: AgentEMode;
 
+  /** V1.8: Optional LLM provider for natural-language intelligence. */
+  llm?: import('./llm/LLMProvider.js').LLMConfig;
+
   // Economy structure hints
   dominantRoles?: string[];           // roles exempt from population caps
   idealDistribution?: Record<string, number>;

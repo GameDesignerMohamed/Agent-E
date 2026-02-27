@@ -28,13 +28,21 @@ import { SatisfactionEstimator } from './SatisfactionEstimator.js';
 import { ALL_PRINCIPLES } from './principles/index.js';
 import { ParameterRegistry } from './ParameterRegistry.js';
 import type { RegisteredParameter } from './ParameterRegistry.js';
+import { DiagnosisNarrator } from './llm/DiagnosisNarrator.js';
+import { PlanExplainer } from './llm/PlanExplainer.js';
+import { AnomalyInterpreter } from './llm/AnomalyInterpreter.js';
+import { resolveFeatureFlags } from './llm/LLMProvider.js';
+// NarratedDiagnosis, ExplainedPlan, AnomalyReport types used by event consumers (re-exported from llm/index)
 
-type EventName = 'decision' | 'alert' | 'rollback' | 'beforeAction' | 'afterAction';
+type EventName =
+  | 'decision' | 'alert' | 'rollback' | 'beforeAction' | 'afterAction'
+  // V1.8: LLM intelligence events
+  | 'narration' | 'explanation' | 'anomaly';
 
 export class AgentE {
   // ── Config ──
   private readonly config: Required<
-    Omit<AgentEConfig, 'adapter' | 'thresholds' | 'onDecision' | 'onAlert' | 'onRollback'>
+    Omit<AgentEConfig, 'adapter' | 'thresholds' | 'onDecision' | 'onAlert' | 'onRollback' | 'llm'>
   >;
   private readonly thresholds: Thresholds;
   private adapter!: EconomyAdapter;
@@ -47,6 +55,11 @@ export class AgentE {
   private planner = new Planner();
   private executor!: Executor;
   private registry = new ParameterRegistry();
+
+  // ── LLM Layer (V1.8) ──
+  private narrator: DiagnosisNarrator | null = null;
+  private explainer: PlanExplainer | null = null;
+  private anomalyInterpreter: AnomalyInterpreter | null = null;
 
   // ── State ──
   readonly log = new DecisionLog();
@@ -110,6 +123,21 @@ export class AgentE {
 
     this.executor = new Executor(config.settlementWindowTicks);
     this.simulator = new Simulator(this.registry, config.simulation);
+
+    // V1.8: Initialize LLM layer if provider is configured
+    if (config.llm?.provider) {
+      const flags = resolveFeatureFlags(config.llm.features);
+      const llmConfig = config.llm.config;
+      if (flags.diagnosisNarration) {
+        this.narrator = new DiagnosisNarrator(config.llm.provider, llmConfig);
+      }
+      if (flags.planExplanation) {
+        this.explainer = new PlanExplainer(config.llm.provider, llmConfig);
+      }
+      if (flags.anomalyInterpretation) {
+        this.anomalyInterpreter = new AnomalyInterpreter(config.llm.provider, llmConfig);
+      }
+    }
 
     // Wire up config callbacks
     if (config.onDecision) this.on('decision', config.onDecision as never);
@@ -218,6 +246,21 @@ export class AgentE {
       this.emit('alert', diagnosis);
     }
 
+    // V1.8: LLM narration of top violation (async, non-blocking)
+    if (this.narrator && diagnoses.length > 0 && diagnoses[0]) {
+      const recentHistory = this.store.recentSnapshots(10);
+      this.narrator.narrate(diagnoses[0], metrics, recentHistory)
+        .then(narration => this.emit('narration', narration))
+        .catch(err => console.warn('[AgentE] LLM narration failed:', err));
+    }
+
+    // V1.8: Anomaly interpretation (async, non-blocking, rate-limited internally)
+    if (this.anomalyInterpreter) {
+      this.anomalyInterpreter.check(metrics, diagnoses)
+        .then(report => { if (report) this.emit('anomaly', report); })
+        .catch(err => console.warn('[AgentE] LLM anomaly check failed:', err));
+    }
+
     // Only act on the top-priority issue (prevents oscillation from multi-action)
     const topDiagnosis = diagnoses[0];
     if (!topDiagnosis) return;
@@ -247,6 +290,13 @@ export class AgentE {
       if (!simulationResult.netImprovement) reason = 'skipped_simulation_failed';
       this.log.recordSkip(topDiagnosis, reason as never, metrics, `Skipped: ${reason}`);
       return;
+    }
+
+    // V1.8: LLM plan explanation (async, non-blocking)
+    if (this.explainer && plan) {
+      this.explainer.explain(plan, metrics)
+        .then(explanation => this.emit('explanation', explanation))
+        .catch(err => console.warn('[AgentE] LLM explanation failed:', err));
     }
 
     // Advisor mode: emit recommendation, don't apply
