@@ -1,8 +1,8 @@
 {
   "name": "@agent-e/core",
-  "version": "1.6.10",
+  "version": "1.6.11",
   "description": "Autonomous economic balancer SDK — observe, diagnose, simulate, plan, execute. Any digital economy.",
-  "license": "MIT",
+  "license": "BUSL-1.1",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/AE-Vault/AgentE.git",

@@ -2,7 +2,7 @@
   "name": "@agent-e/adapter-game",
   "version": "1.5.2",
   "description": "AgentE adapter for game economies",
-  "license": "MIT",
+  "license": "BUSL-1.1",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/AE-Vault/AgentE.git",

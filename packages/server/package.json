@@ -1,8 +1,8 @@
 {
   "name": "@agent-e/server",
-  "version": "1.6.10",
+  "version": "1.6.11",
   "description": "Ready-to-run HTTP + WebSocket server for AgentE",
-  "license": "MIT",
+  "license": "BUSL-1.1",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/AE-Vault/AgentE.git",
