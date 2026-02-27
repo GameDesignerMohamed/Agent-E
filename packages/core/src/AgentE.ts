@@ -163,12 +163,15 @@ export class AgentE {
     if (!this.isRunning || this.isPaused) return;
 
     // Fetch state if not provided (polling mode)
-    const currentState = state ?? (await Promise.resolve(this.adapter.getState()));
-    this.currentTick = currentState.tick;
+    const rawState = state ?? (await Promise.resolve(this.adapter.getState()));
+    this.currentTick = rawState.tick;
 
     // Drain event buffer (atomic swap — no window for lost events)
     const events = this.eventBuffer;
     this.eventBuffer = [];
+
+    // Shallow copy so we never mutate the caller's state object
+    const currentState = { ...rawState };
 
     // Estimate satisfaction if developer didn't provide it
     this.satisfactionEstimator.update(currentState, events);
