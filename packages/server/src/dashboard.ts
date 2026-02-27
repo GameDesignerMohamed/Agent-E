@@ -1,7 +1,7 @@
 // Dashboard HTML — self-contained single-page dashboard served at GET /
 // Inline CSS + Chart.js CDN + WebSocket real-time updates
 
-export function getDashboardHtml(nonce?: string, apiKey?: string): string {
+export function getDashboardHtml(nonce?: string): string {
   const nonceAttr = nonce ? ` nonce="${nonce}"` : '';
   return `<!DOCTYPE html>
 <html lang="en">
@@ -1287,7 +1287,8 @@ export function getDashboardHtml(nonce?: string, apiKey?: string): string {
   }
 
   // -- API calls --
-  var _authKey = ` + (apiKey ? `'${apiKey.replace(/\\/g, '\\\\').replace(/'/g, "\\'")}'` : 'null') + `;
+  // Read token from URL query param — never embed the API key in the HTML body.
+  var _authKey = new URLSearchParams(location.search).get('token');
 
   function authHeaders() {
     var h = {};
