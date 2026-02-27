@@ -117,7 +117,7 @@ onPlayerTrade((trade) => {
 ## Links
 
 - [Core Package](https://www.npmjs.com/package/@agent-e/core)
-- [GitHub](https://github.com/AE-Vault/AgentE)
+- [GitHub](https://github.com/GameDesignerMohamed/Agent-E)
 
 ---
 
