@@ -14,10 +14,21 @@ function setSecurityHeaders(res: http.ServerResponse): void {
 
 function setCorsHeaders(res: http.ServerResponse, allowedOrigin: string, requestOrigin?: string): void {
   setSecurityHeaders(res);
-  // If configured as '*', allow all; otherwise validate request origin
-  const origin = allowedOrigin === '*' ? '*'
-    : (requestOrigin === allowedOrigin ? allowedOrigin : allowedOrigin);
-  res.setHeader('Access-Control-Allow-Origin', origin);
+  // If configured as '*', allow all.
+  // Otherwise, only reflect the origin if it matches the configured allowedOrigin.
+  // If there's no request origin (non-browser / server-to-server), return allowedOrigin directly.
+  let origin: string;
+  if (allowedOrigin === '*') {
+    origin = '*';
+  } else if (requestOrigin === undefined) {
+    origin = allowedOrigin; // non-browser request, return configured origin
+  } else {
+    // Reflect origin only if it matches — otherwise don't include a matching CORS header
+    origin = requestOrigin === allowedOrigin ? allowedOrigin : '';
+  }
+  if (origin) {
+    res.setHeader('Access-Control-Allow-Origin', origin);
+  }
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
 }
@@ -76,10 +87,14 @@ export function createRouteHandler(
     const url = new URL(req.url ?? '/', `http://${req.headers.host ?? 'localhost'}`);
     const path = url.pathname;
     const method = req.method?.toUpperCase() ?? 'GET';
+    const reqOrigin = req.headers['origin'] as string | undefined;
+
+    // Scoped json helper — captures cors + reqOrigin for this request
+    const respond = (status: number, data: unknown) => json(res, status, data, cors, reqOrigin);
 
     // CORS preflight
     if (method === 'OPTIONS') {
-      setCorsHeaders(res, cors);
+      setCorsHeaders(res, cors, reqOrigin);
       res.writeHead(204);
       res.end();
       return;
@@ -89,7 +104,7 @@ export function createRouteHandler(
       // POST /tick — validate state, run tick, return adjustments/alerts/health
       if (path === '/tick' && method === 'POST') {
         if (!checkAuth(req, apiKey)) {
-          json(res, 401, { error: 'Unauthorized' }, cors);
+          respond(401, { error: 'Unauthorized' });
           return;
         }
         const body = await readBody(req);
@@ -97,12 +112,12 @@ export function createRouteHandler(
         try {
           parsed = sanitizeJson(JSON.parse(body));
         } catch {
-          json(res, 400, { error: 'Invalid JSON' }, cors);
+          respond(400, { error: 'Invalid JSON' });
           return;
         }
 
         if (!parsed || typeof parsed !== 'object') {
-          json(res, 400, { error: 'Body must be a JSON object' }, cors);
+          respond(400, { error: 'Body must be a JSON object' });
           return;
         }
 
@@ -113,10 +128,10 @@ export function createRouteHandler(
         // Validate state (if enabled)
         const validation = server.validateState ? validateEconomyState(state) : null;
         if (validation && !validation.valid) {
-          json(res, 400, {
+          respond(400, {
             error: 'invalid_state',
             validationErrors: validation.errors,
-          }, cors);
+          });
           return;
         }
 
@@ -127,7 +142,7 @@ export function createRouteHandler(
 
         const warnings = validation?.warnings ?? [];
 
-        json(res, 200, {
+        respond(200, {
           adjustments: result.adjustments,
           alerts: result.alerts.map(a => ({
             principleId: a.principle.id,
@@ -139,20 +154,20 @@ export function createRouteHandler(
           health: result.health,
           tick: result.tick,
           ...(warnings.length > 0 ? { validationWarnings: warnings } : {}),
-        }, cors);
+        });
         return;
       }
 
       // GET /health — health, tick, mode, activePlans, uptime
       if (path === '/health' && method === 'GET') {
         const agentE = server.getAgentE();
-        json(res, 200, {
+        respond(200, {
           health: agentE.getHealth(),
           tick: agentE.metrics.latest()?.tick ?? 0,
           mode: agentE.getMode(),
           activePlans: agentE.getActivePlans().length,
           uptime: server.getUptime(),
-        }, cors);
+        });
         return;
       }
 
@@ -167,7 +182,7 @@ export function createRouteHandler(
         if (sinceParam) {
           const since = parseInt(sinceParam, 10);
           if (Number.isNaN(since)) {
-            json(res, 400, { error: 'Invalid "since" parameter — must be a number' }, cors);
+            respond(400, { error: 'Invalid "since" parameter — must be a number' });
             return;
           }
           decisions = agentE.getDecisions({ since });
@@ -175,14 +190,14 @@ export function createRouteHandler(
           decisions = agentE.log.latest(limit);
         }
 
-        json(res, 200, { decisions }, cors);
+        respond(200, { decisions });
         return;
       }
 
       // POST /config — batch lock/unlock/constrain/mode
       if (path === '/config' && method === 'POST') {
         if (!checkAuth(req, apiKey)) {
-          json(res, 401, { error: 'Unauthorized' }, cors);
+          respond(401, { error: 'Unauthorized' });
           return;
         }
         const body = await readBody(req);
@@ -190,7 +205,7 @@ export function createRouteHandler(
         try {
           parsed = sanitizeJson(JSON.parse(body));
         } catch {
-          json(res, 400, { error: 'Invalid JSON' }, cors);
+          respond(400, { error: 'Invalid JSON' });
           return;
         }
 
@@ -222,11 +237,11 @@ export function createRouteHandler(
             ) {
               const constraint = c as { param: string; min: number; max: number };
               if (!Number.isFinite(constraint.min) || !Number.isFinite(constraint.max)) {
-                json(res, 400, { error: 'Constraint bounds must be finite numbers' }, cors);
+                respond(400, { error: 'Constraint bounds must be finite numbers' });
                 return;
               }
               if (constraint.min > constraint.max) {
-                json(res, 400, { error: 'Constraint min cannot exceed max' }, cors);
+                respond(400, { error: 'Constraint min cannot exceed max' });
                 return;
               }
               validated.push(constraint);
@@ -242,14 +257,14 @@ export function createRouteHandler(
           server.setMode(config['mode']);
         }
 
-        json(res, 200, { ok: true }, cors);
+        respond(200, { ok: true });
         return;
       }
 
       // GET /principles — list all principles
       if (path === '/principles' && method === 'GET') {
         const principles = server.getAgentE().getPrinciples();
-        json(res, 200, {
+        respond(200, {
           count: principles.length,
           principles: principles.map(p => ({
             id: p.id,
@@ -257,14 +272,14 @@ export function createRouteHandler(
             category: p.category,
             description: p.description,
           })),
-        }, cors);
+        });
         return;
       }
 
       // POST /diagnose — standalone Observer+Diagnoser (no side effects)
       if (path === '/diagnose' && method === 'POST') {
         if (!checkAuth(req, apiKey)) {
-          json(res, 401, { error: 'Unauthorized' }, cors);
+          respond(401, { error: 'Unauthorized' });
           return;
         }
         const body = await readBody(req);
@@ -272,7 +287,7 @@ export function createRouteHandler(
         try {
           parsed = sanitizeJson(JSON.parse(body));
         } catch {
-          json(res, 400, { error: 'Invalid JSON' }, cors);
+          respond(400, { error: 'Invalid JSON' });
           return;
         }
 
@@ -282,14 +297,14 @@ export function createRouteHandler(
         if (server.validateState) {
           const validation = validateEconomyState(state);
           if (!validation.valid) {
-            json(res, 400, { error: 'invalid_state', validationErrors: validation.errors }, cors);
+            respond(400, { error: 'invalid_state', validationErrors: validation.errors });
             return;
           }
         }
 
         const result = server.diagnoseOnly(state as import('@agent-e/core').EconomyState);
 
-        json(res, 200, {
+        respond(200, {
           health: result.health,
           diagnoses: result.diagnoses.map(d => ({
             principleId: d.principle.id,
@@ -298,13 +313,13 @@ export function createRouteHandler(
             evidence: d.violation.evidence,
             suggestedAction: d.violation.suggestedAction,
           })),
-        }, cors);
+        });
         return;
       }
 
       // GET / — Dashboard HTML
       if (path === '/' && method === 'GET' && server.serveDashboard) {
-        setCorsHeaders(res, cors);
+        setCorsHeaders(res, cors, reqOrigin);
         res.setHeader('Content-Security-Policy', "default-src 'self'; script-src 'unsafe-inline' https://cdn.jsdelivr.net; style-src 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; connect-src 'self' ws: wss:; img-src 'self' data:");
         res.setHeader('Cache-Control', 'public, max-age=60');
         res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
@@ -317,7 +332,7 @@ export function createRouteHandler(
         const agentE = server.getAgentE();
         const latest = agentE.store.latest();
         const history = agentE.store.recentHistory(100);
-        json(res, 200, { latest, history }, cors);
+        respond(200, { latest, history });
         return;
       }
 
@@ -327,95 +342,95 @@ export function createRouteHandler(
         const latest = agentE.store.latest();
         const dist = latest.personaDistribution || {};
         const total = Object.values(dist).reduce((s: number, v) => s + (v as number), 0);
-        json(res, 200, { distribution: dist, total }, cors);
+        respond(200, { distribution: dist, total });
         return;
       }
 
       // POST /approve — Approve advisor recommendation
       if (path === '/approve' && method === 'POST') {
         if (!checkAuth(req, apiKey)) {
-          json(res, 401, { error: 'Unauthorized' }, cors);
+          respond(401, { error: 'Unauthorized' });
           return;
         }
         const body = await readBody(req);
         let parsed: unknown;
         try { parsed = sanitizeJson(JSON.parse(body)); } catch {
-          json(res, 400, { error: 'Invalid JSON' }, cors);
+          respond(400, { error: 'Invalid JSON' });
           return;
         }
         const payload = parsed as Record<string, unknown>;
         const decisionId = payload['decisionId'] as string;
         if (!decisionId) {
-          json(res, 400, { error: 'missing_decision_id' }, cors);
+          respond(400, { error: 'missing_decision_id' });
           return;
         }
 
         const agentE = server.getAgentE();
         if (agentE.getMode() !== 'advisor') {
-          json(res, 400, { error: 'not_in_advisor_mode' }, cors);
+          respond(400, { error: 'not_in_advisor_mode' });
           return;
         }
 
         const entry = agentE.log.getById(decisionId);
         if (!entry) {
-          json(res, 404, { error: 'decision_not_found' }, cors);
+          respond(404, { error: 'decision_not_found' });
           return;
         }
         if (entry.result !== 'skipped_override') {
-          json(res, 409, { error: 'decision_not_pending', currentResult: entry.result }, cors);
+          respond(409, { error: 'decision_not_pending', currentResult: entry.result });
           return;
         }
 
         await agentE.apply(entry.plan);
         agentE.log.updateResult(decisionId, 'applied');
         server.broadcast({ type: 'advisor_action', action: 'approved', decisionId });
-        json(res, 200, {
+        respond(200, {
           ok: true,
           parameter: entry.plan.parameter,
           value: entry.plan.targetValue,
-        }, cors);
+        });
         return;
       }
 
       // POST /reject — Reject advisor recommendation
       if (path === '/reject' && method === 'POST') {
         if (!checkAuth(req, apiKey)) {
-          json(res, 401, { error: 'Unauthorized' }, cors);
+          respond(401, { error: 'Unauthorized' });
           return;
         }
         const body = await readBody(req);
         let parsed: unknown;
         try { parsed = sanitizeJson(JSON.parse(body)); } catch {
-          json(res, 400, { error: 'Invalid JSON' }, cors);
+          respond(400, { error: 'Invalid JSON' });
           return;
         }
         const payload = parsed as Record<string, unknown>;
         const decisionId = payload['decisionId'] as string;
         const reason = (payload['reason'] as string) || undefined;
         if (!decisionId) {
-          json(res, 400, { error: 'missing_decision_id' }, cors);
+          respond(400, { error: 'missing_decision_id' });
           return;
         }
 
         const agentE = server.getAgentE();
         if (agentE.getMode() !== 'advisor') {
-          json(res, 400, { error: 'not_in_advisor_mode' }, cors);
+          respond(400, { error: 'not_in_advisor_mode' });
           return;
         }
 
         const entry = agentE.log.getById(decisionId);
         if (!entry) {
-          json(res, 404, { error: 'decision_not_found' }, cors);
+          respond(404, { error: 'decision_not_found' });
           return;
         }
         if (entry.result !== 'skipped_override') {
-          json(res, 409, { error: 'decision_not_pending', currentResult: entry.result }, cors);
+          respond(409, { error: 'decision_not_pending', currentResult: entry.result });
           return;
         }
 
         agentE.log.updateResult(decisionId, 'rejected', reason);
         server.broadcast({ type: 'advisor_action', action: 'rejected', decisionId, reason });
-        json(res, 200, { ok: true, decisionId }, cors);
+        respond(200, { ok: true, decisionId });
         return;
       }
 
@@ -423,19 +438,19 @@ export function createRouteHandler(
       if (path === '/pending' && method === 'GET') {
         const agentE = server.getAgentE();
         const pending = agentE.log.query({ result: 'skipped_override' });
-        json(res, 200, {
+        respond(200, {
           mode: agentE.getMode(),
           pending,
           count: pending.length,
-        }, cors);
+        });
         return;
       }
 
       // 404
-      json(res, 404, { error: 'Not found' }, cors);
+      respond(404, { error: 'Not found' });
     } catch (err) {
       console.error('[AgentE Server] Unhandled route error:', err);
-      json(res, 500, { error: 'Internal server error' }, cors);
+      respond(500, { error: 'Internal server error' });
     }
   };
 }
