@@ -48,6 +48,8 @@ export class AgentEServer {
   private lastState: EconomyState | null = null;
   private adjustmentQueue: QueuedAdjustment[] = [];
   private alerts: Diagnosis[] = [];
+  /** Serialization lock for processTick — prevents concurrent ticks from corrupting shared state. */
+  private tickLock: Promise<void> = Promise.resolve();
   readonly port: number;
   private readonly host: string;
   private readonly thresholds: Thresholds;
@@ -237,49 +239,59 @@ export class AgentEServer {
     tick: number;
     decisions: ReturnType<AgentE['getDecisions']>;
   }> {
-    // Clear queues
-    this.adjustmentQueue = [];
-    this.alerts = [];
+    // Serialize tick processing — concurrent HTTP + WS ticks would corrupt shared queues
+    const prev = this.tickLock;
+    let unlock: () => void;
+    this.tickLock = new Promise<void>(resolve => { unlock = resolve; });
+    await prev;
 
-    // Set state
-    this.lastState = state;
+    try {
+      // Clear queues
+      this.adjustmentQueue = [];
+      this.alerts = [];
 
-    // Ingest events
-    if (events) {
-      for (const event of events) {
-        this.agentE.ingest(event);
+      // Set state
+      this.lastState = state;
+
+      // Ingest events
+      if (events) {
+        for (const event of events) {
+          this.agentE.ingest(event);
+        }
       }
-    }
 
-    // Run tick
-    await this.agentE.tick(state);
+      // Run tick
+      await this.agentE.tick(state);
 
-    // Drain adjustments
-    const rawAdj = [...this.adjustmentQueue];
-    this.adjustmentQueue = [];
+      // Drain adjustments
+      const rawAdj = [...this.adjustmentQueue];
+      this.adjustmentQueue = [];
 
-    // Cross-reference with decision log to attach reasoning
-    const decisions = this.agentE.getDecisions({ since: state.tick, until: state.tick });
+      // Cross-reference with decision log to attach reasoning
+      const decisions = this.agentE.getDecisions({ since: state.tick, until: state.tick });
 
-    const adjustments: EnrichedAdjustment[] = rawAdj.map(adj => {
-      const decision = decisions.find(d =>
-        d.plan.parameter === adj.key && d.result === 'applied',
-      );
+      const adjustments: EnrichedAdjustment[] = rawAdj.map(adj => {
+        const decision = decisions.find(d =>
+          d.plan.parameter === adj.key && d.result === 'applied',
+        );
+        return {
+          parameter: adj.key,
+          value: adj.value,
+          ...(adj.scope ? { scope: adj.scope } : {}),
+          reasoning: decision?.diagnosis.violation.suggestedAction.reasoning ?? '',
+        };
+      });
+
       return {
-        parameter: adj.key,
-        value: adj.value,
-        ...(adj.scope ? { scope: adj.scope } : {}),
-        reasoning: decision?.diagnosis.violation.suggestedAction.reasoning ?? '',
+        adjustments,
+        alerts: [...this.alerts],
+        health: this.agentE.getHealth(),
+        tick: state.tick,
+        decisions,
       };
-    });
-
-    return {
-      adjustments,
-      alerts: [...this.alerts],
-      health: this.agentE.getHealth(),
-      tick: state.tick,
-      decisions,
-    };
+    } finally {
+      unlock!();
+    }
   }
 
   /**

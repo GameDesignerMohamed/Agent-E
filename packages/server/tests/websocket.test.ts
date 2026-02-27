@@ -79,7 +79,7 @@ describe('WebSocket: event ingestion', () => {
     const ws = await connect();
     const response = await sendAndReceive(ws, {
       type: 'event',
-      event: { type: 'trade', actor: 'a1', tick: 100 },
+      event: { type: 'trade', actor: 'a1', timestamp: 100 },
     });
     expect(response['type']).toBe('event_ack');
     ws.close();
@@ -90,6 +90,28 @@ describe('WebSocket: event ingestion', () => {
     const response = await sendAndReceive(ws, { type: 'event' });
     expect(response['type']).toBe('error');
     expect(response['message']).toContain('Missing');
+    ws.close();
+  });
+
+  it('returns error for malformed event (missing required fields)', async () => {
+    const ws = await connect();
+    const response = await sendAndReceive(ws, {
+      type: 'event',
+      event: { type: 'trade', actor: 'a1' }, // missing timestamp
+    });
+    expect(response['type']).toBe('error');
+    expect(response['message']).toContain('Invalid event');
+    ws.close();
+  });
+
+  it('returns error for event with invalid type', async () => {
+    const ws = await connect();
+    const response = await sendAndReceive(ws, {
+      type: 'event',
+      event: { type: 'invalid_type', actor: 'a1', timestamp: 100 },
+    });
+    expect(response['type']).toBe('error');
+    expect(response['message']).toContain('Invalid event');
     ws.close();
   });
 });

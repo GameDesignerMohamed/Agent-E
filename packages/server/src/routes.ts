@@ -2,7 +2,7 @@
 // Node http module with manual body parsing. CORS on all responses.
 
 import type * as http from 'node:http';
-import { timingSafeEqual } from 'node:crypto';
+import { timingSafeEqual, randomBytes } from 'node:crypto';
 import { validateEconomyState } from '@agent-e/core';
 import type { AgentEServer } from './AgentEServer.js';
 import { getDashboardHtml } from './dashboard.js';
@@ -11,6 +11,7 @@ function setSecurityHeaders(res: http.ServerResponse): void {
   res.setHeader('X-Content-Type-Options', 'nosniff');
   res.setHeader('X-Frame-Options', 'DENY');
   res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+  res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
 }
 
 function setCorsHeaders(res: http.ServerResponse, allowedOrigin: string, requestOrigin?: string): void {
@@ -46,6 +47,20 @@ function sanitizeJson(obj: unknown): unknown {
   return clean;
 }
 
+/** Valid EconomicEvent type values — must match core EconomicEventType union. */
+const VALID_EVENT_TYPES = new Set([
+  'trade', 'mint', 'burn', 'transfer', 'produce', 'consume', 'role_change', 'enter', 'churn',
+]);
+
+/** Validates an event has the required shape before ingestion. */
+function validateEvent(e: unknown): e is import('@agent-e/core').EconomicEvent {
+  if (!e || typeof e !== 'object') return false;
+  const ev = e as Record<string, unknown>;
+  return typeof ev['type'] === 'string' && VALID_EVENT_TYPES.has(ev['type'])
+    && typeof ev['timestamp'] === 'number'
+    && typeof ev['actor'] === 'string';
+}
+
 function checkAuth(req: http.IncomingMessage, apiKey: string | undefined): boolean {
   if (!apiKey) return true; // no key configured = open
   const header = req.headers['authorization'];
@@ -62,22 +77,35 @@ function json(res: http.ServerResponse, status: number, data: unknown, origin: s
 }
 
 const MAX_BODY_BYTES = 1_048_576; // 1 MB
+const READ_BODY_TIMEOUT_MS = 30_000; // 30 seconds — mitigates slow-loris attacks
+const MAX_CONFIG_ARRAY = 1000; // cap lock/unlock/constrain array lengths
 
 function readBody(req: http.IncomingMessage): Promise<string> {
   return new Promise((resolve, reject) => {
     const chunks: Buffer[] = [];
     let totalBytes = 0;
+    const timeout = setTimeout(() => {
+      req.destroy();
+      reject(new Error('Request body read timeout'));
+    }, READ_BODY_TIMEOUT_MS);
     req.on('data', (chunk: Buffer) => {
       totalBytes += chunk.length;
       if (totalBytes > MAX_BODY_BYTES) {
+        clearTimeout(timeout);
         req.destroy();
         reject(new Error('Request body too large'));
         return;
       }
       chunks.push(chunk);
     });
-    req.on('end', () => resolve(Buffer.concat(chunks).toString('utf-8')));
-    req.on('error', reject);
+    req.on('end', () => {
+      clearTimeout(timeout);
+      resolve(Buffer.concat(chunks).toString('utf-8'));
+    });
+    req.on('error', (err) => {
+      clearTimeout(timeout);
+      reject(err);
+    });
   });
 }
 
@@ -139,9 +167,14 @@ export function createRouteHandler(
           return;
         }
 
+        // Validate individual events before ingestion
+        const validEvents = Array.isArray(events)
+          ? (events as unknown[]).filter(validateEvent)
+          : undefined;
+
         const result = await server.processTick(
           state as import('@agent-e/core').EconomyState,
-          Array.isArray(events) ? events as import('@agent-e/core').EconomicEvent[] : undefined,
+          validEvents,
         );
 
         const warnings = validation?.warnings ?? [];
@@ -175,8 +208,12 @@ export function createRouteHandler(
         return;
       }
 
-      // GET /decisions — decision log with optional ?limit and ?since
+      // GET /decisions — decision log with optional ?limit and ?since (auth-protected)
       if (path === '/decisions' && method === 'GET') {
+        if (!checkAuth(req, apiKey)) {
+          respond(401, { error: 'Unauthorized' });
+          return;
+        }
         const rawLimit = parseInt(url.searchParams.get('limit') ?? '100', 10);
         const limit = Math.min(Math.max(Number.isNaN(rawLimit) ? 100 : rawLimit, 1), 1000);
         const sinceParam = url.searchParams.get('since');
@@ -194,7 +231,12 @@ export function createRouteHandler(
           decisions = agentE.log.latest(limit);
         }
 
-        respond(200, { decisions });
+        // Strip metricsSnapshot from responses to avoid leaking full economy state
+        const sanitized = decisions.map((d: Record<string, unknown>) => {
+          const { metricsSnapshot: _, ...rest } = d as Record<string, unknown> & { metricsSnapshot?: unknown };
+          return rest;
+        });
+        respond(200, { decisions: sanitized });
         return;
       }
 
@@ -215,24 +257,24 @@ export function createRouteHandler(
 
         const config = parsed as Record<string, unknown>;
 
-        // Lock parameters
+        // Lock parameters (capped to prevent abuse)
         if (Array.isArray(config['lock'])) {
-          for (const param of config['lock']) {
+          for (const param of (config['lock'] as unknown[]).slice(0, MAX_CONFIG_ARRAY)) {
             if (typeof param === 'string') server.lock(param);
           }
         }
 
-        // Unlock parameters
+        // Unlock parameters (capped to prevent abuse)
         if (Array.isArray(config['unlock'])) {
-          for (const param of config['unlock']) {
+          for (const param of (config['unlock'] as unknown[]).slice(0, MAX_CONFIG_ARRAY)) {
             if (typeof param === 'string') server.unlock(param);
           }
         }
 
-        // Constrain parameters — validate ALL before applying any
+        // Constrain parameters — validate ALL before applying any (capped)
         if (Array.isArray(config['constrain'])) {
           const validated: { param: string; min: number; max: number }[] = [];
-          for (const c of config['constrain'] as unknown[]) {
+          for (const c of (config['constrain'] as unknown[]).slice(0, MAX_CONFIG_ARRAY)) {
             if (
               c && typeof c === 'object' &&
               typeof (c as Record<string, unknown>)['param'] === 'string' &&
@@ -321,18 +363,35 @@ export function createRouteHandler(
         return;
       }
 
-      // GET / — Dashboard HTML
+      // GET / — Dashboard HTML (nonce-based CSP, auth-protected when apiKey is set)
       if (path === '/' && method === 'GET' && server.serveDashboard) {
+        // When apiKey is configured, require auth to access the dashboard.
+        // Browser users can use /?token=<key> since browsers cannot set custom headers on navigation.
+        if (apiKey) {
+          const dashToken = url.searchParams.get('token') ?? '';
+          const hasBearer = checkAuth(req, apiKey);
+          const hasQueryToken = dashToken.length === apiKey.length
+            && timingSafeEqual(Buffer.from(dashToken), Buffer.from(apiKey));
+          if (!hasBearer && !hasQueryToken) {
+            respond(401, { error: 'Unauthorized — use ?token=<apiKey> or Authorization header' });
+            return;
+          }
+        }
         setCorsHeaders(res, cors, reqOrigin);
-        res.setHeader('Content-Security-Policy', "default-src 'self'; script-src 'unsafe-inline' https://cdn.jsdelivr.net; style-src 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; connect-src 'self' ws: wss:; img-src 'self' data:");
-        res.setHeader('Cache-Control', 'public, max-age=60');
+        const nonce = randomBytes(16).toString('base64');
+        res.setHeader('Content-Security-Policy', `default-src 'self'; script-src 'nonce-${nonce}' https://cdn.jsdelivr.net; style-src 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; connect-src 'self' ws: wss:; img-src 'self' data:`);
+        res.setHeader('Cache-Control', 'no-cache, private');
         res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
-        res.end(getDashboardHtml());
+        res.end(getDashboardHtml(nonce, apiKey));
         return;
       }
 
-      // GET /metrics — Latest metrics + history for dashboard charts
+      // GET /metrics — Latest metrics + history for dashboard charts (auth-protected)
       if (path === '/metrics' && method === 'GET') {
+        if (!checkAuth(req, apiKey)) {
+          respond(401, { error: 'Unauthorized' });
+          return;
+        }
         const agentE = server.getAgentE();
         const latest = agentE.store.latest();
         const history = agentE.store.recentHistory(100);
@@ -340,8 +399,12 @@ export function createRouteHandler(
         return;
       }
 
-      // GET /metrics/personas — Persona distribution
+      // GET /metrics/personas — Persona distribution (auth-protected)
       if (path === '/metrics/personas' && method === 'GET') {
+        if (!checkAuth(req, apiKey)) {
+          respond(401, { error: 'Unauthorized' });
+          return;
+        }
         const agentE = server.getAgentE();
         const latest = agentE.store.latest();
         const dist = latest.personaDistribution || {};
@@ -438,8 +501,12 @@ export function createRouteHandler(
         return;
       }
 
-      // GET /pending — List pending advisor recommendations
+      // GET /pending — List pending advisor recommendations (auth-protected)
       if (path === '/pending' && method === 'GET') {
+        if (!checkAuth(req, apiKey)) {
+          respond(401, { error: 'Unauthorized' });
+          return;
+        }
         const agentE = server.getAgentE();
         const pending = agentE.log.query({ result: 'skipped_override' });
         respond(200, {

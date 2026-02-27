@@ -232,6 +232,60 @@ Connect to the same port via WebSocket upgrade.
 
 Heartbeat: Server pings every 30 seconds.
 
+## Authentication
+
+Protect mutation routes and the dashboard with an API key:
+
+```ts
+const server = new AgentEServer({
+  apiKey: process.env.AGENTE_API_KEY,
+});
+```
+
+When `apiKey` is set:
+
+- **POST routes** (`/tick`, `/config`, `/approve`, `/reject`, `/diagnose`) require `Authorization: Bearer <key>`.
+- **Sensitive GET routes** (`/decisions`, `/metrics`, `/metrics/personas`, `/pending`) also require the header.
+- **Dashboard** (`GET /`) accepts either the `Authorization` header or a `?token=<key>` query parameter.
+- **WebSocket** accepts the key via `Authorization` header or `?token=<key>` on the upgrade request.
+- **Open routes** (`/health`, `/principles`) remain unauthenticated for health-check probes.
+
+All key comparisons use `crypto.timingSafeEqual()` to prevent timing side-channel attacks.
+
+## Security
+
+The server includes multiple layers of defense-in-depth:
+
+### Input Validation
+
+- **State validation** — all incoming economy state is validated before processing. Invalid state returns detailed errors with field paths.
+- **Event validation** — events are checked for required fields (`type`, `actor`, `timestamp`) and a valid `type` value before ingestion. Malformed events are silently dropped (HTTP) or return an error (WebSocket).
+- **Prototype pollution protection** — `__proto__`, `constructor`, and `prototype` keys are recursively stripped from all parsed JSON bodies.
+- **Body size limits** — HTTP request bodies are capped at 1 MB with a 30-second read timeout to mitigate slow-loris attacks.
+- **Array caps** — configuration arrays (lock/unlock/constrain) are capped at 1,000 entries.
+
+### Rate Limiting
+
+- **Per-connection** — each WebSocket connection is limited to one tick per 100 ms.
+- **Global** — a server-wide rate limiter caps ticks at 20/sec across all WebSocket connections to prevent CPU saturation.
+- **Connection limit** — maximum 50 concurrent WebSocket connections; excess connections are closed with code 1013.
+
+### Transport Security
+
+- **CORS** — configurable origin restriction via `corsOrigin` (default: `http://localhost:3100`). WebSocket connections from disallowed origins are closed with code 1008.
+- **HSTS** — `Strict-Transport-Security: max-age=31536000; includeSubDomains` header on all responses.
+- **Nonce-based CSP** — the dashboard uses a per-request cryptographic nonce for `script-src`, eliminating `'unsafe-inline'` scripts.
+- **SRI** — the CDN-loaded Chart.js library includes a `integrity` hash and `crossorigin="anonymous"` attribute.
+- **Security headers** — `X-Content-Type-Options: nosniff`, `X-Frame-Options: DENY`, and `Cache-Control: no-cache, private` on all responses.
+
+### Concurrency
+
+- **Tick serialization** — `processTick()` uses a Promise-based mutex so concurrent HTTP + WebSocket ticks cannot corrupt shared adjustment queues.
+
+### Data Exposure
+
+- **metricsSnapshot stripping** — the `/decisions` endpoint strips full metrics snapshots from decision records to avoid leaking large internal state objects.
+
 ## State Validation
 
 All incoming state is validated before processing. Invalid state returns detailed errors with paths:

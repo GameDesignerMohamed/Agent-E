@@ -174,7 +174,7 @@ describe('HTTP: GET / (Dashboard)', () => {
     const res = await fetch(`${baseUrl}/`);
     expect(res.status).toBe(200);
     expect(res.headers.get('content-type')).toContain('text/html');
-    expect(res.headers.get('cache-control')).toBe('public, max-age=60');
+    expect(res.headers.get('cache-control')).toBe('no-cache, private');
     expect(res.headers.get('content-security-policy')).toBeTruthy();
     const body = await res.text();
     expect(body).toContain('AgentE Dashboard');
@@ -344,15 +344,28 @@ describe('Auth: API key enforcement', () => {
     expect(res.status).toBe(401);
   });
 
-  it('GET routes remain open (no auth needed)', async () => {
+  it('GET /health and /principles remain open (no auth needed)', async () => {
     const health = await fetch(`${authUrl}/health`);
     expect(health.status).toBe(200);
 
     const principles = await fetch(`${authUrl}/principles`);
     expect(principles.status).toBe(200);
+  });
 
+  it('GET /decisions, /metrics, /pending require auth when apiKey is set', async () => {
     const decisions = await fetch(`${authUrl}/decisions`);
-    expect(decisions.status).toBe(200);
+    expect(decisions.status).toBe(401);
+
+    const metrics = await fetch(`${authUrl}/metrics`);
+    expect(metrics.status).toBe(401);
+
+    const pending = await fetch(`${authUrl}/pending`);
+    expect(pending.status).toBe(401);
+
+    // With auth header, they should succeed
+    const headers = { 'Authorization': 'Bearer test-secret-key' };
+    const authDecisions = await fetch(`${authUrl}/decisions`, { headers });
+    expect(authDecisions.status).toBe(200);
   });
 
   it('WebSocket rejects connection without token', async () => {
@@ -425,6 +438,96 @@ describe('HTTP: Error handling', () => {
   });
 });
 
+// ── Security Tests ──────────────────────────────────────────────────────────
+
+describe('Security: prototype pollution protection', () => {
+  it('strips __proto__ keys from POST /tick body', async () => {
+    const res = await fetch(`${baseUrl}/tick`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        __proto__: { polluted: true },
+        state: validState(),
+      }),
+    });
+    expect(res.status).toBe(200);
+    // If pollution occurred, this would fail or behave unexpectedly
+    const data = await res.json();
+    expect(data).toHaveProperty('health');
+  });
+});
+
+describe('Security: event validation', () => {
+  it('silently drops invalid events in POST /tick', async () => {
+    const res = await fetch(`${baseUrl}/tick`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        state: validState(),
+        events: [
+          { type: 'trade', actor: 'a1', timestamp: 100 },      // valid
+          { type: null, actor: 'a1', timestamp: 100 },           // invalid type
+          { type: 'trade', timestamp: 100 },                     // missing actor
+          { type: 'invalid_type', actor: 'a1', timestamp: 100 }, // bad type
+        ],
+      }),
+    });
+    expect(res.status).toBe(200);
+    const data = await res.json();
+    expect(data).toHaveProperty('health');
+  });
+});
+
+describe('Security: HSTS header', () => {
+  it('includes Strict-Transport-Security header', async () => {
+    const res = await fetch(`${baseUrl}/health`);
+    expect(res.headers.get('strict-transport-security')).toBe('max-age=31536000; includeSubDomains');
+  });
+});
+
+describe('Security: dashboard auth', () => {
+  let authServer2: AgentEServer;
+  let authUrl2: string;
+
+  beforeAll(async () => {
+    authServer2 = new AgentEServer({
+      port: 0,
+      apiKey: 'dash-secret',
+      agentE: { gracePeriod: 0, checkInterval: 1 },
+    });
+    await authServer2.start();
+    const addr = authServer2.getAddress();
+    authUrl2 = `http://127.0.0.1:${addr.port}`;
+  });
+
+  afterAll(async () => {
+    await authServer2.stop();
+  });
+
+  it('returns 401 for dashboard without token when apiKey is set', async () => {
+    const res = await fetch(`${authUrl2}/`);
+    expect(res.status).toBe(401);
+  });
+
+  it('serves dashboard with valid query token', async () => {
+    const res = await fetch(`${authUrl2}/?token=dash-secret`);
+    expect(res.status).toBe(200);
+    const body = await res.text();
+    expect(body).toContain('AgentE Dashboard');
+  });
+
+  it('CSP uses nonce for scripts instead of unsafe-inline', async () => {
+    const res = await fetch(`${authUrl2}/?token=dash-secret`);
+    const csp = res.headers.get('content-security-policy') ?? '';
+    expect(csp).toContain('nonce-');
+    // script-src should use nonce, not unsafe-inline
+    expect(csp).toMatch(/script-src\s+'nonce-[A-Za-z0-9+/=]+'/);
+    expect(csp).not.toMatch(/script-src[^;]*'unsafe-inline'/);
+    // style-src still uses unsafe-inline (CSS only — acceptable)
+    expect(csp).toMatch(/style-src\s+'unsafe-inline'/);
+  });
+});
+
 // ── WebSocket Tests ─────────────────────────────────────────────────────────
 
 function connectWs(): Promise<WebSocket> {
@@ -478,6 +581,8 @@ describe('WebSocket', () => {
 
   it('returns validation_error with validationErrors for invalid state', async () => {
     const ws = await connectWs();
+    // Wait to avoid hitting the global tick rate limiter from prior tests
+    await new Promise(r => setTimeout(r, 150));
     const response = await sendAndReceive(ws, {
       type: 'tick',
       state: { tick: -1 },

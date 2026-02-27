@@ -26,6 +26,21 @@ export interface WebSocketHandle {
 const MAX_WS_PAYLOAD = 1_048_576; // 1 MB
 const MAX_WS_CONNECTIONS = 100;
 const MIN_TICK_INTERVAL_MS = 100; // rate limit: max 10 ticks/sec per connection
+const GLOBAL_MIN_TICK_INTERVAL_MS = 50; // global rate limit: max 20 ticks/sec across all connections
+
+/** Valid EconomicEvent type values — must match core EconomicEventType union. */
+const VALID_EVENT_TYPES = new Set([
+  'trade', 'mint', 'burn', 'transfer', 'produce', 'consume', 'role_change', 'enter', 'churn',
+]);
+
+/** Validates an event has the required shape before ingestion. */
+function validateEvent(e: unknown): e is EconomicEvent {
+  if (!e || typeof e !== 'object') return false;
+  const ev = e as Record<string, unknown>;
+  return typeof ev['type'] === 'string' && VALID_EVENT_TYPES.has(ev['type'])
+    && typeof ev['timestamp'] === 'number'
+    && typeof ev['actor'] === 'string';
+}
 
 /** Strips prototype-polluting keys from parsed JSON objects (recursive). */
 function sanitizeJson(obj: unknown): unknown {
@@ -45,6 +60,9 @@ export function createWebSocketHandler(
 ): WebSocketHandle {
   const wss = new WebSocketServer({ server: httpServer, maxPayload: MAX_WS_PAYLOAD });
 
+  // Global tick rate limiter — shared across all connections to prevent CPU saturation
+  let globalLastTickTime = 0;
+
   // Heartbeat: ping every 30s, disconnect if no pong within 10s
   const aliveMap = new WeakMap<WebSocket, boolean>();
 
@@ -63,7 +81,7 @@ export function createWebSocketHandler(
   }, 30_000);
 
   wss.on('connection', (ws, req) => {
-    if (wss.clients.size > MAX_WS_CONNECTIONS) {
+    if (wss.clients.size >= MAX_WS_CONNECTIONS) {
       ws.close(1013, 'Server at capacity');
       return;
     }
@@ -77,10 +95,13 @@ export function createWebSocketHandler(
       }
     }
 
-    // Auth check: if apiKey is configured, require it via query param or protocol header
+    // Auth check: if apiKey is configured, require it via Authorization header or query param.
+    // SECURITY NOTE: The ?token= query param is for browser WebSocket compatibility only (browsers
+    // cannot set custom headers on WebSocket upgrade). Prefer Authorization header in production —
+    // query params may be logged in proxy/server access logs.
     if (server.apiKey) {
       const url = new URL(req.url ?? '/', `http://${req.headers.host ?? 'localhost'}`);
-      const token = url.searchParams.get('token') ?? req.headers['authorization']?.replace('Bearer ', '');
+      const token = req.headers['authorization']?.replace('Bearer ', '') ?? url.searchParams.get('token');
       if (!token || token.length !== server.apiKey.length || !timingSafeEqual(Buffer.from(token), Buffer.from(server.apiKey))) {
         ws.close(1008, 'Unauthorized');
         return;
@@ -121,7 +142,12 @@ export function createWebSocketHandler(
             send(ws, { type: 'error', message: 'Rate limited — min 100ms between ticks' });
             break;
           }
+          if (now - globalLastTickTime < GLOBAL_MIN_TICK_INTERVAL_MS) {
+            send(ws, { type: 'error', message: 'Rate limited — server tick capacity exceeded' });
+            break;
+          }
           lastTickTime = now;
+          globalLastTickTime = now;
 
           const state = msg['state'];
           const events = msg['events'];
@@ -140,9 +166,14 @@ export function createWebSocketHandler(
           }
 
           try {
+            // Validate individual events before ingestion
+            const validEvents = Array.isArray(events)
+              ? (events as unknown[]).filter(validateEvent)
+              : undefined;
+
             const result = await server.processTick(
               state as EconomyState,
-              Array.isArray(events) ? events as EconomicEvent[] : undefined,
+              validEvents,
             );
 
             send(ws, {
@@ -164,13 +195,17 @@ export function createWebSocketHandler(
         }
 
         case 'event': {
-          const event = msg['event'] as EconomicEvent | undefined;
-          if (event) {
-            server.getAgentE().ingest(event);
-            send(ws, { type: 'event_ack' });
-          } else {
+          const rawEvent = msg['event'];
+          if (!rawEvent) {
             send(ws, { type: 'error', message: 'Missing "event" field' });
+            break;
           }
+          if (!validateEvent(rawEvent)) {
+            send(ws, { type: 'error', message: 'Invalid event — requires type (valid event type), timestamp (number), and actor (string)' });
+            break;
+          }
+          server.getAgentE().ingest(rawEvent);
+          send(ws, { type: 'event_ack' });
           break;
         }
 

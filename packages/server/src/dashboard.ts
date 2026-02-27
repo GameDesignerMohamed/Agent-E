@@ -1,7 +1,8 @@
 // Dashboard HTML — self-contained single-page dashboard served at GET /
 // Inline CSS + Chart.js CDN + WebSocket real-time updates
 
-export function getDashboardHtml(): string {
+export function getDashboardHtml(nonce?: string, apiKey?: string): string {
+  const nonceAttr = nonce ? ` nonce="${nonce}"` : '';
   return `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -11,7 +12,7 @@ export function getDashboardHtml(): string {
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400;14..32,500;14..32,600;14..32,700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4.5.1/dist/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.5.1/dist/chart.umd.min.js" integrity="sha384-jb8JQMbMoBUzgWatfe6COACi2ljcDdZQ2OxczGA3bGNeWe+6DChMTBJemed7ZnvJ" crossorigin="anonymous"` + nonceAttr + `></script>
 <style>
   *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
 
@@ -832,7 +833,7 @@ export function getDashboardHtml(): string {
 
 </main>
 
-<script>
+<script` + nonceAttr + `>
 (function() {
   'use strict';
 
@@ -879,6 +880,9 @@ export function getDashboardHtml(): string {
   var $dashboardRoot = document.getElementById('dashboard-root');
 
   // -- Helpers --
+  // SECURITY-CRITICAL: esc() prevents XSS by escaping all HTML-significant characters.
+  // Every user-derived or WebSocket-derived value rendered via innerHTML MUST pass through esc().
+  // If adding new terminal renderers or DOM builders, always use esc() on dynamic data.
   function esc(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;').replace(/\\\\/g,'&#92;'); }
   function pad(n, w) { return String(n).padStart(w || 4, ' '); }
   function fmt(n) { return typeof n === 'number' ? n.toFixed(3) : '\\u2014'; }
@@ -1283,14 +1287,24 @@ export function getDashboardHtml(): string {
   }
 
   // -- API calls --
+  var _authKey = ` + (apiKey ? `'${apiKey.replace(/\\/g, '\\\\').replace(/'/g, "\\'")}'` : 'null') + `;
+
+  function authHeaders() {
+    var h = {};
+    if (_authKey) h['Authorization'] = 'Bearer ' + _authKey;
+    return h;
+  }
+
   function fetchJSON(path) {
-    return fetch(path).then(function(r) { return r.json(); });
+    return fetch(path, { headers: authHeaders() }).then(function(r) { return r.json(); });
   }
 
   function postJSON(path, body) {
+    var h = authHeaders();
+    h['Content-Type'] = 'application/json';
     return fetch(path, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: h,
       body: JSON.stringify(body),
     }).then(function(r) { return r.json(); });
   }
@@ -1352,7 +1366,9 @@ export function getDashboardHtml(): string {
   // -- WebSocket --
   function connectWS() {
     var proto = location.protocol === 'https:' ? 'wss:' : 'ws:';
-    ws = new WebSocket(proto + '//' + location.host);
+    var wsUrl = proto + '//' + location.host;
+    if (_authKey) wsUrl += '?token=' + encodeURIComponent(_authKey);
+    ws = new WebSocket(wsUrl);
 
     ws.onopen = function() {
       reconnectDelay = 1000;

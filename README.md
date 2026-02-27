@@ -161,14 +161,22 @@ agent.on('beforeAction', (plan) => {
 AgentE explains its decisions in plain English. Optional — bring your own LLM provider. Zero cost to AgentE.
 
 ```typescript
+import Anthropic from '@anthropic-ai/sdk';
+
+const anthropic = new Anthropic(); // reads ANTHROPIC_API_KEY from env
+
 const agent = new AgentE({
   adapter,
   llm: {
-    provider: myLLMProvider, // any backend — Claude, Llama, Ollama, etc.
-    features: {
-      diagnosisNarration: true,
-      planExplanation: true,
-      anomalyInterpretation: true,
+    provider: {
+      async complete(prompt, config) {
+        const msg = await anthropic.messages.create({
+          model: 'claude-sonnet-4-5-20250929',
+          max_tokens: config?.maxTokens ?? 256,
+          messages: [{ role: 'user', content: prompt }],
+        });
+        return msg.content[0].type === 'text' ? msg.content[0].text : '';
+      },
     },
   },
 });
@@ -177,6 +185,8 @@ agent.on('narration',   (n) => console.log(n.narration));
 agent.on('explanation', (e) => console.log(e.explanation));
 agent.on('anomaly',     (a) => console.log(a.interpretation));
 ```
+
+The developer implements the `provider.complete()` function — that's where their API key lives. AgentE never touches or stores API keys. The developer's key stays in their environment (`ANTHROPIC_API_KEY`) or wherever they manage secrets.
 
 Three capabilities:
 
