@@ -24,6 +24,7 @@ import { Executor } from './Executor.js';
 import { DecisionLog } from './DecisionLog.js';
 import { MetricStore } from './MetricStore.js';
 import { PersonaTracker } from './PersonaTracker.js';
+import { SatisfactionEstimator } from './SatisfactionEstimator.js';
 import { ALL_PRINCIPLES } from './principles/index.js';
 import { ParameterRegistry } from './ParameterRegistry.js';
 import type { RegisteredParameter } from './ParameterRegistry.js';
@@ -51,6 +52,7 @@ export class AgentE {
   readonly log = new DecisionLog();
   readonly store!: MetricStore;
   private personaTracker = new PersonaTracker();
+  private satisfactionEstimator = new SatisfactionEstimator();
   private params: Record<string, number> = {};
   private eventBuffer: EconomicEvent[] = [];
   private static readonly MAX_EVENT_BUFFER = 10_000;
@@ -167,6 +169,12 @@ export class AgentE {
     // Drain event buffer (atomic swap — no window for lost events)
     const events = this.eventBuffer;
     this.eventBuffer = [];
+
+    // Estimate satisfaction if developer didn't provide it
+    this.satisfactionEstimator.update(currentState, events);
+    if (!currentState.agentSatisfaction || Object.keys(currentState.agentSatisfaction).length === 0) {
+      currentState.agentSatisfaction = this.satisfactionEstimator.getEstimates();
+    }
 
     // PersonaTracker ingests events first (needed as fallback for Observer)
     this.personaTracker.update(currentState, events);

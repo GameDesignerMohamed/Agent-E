@@ -10,6 +10,8 @@ export { DecisionLog } from './DecisionLog.js';
 export { MetricStore } from './MetricStore.js';
 export { PersonaTracker } from './PersonaTracker.js';
 export type { PersonaConfig } from './PersonaTracker.js';
+export { SatisfactionEstimator } from './SatisfactionEstimator.js';
+export type { SatisfactionConfig } from './SatisfactionEstimator.js';
 export { ParameterRegistry } from './ParameterRegistry.js';
 export type { ParameterType, FlowImpact, ParameterScope, RegisteredParameter, RegistryValidationResult } from './ParameterRegistry.js';
 export type { ExecutionResult } from './Executor.js';
