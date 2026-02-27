@@ -8,7 +8,7 @@
 import { AgentEServer } from './AgentEServer.js';
 
 const port = parseInt(process.env['AGENTE_PORT'] ?? '3100', 10);
-const host = process.env['AGENTE_HOST'] ?? '0.0.0.0';
+const host = process.env['AGENTE_HOST'] ?? '127.0.0.1';
 const mode = process.env['AGENTE_MODE'] === 'advisor' ? 'advisor' as const : 'autonomous' as const;
 
 const server = new AgentEServer({

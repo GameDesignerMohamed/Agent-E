@@ -191,7 +191,7 @@ Disable with `serveDashboard: false` if you only want the API.
 
 ## License
 
-MIT
+[Business Source License 1.1 (BUSL-1.1)](./LICENSE) — free for non-production use. Production use requires a commercial license. Converts to MIT on 2030-02-27.
 
 ---
 

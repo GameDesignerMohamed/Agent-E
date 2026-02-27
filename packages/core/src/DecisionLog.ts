@@ -24,7 +24,7 @@ export class DecisionLog {
     metrics: EconomyMetrics,
   ): DecisionEntry {
     const entry: DecisionEntry = {
-      id: `decision_${metrics.tick}_${plan.parameter}_${randomHex(4)}`,
+      id: `decision_${metrics.tick}_${plan.parameter}_${randomHex(8)}`,
       tick: metrics.tick,
       timestamp: Date.now(),
       diagnosis,
@@ -51,7 +51,7 @@ export class DecisionLog {
     reason: string,
   ): void {
     const entry: DecisionEntry = {
-      id: `skip_${metrics.tick}_${diagnosis.principle.id}_${randomHex(4)}`,
+      id: `skip_${metrics.tick}_${diagnosis.principle.id}_${randomHex(8)}`,
       tick: metrics.tick,
       timestamp: Date.now(),
       diagnosis,

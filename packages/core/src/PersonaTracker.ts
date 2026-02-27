@@ -73,6 +73,14 @@ export class PersonaTracker {
 
   constructor(config?: Partial<PersonaConfig>) {
     this.config = { ...DEFAULT_PERSONA_CONFIG, ...config };
+    // Validate config ranges to prevent NaN/Infinity propagation
+    const cfg = this.config as unknown as Record<string, unknown>;
+    const defaults = DEFAULT_PERSONA_CONFIG as unknown as Record<string, unknown>;
+    for (const [key, val] of Object.entries(cfg)) {
+      if (typeof val === 'number' && !Number.isFinite(val)) {
+        cfg[key] = defaults[key];
+      }
+    }
   }
 
   /**

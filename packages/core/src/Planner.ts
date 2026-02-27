@@ -91,6 +91,7 @@ export class Planner {
 
     if (action.direction === 'set' && action.absoluteValue !== undefined) {
       targetValue = action.absoluteValue;
+      if (!Number.isFinite(targetValue)) return null;
     } else if (action.direction === 'increase') {
       targetValue = currentValue * (1 + magnitude);
     } else {

@@ -54,6 +54,7 @@ export class AgentE {
   private params: Record<string, number> = {};
   private eventBuffer: EconomicEvent[] = [];
   private static readonly MAX_EVENT_BUFFER = 10_000;
+  private static readonly MAX_EVENT_METADATA_KEYS = 50;
   private isRunning = false;
   private isPaused = false;
   private currentTick = 0;
@@ -332,9 +333,14 @@ export class AgentE {
 
   // ── Events ──────────────────────────────────────────────────────────────────
 
+  private static readonly MAX_HANDLERS_PER_EVENT = 100;
+
   on(event: EventName, handler: (...args: unknown[]) => unknown): this {
     const list = this.handlers.get(event) ?? [];
     if (!list.includes(handler)) {
+      if (list.length >= AgentE.MAX_HANDLERS_PER_EVENT) {
+        throw new Error(`[AgentE] Max ${AgentE.MAX_HANDLERS_PER_EVENT} handlers per event reached for '${event}'`);
+      }
       list.push(handler);
     }
     this.handlers.set(event, list);
@@ -385,6 +391,10 @@ export class AgentE {
   // ── Ingest events directly (event-driven mode) ───────────────────────────
 
   ingest(event: EconomicEvent): void {
+    // Reject oversized metadata to prevent memory DoS
+    if (event.metadata && Object.keys(event.metadata).length > AgentE.MAX_EVENT_METADATA_KEYS) {
+      return;
+    }
     if (this.eventBuffer.length >= AgentE.MAX_EVENT_BUFFER) {
       this.eventBuffer.shift(); // evict oldest
     }

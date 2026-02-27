@@ -67,6 +67,15 @@ export function createWebSocketHandler(
       return;
     }
 
+    // Origin check: validate against CORS policy (skip for non-browser / missing origin)
+    const wsOrigin = req.headers['origin'];
+    if (wsOrigin && server.corsOrigin !== '*') {
+      if (wsOrigin.toLowerCase() !== server.corsOrigin.toLowerCase()) {
+        ws.close(1008, 'Origin not allowed');
+        return;
+      }
+    }
+
     // Auth check: if apiKey is configured, require it via query param or protocol header
     if (server.apiKey) {
       const url = new URL(req.url ?? '/', `http://${req.headers.host ?? 'localhost'}`);

@@ -2,6 +2,7 @@
 // Node http module with manual body parsing. CORS on all responses.
 
 import type * as http from 'node:http';
+import { timingSafeEqual } from 'node:crypto';
 import { validateEconomyState } from '@agent-e/core';
 import type { AgentEServer } from './AgentEServer.js';
 import { getDashboardHtml } from './dashboard.js';
@@ -23,8 +24,8 @@ function setCorsHeaders(res: http.ServerResponse, allowedOrigin: string, request
   } else if (requestOrigin === undefined) {
     origin = allowedOrigin; // non-browser request, return configured origin
   } else {
-    // Reflect origin only if it matches — otherwise don't include a matching CORS header
-    origin = requestOrigin === allowedOrigin ? allowedOrigin : '';
+    // Reflect origin only if it matches (case-insensitive) — otherwise don't include a matching CORS header
+    origin = requestOrigin.toLowerCase() === allowedOrigin.toLowerCase() ? requestOrigin : '';
   }
   if (origin) {
     res.setHeader('Access-Control-Allow-Origin', origin);
@@ -48,7 +49,10 @@ function sanitizeJson(obj: unknown): unknown {
 function checkAuth(req: http.IncomingMessage, apiKey: string | undefined): boolean {
   if (!apiKey) return true; // no key configured = open
   const header = req.headers['authorization'];
-  return header === `Bearer ${apiKey}`;
+  if (typeof header !== 'string') return false;
+  const expected = `Bearer ${apiKey}`;
+  if (header.length !== expected.length) return false;
+  return timingSafeEqual(Buffer.from(header), Buffer.from(expected));
 }
 
 function json(res: http.ServerResponse, status: number, data: unknown, origin: string, reqOrigin?: string): void {

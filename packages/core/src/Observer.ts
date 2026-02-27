@@ -145,7 +145,7 @@ export class Observer {
 
       // Velocity: trades involving this currency / supply
       const currTrades = tradeEvents.filter(e => (e.currency ?? defaultCurrency) === curr);
-      velocityByCurrency[curr] = currSupply > 0 ? currTrades.length / currSupply : 0;
+      velocityByCurrency[curr] = currSupply > 0 ? Math.min(currTrades.length / currSupply, 1000) : 0;
     }
 
     // ── Per-currency wealth distribution ──
