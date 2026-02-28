@@ -1,6 +1,6 @@
 {
   "name": "@agent-e/core",
-  "version": "1.8.0",
+  "version": "1.8.2",
   "description": "Autonomous economic balancer SDK — observe, diagnose, simulate, plan, execute. Any digital economy.",
   "license": "BUSL-1.1",
   "repository": {
