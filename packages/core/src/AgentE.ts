@@ -60,6 +60,12 @@ export class AgentE {
   private narrator: DiagnosisNarrator | null = null;
   private explainer: PlanExplainer | null = null;
   private anomalyInterpreter: AnomalyInterpreter | null = null;
+  /** Minimum ticks between LLM narration calls (prevents flooding on persistent violations) */
+  private static readonly NARRATION_COOLDOWN_TICKS = 50;
+  /** Minimum ticks between LLM explanation calls (one plan applied per cooldown anyway, but guard against rapid advisor approvals) */
+  private static readonly EXPLANATION_COOLDOWN_TICKS = 20;
+  private lastNarrationTick = -Infinity;
+  private lastExplanationTick = -Infinity;
 
   // ── State ──
   readonly log = new DecisionLog();
@@ -246,8 +252,10 @@ export class AgentE {
       this.emit('alert', diagnosis);
     }
 
-    // V1.8: LLM narration of top violation (async, non-blocking)
-    if (this.narrator && diagnoses.length > 0 && diagnoses[0]) {
+    // V1.8: LLM narration of top violation (async, non-blocking, rate-limited)
+    if (this.narrator && diagnoses.length > 0 && diagnoses[0]
+        && metrics.tick - this.lastNarrationTick >= AgentE.NARRATION_COOLDOWN_TICKS) {
+      this.lastNarrationTick = metrics.tick;
       const recentHistory = this.store.recentSnapshots(10);
       this.narrator.narrate(diagnoses[0], metrics, recentHistory)
         .then(narration => this.emit('narration', narration))
@@ -292,8 +300,10 @@ export class AgentE {
       return;
     }
 
-    // V1.8: LLM plan explanation (async, non-blocking)
-    if (this.explainer && plan) {
+    // V1.8: LLM plan explanation (async, non-blocking, rate-limited)
+    if (this.explainer && plan
+        && metrics.tick - this.lastExplanationTick >= AgentE.EXPLANATION_COOLDOWN_TICKS) {
+      this.lastExplanationTick = metrics.tick;
       this.explainer.explain(plan, metrics)
         .then(explanation => this.emit('explanation', explanation))
         .catch(err => console.warn('[AgentE] LLM explanation failed:', err));
