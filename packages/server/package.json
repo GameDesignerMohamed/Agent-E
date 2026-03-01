@@ -1,6 +1,6 @@
 {
   "name": "@agent-e/server",
-  "version": "1.8.2",
+  "version": "1.8.3",
   "description": "Ready-to-run HTTP + WebSocket server for AgentE",
   "license": "BUSL-1.1",
   "repository": {
@@ -42,7 +42,7 @@
     "access": "public"
   },
   "dependencies": {
-    "@agent-e/core": "^1.8.2",
+    "@agent-e/core": "^1.8.3",
     "ws": "^8.18.0"
   },
   "devDependencies": {
