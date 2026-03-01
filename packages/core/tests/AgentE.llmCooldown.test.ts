@@ -12,10 +12,11 @@
 
 import { describe, it, expect, vi } from 'vitest';
 import { AgentE } from '../src/AgentE.js';
-import type { EconomyAdapter, EconomyState, LLMProvider } from '../src/types.js';
+import type { EconomyAdapter, EconomyState, LLMProvider, ParameterDefinition } from '../src/types.js';
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
+/** Economy state with extreme imbalance — reliably triggers principle violations. */
 function makeState(tick: number): EconomyState {
   return {
     tick,
@@ -27,7 +28,7 @@ function makeState(tick: number): EconomyState {
     agentInventories: { a1: { itemA: 10 }, a2: { itemA: 0 } },
     agentSatisfaction: { a1: 80, a2: 30 },
     marketPrices: { gold: { itemA: 10 } },
-    // Inject a supply imbalance to trigger principle violations → narration
+    // 50 mint transactions → triggers supply inflation violations
     recentTransactions: Array.from({ length: 50 }, (_, i) => ({
       type: 'mint' as const,
       actor: 'a1',
@@ -53,6 +54,20 @@ function mockLLMProvider(): LLMProvider & { complete: ReturnType<typeof vi.fn> }
   };
 }
 
+/**
+ * Parameters that match the violations triggered by makeState().
+ * Required so the Planner can produce plans → explanation fires.
+ */
+const TEST_PARAMETERS: ParameterDefinition[] = [
+  { key: 'baseReward', type: 'reward', flowImpact: 'faucet', currentValue: 100 },
+  { key: 'baseCost', type: 'cost', flowImpact: 'sink', currentValue: 50 },
+  { key: 'baseFee', type: 'fee', flowImpact: 'sink', scope: { tags: ['transaction'] }, currentValue: 10 },
+  { key: 'baseYield', type: 'yield', flowImpact: 'faucet', currentValue: 5 },
+];
+
+/** Let fire-and-forget LLM promises settle. */
+const flush = () => new Promise(r => setTimeout(r, 50));
+
 // ── Tests ─────────────────────────────────────────────────────────────────────
 
 describe('AgentE — narration cooldown (NARRATION_COOLDOWN_TICKS = 50)', () => {
@@ -60,24 +75,20 @@ describe('AgentE — narration cooldown (NARRATION_COOLDOWN_TICKS = 50)', () => 
     const adapter = makeAdapter(100);
     const provider = mockLLMProvider();
 
-    const narrationEvents: unknown[] = [];
     const agent = new AgentE({
       adapter,
       gracePeriod: 0,
       checkInterval: 1,
-      llm: { provider },
+      llm: { provider, features: { planExplanation: false, anomalyInterpretation: false } },
     });
 
-    agent.on('narration', (n: unknown) => narrationEvents.push(n));
     agent.connect(adapter).start();
 
     await agent.tick(makeState(100));
-    await new Promise(r => setTimeout(r, 50)); // let async settle
+    await flush();
 
-    // Narration should have fired (if violations found)
-    // We check provider was called rather than the event count
-    // because the specific violation depends on the economy state
-    expect(provider.complete.mock.calls.length).toBeGreaterThanOrEqual(0);
+    // The imbalanced state triggers violations → narrator must be called
+    expect(provider.complete).toHaveBeenCalled();
   });
 
   it('does not fire narration again within 50 ticks of the last call', async () => {
@@ -93,16 +104,17 @@ describe('AgentE — narration cooldown (NARRATION_COOLDOWN_TICKS = 50)', () => 
 
     agent.connect(adapter).start();
 
-    // Tick 100 — first narration call (if violation exists)
+    // Tick 100 — first narration fires
     await agent.tick(makeState(100));
-    await new Promise(r => setTimeout(r, 30));
+    await flush();
     const callsAfterTick100 = provider.complete.mock.calls.length;
+    expect(callsAfterTick100).toBeGreaterThanOrEqual(1);
 
     // Ticks 101–149 — all within cooldown window (100 + 50 = 150 is next eligible)
     for (let t = 101; t < 150; t++) {
       await agent.tick(makeState(t));
     }
-    await new Promise(r => setTimeout(r, 30));
+    await flush();
 
     // Provider should not have been called any more times during the cooldown window
     expect(provider.complete.mock.calls.length).toBe(callsAfterTick100);
@@ -121,61 +133,123 @@ describe('AgentE — narration cooldown (NARRATION_COOLDOWN_TICKS = 50)', () => 
 
     agent.connect(adapter).start();
 
-    // Tick 100 — may fire narration
+    // Tick 100 — first narration fires
     await agent.tick(makeState(100));
-    await new Promise(r => setTimeout(r, 30));
+    await flush();
     const callsAfterFirst = provider.complete.mock.calls.length;
+    expect(callsAfterFirst).toBeGreaterThanOrEqual(1);
 
-    // Skip past cooldown — tick 150+ is eligible again
+    // Tick 150 — cooldown expired, narration should fire again
     await agent.tick(makeState(150));
-    await new Promise(r => setTimeout(r, 30));
+    await flush();
 
-    // If violations are still active at tick 150, narration should fire again
-    // We simply assert the call count didn't decrease (it can only stay same or increase)
-    expect(provider.complete.mock.calls.length).toBeGreaterThanOrEqual(callsAfterFirst);
+    expect(provider.complete.mock.calls.length).toBeGreaterThan(callsAfterFirst);
   });
 });
 
 describe('AgentE — explanation cooldown (EXPLANATION_COOLDOWN_TICKS = 20)', () => {
-  it('does not fire explanation again within 20 ticks of the last call', async () => {
+  it('fires explanation on the first eligible tick', async () => {
     const provider = mockLLMProvider();
-    // Override the mock to return explanation format for PlanExplainer
     provider.complete.mockResolvedValue(
       'EXPLANATION: Reducing faucet.\nOUTCOME: Supply stabilizes.\nRISKS: Overcorrection.',
     );
 
     const adapter = makeAdapter(100);
+    const explanationEvents: unknown[] = [];
     const agent = new AgentE({
       adapter,
       gracePeriod: 0,
       checkInterval: 1,
+      cooldownTicks: 1,
+      settlementWindowTicks: 1,
+      parameters: TEST_PARAMETERS,
       llm: { provider, features: { diagnosisNarration: false, anomalyInterpretation: false } },
     });
 
+    agent.on('explanation', (e: unknown) => explanationEvents.push(e));
     agent.connect(adapter).start();
 
-    // Tick 100 — first explanation may fire (autonomous mode needed for plans)
     await agent.tick(makeState(100));
-    await new Promise(r => setTimeout(r, 30));
-    const callsAfterFirst = provider.complete.mock.calls.length;
+    await flush();
+
+    expect(explanationEvents.length).toBe(1);
+  });
+
+  it('does not fire explanation again within 20 ticks of the last call', async () => {
+    const provider = mockLLMProvider();
+    provider.complete.mockResolvedValue(
+      'EXPLANATION: Reducing faucet.\nOUTCOME: Supply stabilizes.\nRISKS: Overcorrection.',
+    );
+
+    const adapter = makeAdapter(100);
+    const explanationEvents: unknown[] = [];
+    const agent = new AgentE({
+      adapter,
+      gracePeriod: 0,
+      checkInterval: 1,
+      cooldownTicks: 1,
+      settlementWindowTicks: 1,
+      parameters: TEST_PARAMETERS,
+      llm: { provider, features: { diagnosisNarration: false, anomalyInterpretation: false } },
+    });
+
+    agent.on('explanation', (e: unknown) => explanationEvents.push(e));
+    agent.connect(adapter).start();
+
+    // Tick 100 — first explanation fires
+    await agent.tick(makeState(100));
+    await flush();
+    expect(explanationEvents.length).toBe(1);
 
     // Ticks 101–119 — within cooldown
     for (let t = 101; t < 120; t++) {
       await agent.tick(makeState(t));
     }
-    await new Promise(r => setTimeout(r, 30));
+    await flush();
 
     // No additional explanation calls within cooldown window
-    expect(provider.complete.mock.calls.length).toBe(callsAfterFirst);
+    expect(explanationEvents.length).toBe(1);
+  });
+
+  it('fires explanation again after cooldown expires (tick >= lastExplanationTick + 20)', async () => {
+    const provider = mockLLMProvider();
+    provider.complete.mockResolvedValue(
+      'EXPLANATION: Reducing faucet.\nOUTCOME: Supply stabilizes.\nRISKS: Overcorrection.',
+    );
+
+    const adapter = makeAdapter(100);
+    const explanationEvents: unknown[] = [];
+    const agent = new AgentE({
+      adapter,
+      gracePeriod: 0,
+      checkInterval: 1,
+      cooldownTicks: 1,
+      settlementWindowTicks: 1,
+      parameters: TEST_PARAMETERS,
+      llm: { provider, features: { diagnosisNarration: false, anomalyInterpretation: false } },
+    });
+
+    agent.on('explanation', (e: unknown) => explanationEvents.push(e));
+    agent.connect(adapter).start();
+
+    // Tick 100 — first explanation fires
+    await agent.tick(makeState(100));
+    await flush();
+    expect(explanationEvents.length).toBe(1);
+
+    // Tick 120 — cooldown expired, explanation should fire again
+    await agent.tick(makeState(120));
+    await flush();
+
+    expect(explanationEvents.length).toBe(2);
   });
 });
 
 describe('AgentE — LLM cooldown isolation', () => {
   it('narration and explanation cooldowns are independent', async () => {
     // Narration cooldown = 50, explanation cooldown = 20
-    // After tick 100: both may fire
-    // At tick 120: explanation eligible again (100+20), narration not (100+50=150)
-    // This test verifies the two guards are separate state
+    // Over 60 ticks: narration can fire at most 2x (tick 100, 150)
+    // explanation can fire at most 3x (tick 100, 120, 140)
     const provider = mockLLMProvider();
     const adapter = makeAdapter(100);
 
@@ -186,11 +260,14 @@ describe('AgentE — LLM cooldown isolation', () => {
       adapter,
       gracePeriod: 0,
       checkInterval: 1,
+      cooldownTicks: 1,
+      settlementWindowTicks: 1,
+      parameters: TEST_PARAMETERS,
       llm: { provider, features: { anomalyInterpretation: false } },
     });
 
-    agent.on('narration', () => narrationFired.push(Date.now()));
-    agent.on('explanation', () => explanationFired.push(Date.now()));
+    agent.on('narration', () => narrationFired.push(narrationFired.length));
+    agent.on('explanation', () => explanationFired.push(explanationFired.length));
 
     agent.connect(adapter).start();
 
@@ -198,15 +275,14 @@ describe('AgentE — LLM cooldown isolation', () => {
     for (let t = 100; t < 160; t++) {
       await agent.tick(makeState(t));
     }
-    await new Promise(r => setTimeout(r, 100));
+    await flush();
 
-    // Narration: max 1 fire in ticks 100–149 (cooldown=50), then possibly again at 150
-    // Explanation: max 1 fire per 20 ticks → up to 3 fires in 60 ticks (at 100, 120, 140)
-    // The explanation count should be >= narration count (shorter cooldown)
-    // Both arrays may be empty if no violations — that's fine. Just check the relationship.
-    if (narrationFired.length > 0 && explanationFired.length > 0) {
-      expect(explanationFired.length).toBeGreaterThanOrEqual(narrationFired.length);
-    }
+    // Both must have fired (state reliably triggers violations)
+    expect(narrationFired.length).toBeGreaterThanOrEqual(1);
+    expect(explanationFired.length).toBeGreaterThanOrEqual(1);
+
+    // Explanation has a shorter cooldown (20 vs 50), so it must fire more often
+    expect(explanationFired.length).toBeGreaterThan(narrationFired.length);
   });
 
   it('no LLM calls when no provider is configured (existing behavior preserved)', async () => {
@@ -227,7 +303,7 @@ describe('AgentE — LLM cooldown isolation', () => {
     for (let t = 100; t < 200; t++) {
       await agent.tick(makeState(t));
     }
-    await new Promise(r => setTimeout(r, 50));
+    await flush();
 
     expect(events).toHaveLength(0);
   });
