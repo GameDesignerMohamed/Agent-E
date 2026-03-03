@@ -1,6 +1,6 @@
 # AgentE — Autonomous Economic Balancer
 
-> 60 principles. 5-stage pipeline. One npm install. Any economy.
+> 5 principles. 5-stage pipeline. One npm install. Any economy.
 
 AgentE observes, diagnoses, simulates, plans, and executes — keeping any digital economy healthy without manual tuning. If it has currencies, resources, and participants, AgentE balances it.
 
@@ -9,6 +9,8 @@ AgentE observes, diagnoses, simulates, plans, and executes — keeping any digit
 ```bash
 npm install @agent-e/core
 ```
+
+Need all 60 principles? See [@agent-e/pro](https://www.npmjs.com/package/@agent-e/pro).
 
 ## Quick Start
 
@@ -56,48 +58,6 @@ await agent.tick();
 
 > **You never hand-type agents.** `getState()` pulls from your existing backend — whether that's 50 players or 5 million. AgentE computes aggregate metrics (Gini, velocity, flow rates) and balances the economy as a whole.
 
-## What Does That Look Like in Practice?
-
-The Quick Start above uses placeholder names. Here's what real setups look like:
-
-### Game Economy
-
-```typescript
-currencies: ['gold', 'gems'],
-systems: ['crafting', 'arena', 'marketplace'],
-parameters: [
-  { key: 'craftingCost',  type: 'cost',   flowImpact: 'sink',    scope: { system: 'crafting' } },
-  { key: 'arenaReward',   type: 'reward', flowImpact: 'faucet',  scope: { system: 'arena' } },
-  { key: 'auctionFee',    type: 'fee',    flowImpact: 'friction', scope: { system: 'marketplace' } },
-],
-```
-
-### DeFi Protocol (Coming Soon)
-
-```typescript
-currencies: ['ETH', 'USDC'],
-systems: ['amm', 'lending', 'staking'],
-parameters: [
-  { key: 'swapFee',       type: 'fee',   flowImpact: 'friction', scope: { system: 'amm' } },
-  { key: 'borrowRate',    type: 'rate',  flowImpact: 'sink',     scope: { system: 'lending' } },
-  { key: 'stakingYield',  type: 'yield', flowImpact: 'faucet',   scope: { system: 'staking' } },
-],
-```
-
-### Marketplace (Coming Soon)
-
-```typescript
-currencies: ['credits'],
-systems: ['listings', 'promotions', 'referrals'],
-parameters: [
-  { key: 'listingFee',    type: 'fee',    flowImpact: 'friction', scope: { system: 'listings' } },
-  { key: 'promoDiscount', type: 'cost',   flowImpact: 'faucet',   scope: { system: 'promotions' } },
-  { key: 'referralBonus', type: 'reward', flowImpact: 'faucet',   scope: { system: 'referrals' } },
-],
-```
-
-**The parameter names are YOURS. AgentE only cares about the `type` and `flowImpact`.**
-
 ## How It Works
 
 ```
@@ -105,10 +65,24 @@ Your Economy → Observer → Diagnoser → Simulator → Planner → Executor �
 ```
 
 1. **Observer** — computes 40+ metrics at 3 time resolutions (fine/medium/coarse)
-2. **Diagnoser** — runs 60 principles, returns violations sorted by severity
+2. **Diagnoser** — runs principles, returns violations sorted by severity
 3. **Simulator** — Monte Carlo forward projection (≥100 iterations) before any action
 4. **Planner** — lag-aware, cooldown-aware action planning with rollback conditions
 5. **Executor** — applies actions, monitors for rollback triggers
+
+## 5 Community Principles
+
+| ID | Category | Name |
+|----|----------|------|
+| P1 | Supply Chain | Production Must Match Consumption |
+| P12 | Currency Flow | One Primary Faucet |
+| P20 | Feedback Loops | Decay Prevents Accumulation |
+| P33 | Participant Experience | Fair ≠ Equal |
+| P43 | Statistical | Simulation Minimum |
+
+Each principle returns either `{ violated: false }` or a full violation with severity, evidence, suggested action (parameterType + scope), confidence score, and estimated lag.
+
+Need all 60 principles across 15 categories? See [@agent-e/pro](https://www.npmjs.com/package/@agent-e/pro).
 
 ## Universal by Design
 
@@ -122,7 +96,7 @@ The core innovation. You register YOUR parameters with semantic metadata:
 - **`flowImpact`** — what does it do to the flow of currency? (`sink`, `faucet`, `friction`, `redistribution`, `neutral`)
 - **`scope`** — where in your economy does it live? (`{ system?, currency?, tags? }`)
 
-AgentE's 60 principles target **types**, not names. When a principle says "decrease the `fee` in `system_1`", the registry resolves that to YOUR parameter name.
+AgentE's principles target **types**, not names. When a principle says "decrease the `fee` in `system_1`", the registry resolves that to YOUR parameter name.
 
 ### Multi-Everything
 
@@ -156,17 +130,12 @@ agent.on('beforeAction', (plan) => {
 });
 ```
 
-## 60 Principles
-
-Built-in knowledge base across 15 categories: supply chain, incentives, population, currency flow, bootstrap, feedback loops, regulator, market dynamics, measurement, statistical, system dynamics, resource management, participant experience, open economy, and operations.
-
-Each principle returns either `{ violated: false }` or a full violation with severity, evidence, suggested action (parameterType + scope), confidence score, and estimated lag.
-
 ## Packages
 
 | Package | Description |
 |---------|-------------|
-| `@agent-e/core` | The SDK. Zero dependencies. |
+| `@agent-e/core` | Community Edition — 5 principles, MIT license |
+| `@agent-e/pro` | Pro Edition — 60 principles, BSL-1.1 license |
 | `@agent-e/adapter-game` | Presets for game economies |
 | `@agent-e/server` | HTTP + WebSocket server for game engine integration |
 
@@ -176,7 +145,9 @@ Each principle returns either `{ violated: false }` or a full violation with sev
 
 ## License
 
-[Business Source License 1.1 (BUSL-1.1)](../../LICENSE) — free for non-production use. Production use requires a commercial license. Converts to MIT on 2030-02-27.
+[MIT](../../LICENSE-MIT) — free for any use.
+
+For the full 60-principle Pro edition, see [@agent-e/pro](https://www.npmjs.com/package/@agent-e/pro) (BSL-1.1).
 
 ---
 

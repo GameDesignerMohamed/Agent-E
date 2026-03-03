@@ -1,13 +1,8 @@
 import { describe, it, expect } from 'vitest';
 import { PersonaTracker } from '../src/PersonaTracker.js';
 import { Observer } from '../src/Observer.js';
-import { P4_MaterialsFlowFasterThanCooldown } from '../src/principles/supply-chain.js';
-import { P8_RegulatorCannotFightDesign } from '../src/principles/incentives.js';
-import { P28_StructuralDominanceIsNotPathological } from '../src/principles/regulator.js';
-import { REGULATOR_PRINCIPLES } from '../src/principles/regulator.js';
 import { DEFAULT_THRESHOLDS } from '../src/defaults.js';
-import { emptyMetrics } from '../src/types.js';
-import type { EconomyState, Thresholds } from '../src/types.js';
+import type { EconomyState } from '../src/types.js';
 
 const t = DEFAULT_THRESHOLDS;
 
@@ -27,98 +22,6 @@ function makeState(tick: number, overrides: Partial<EconomyState> = {}): Economy
     ...overrides,
   };
 }
-
-// ─── P4 Per-Currency Velocity ───────────────────────────────────────────────
-
-describe('P4 — Per-Currency Velocity', () => {
-  it('fires for stagnant currency when another is healthy', () => {
-    const m = {
-      ...emptyMetrics(50),
-      totalAgents: 30,
-      supplyByResource: { materialA: 5 },
-      populationByRole: { extractor: 10, producer: 20 },
-      velocity: 4.5, // aggregate looks borderline
-      velocityByCurrency: { gold: 9.0, gems: 0.3 }, // gems is dead
-    };
-    const result = P4_MaterialsFlowFasterThanCooldown.check(m, t);
-    expect(result.violated).toBe(true);
-    if (result.violated) {
-      // Multi-currency evidence: worst currency targeted
-      expect(result.evidence['worst']).toBe('gems');
-      expect(result.evidence['stagnantCurrencies']).toHaveLength(1);
-      expect(result.suggestedAction.scope?.currency).toBe('gems');
-    }
-  });
-
-  it('reports ALL stagnant currencies in evidence', () => {
-    const m = {
-      ...emptyMetrics(50),
-      totalAgents: 30,
-      supplyByResource: { materialA: 5 },
-      populationByRole: { extractor: 10, producer: 20 },
-      velocity: 2,
-      velocityByCurrency: { gold: 1.0, gems: 0.3, silver: 2.5 },
-    };
-    const result = P4_MaterialsFlowFasterThanCooldown.check(m, t);
-    expect(result.violated).toBe(true);
-    if (result.violated) {
-      const stagnant = result.evidence['stagnantCurrencies'] as { currency: string }[];
-      expect(stagnant).toHaveLength(3); // all three < 5
-      expect(result.evidence['worst']).toBe('gems'); // lowest velocity
-    }
-  });
-
-  it('does not fire when both currencies are healthy', () => {
-    const m = {
-      ...emptyMetrics(50),
-      totalAgents: 30,
-      supplyByResource: { materialA: 5 },
-      populationByRole: { extractor: 10, producer: 20 },
-      velocity: 8,
-      velocityByCurrency: { gold: 9.0, gems: 7.0 },
-    };
-    const result = P4_MaterialsFlowFasterThanCooldown.check(m, t);
-    // Should not fire for velocity (may fire for excess supply, but not for low velocity)
-    if (result.violated) {
-      // If it fires, it should NOT be for velocity reasons
-      expect(result.evidence['currency']).toBeUndefined();
-    }
-  });
-
-  it('evidence includes specific currency name', () => {
-    const m = {
-      ...emptyMetrics(50),
-      totalAgents: 30,
-      supplyByResource: { materialA: 5 },
-      populationByRole: { extractor: 10, producer: 20 },
-      velocity: 3,
-      velocityByCurrency: { stakingToken: 1.2 },
-    };
-    const result = P4_MaterialsFlowFasterThanCooldown.check(m, t);
-    expect(result.violated).toBe(true);
-    if (result.violated) {
-      expect(result.evidence['worst']).toBe('stakingToken');
-    }
-  });
-
-  it('falls back to aggregate when no velocityByCurrency data', () => {
-    const m = {
-      ...emptyMetrics(50),
-      totalAgents: 30,
-      supplyByResource: { materialA: 5 },
-      populationByRole: { extractor: 10, producer: 20 },
-      velocity: 2,
-      velocityByCurrency: {},
-    };
-    const result = P4_MaterialsFlowFasterThanCooldown.check(m, t);
-    expect(result.violated).toBe(true);
-    if (result.violated) {
-      // Fallback uses aggregate — no currency in evidence
-      expect(result.evidence['velocity']).toBe(2);
-      expect(result.evidence['currency']).toBeUndefined();
-    }
-  });
-});
 
 // ─── PersonaTracker Reclassification ────────────────────────────────────────
 
@@ -232,56 +135,6 @@ describe('Observer — persona fallback for populationByRole', () => {
 
     // Should remain empty
     expect(Object.keys(m.populationByRole).length).toBe(0);
-  });
-});
-
-// ─── P8/P28 Merge ───────────────────────────────────────────────────────────
-
-describe('P8 — Regulator Cannot Fight Design (with P28 merge)', () => {
-  it('structural role returns violated: false (by design, not a problem)', () => {
-    const thresholds: Thresholds = { ...t, dominantRoles: ['Warrior'] };
-    const m = {
-      ...emptyMetrics(100),
-      roleShares: { Warrior: 0.55, Mage: 0.25, Healer: 0.20 },
-      avgSatisfaction: 70,
-    };
-    const result = P8_RegulatorCannotFightDesign.check(m, thresholds);
-    expect(result.violated).toBe(false);
-  });
-
-  it('non-structural role > 30% gets classification: pathological', () => {
-    const thresholds: Thresholds = { ...t, dominantRoles: [] };
-    const m = {
-      ...emptyMetrics(100),
-      roleShares: { Trader: 0.45, Consumer: 0.35, Producer: 0.20 },
-      avgSatisfaction: 40,
-    };
-    const result = P8_RegulatorCannotFightDesign.check(m, thresholds);
-    expect(result.violated).toBe(true);
-    if (result.violated) {
-      expect(result.evidence['classification']).toBe('pathological');
-      expect(result.suggestedAction.direction).toBe('decrease');
-      expect(result.severity).toBe(7);
-    }
-  });
-
-  it('does not fire when no role exceeds 30%', () => {
-    const m = {
-      ...emptyMetrics(100),
-      roleShares: { A: 0.25, B: 0.25, C: 0.25, D: 0.25 },
-      avgSatisfaction: 70,
-    };
-    const result = P8_RegulatorCannotFightDesign.check(m, t);
-    expect(result.violated).toBe(false);
-  });
-
-  it('P28 is no longer in active REGULATOR_PRINCIPLES', () => {
-    const ids = REGULATOR_PRINCIPLES.map(p => p.id);
-    expect(ids).not.toContain('P28');
-  });
-
-  it('P28 deprecated export aliases to P8', () => {
-    expect(P28_StructuralDominanceIsNotPathological).toBe(P8_RegulatorCannotFightDesign);
   });
 });
 

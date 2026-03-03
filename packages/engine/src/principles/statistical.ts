@@ -1,53 +1,6 @@
-// P42-P43: Statistical Balancing Principles
+// P43: Statistical — Simulation Minimum (Community)
 
 import type { Principle, PrincipleResult } from '../types.js';
-
-export const P42_TheMedianPrinciple: Principle = {
-  id: 'P42',
-  name: 'The Median Principle',
-  category: 'statistical',
-  description:
-    'When (mean - median) / median > 0.3, mean is a lie. ' +
-    'A few high-balance agents raise the mean while most agents have low balances. ' +
-    'Always balance to median when divergence exceeds 30%.',
-  check(metrics, thresholds): PrincipleResult {
-    for (const curr of metrics.currencies) {
-      const meanMedianDivergence = metrics.meanMedianDivergenceByCurrency[curr] ?? 0;
-      const giniCoefficient = metrics.giniCoefficientByCurrency[curr] ?? 0;
-      const meanBalance = metrics.meanBalanceByCurrency[curr] ?? 0;
-      const medianBalance = metrics.medianBalanceByCurrency[curr] ?? 0;
-
-      if (meanMedianDivergence > thresholds.meanMedianDivergenceMax) {
-        return {
-          violated: true,
-          severity: 5,
-          evidence: {
-            currency: curr,
-            meanMedianDivergence,
-            giniCoefficient,
-            meanBalance,
-            medianBalance,
-          },
-          suggestedAction: {
-            parameterType: 'fee',
-            scope: { tags: ['transaction'], currency: curr },
-            direction: 'increase',
-            magnitude: 0.15,
-            reasoning:
-              `[${curr}] Mean/median divergence ${(meanMedianDivergence * 100).toFixed(0)}% ` +
-              `(threshold: ${(thresholds.meanMedianDivergenceMax * 100).toFixed(0)}%). ` +
-              'Economy has outliers skewing metrics. Use median for decisions. ' +
-              'Raise transaction fees to redistribute wealth.',
-          },
-          confidence: 0.85,
-          estimatedLag: 15,
-        };
-      }
-    }
-
-    return { violated: false };
-  },
-};
 
 export const P43_SimulationMinimum: Principle = {
   id: 'P43',
@@ -85,7 +38,4 @@ export const P43_SimulationMinimum: Principle = {
   },
 };
 
-export const STATISTICAL_PRINCIPLES: Principle[] = [
-  P42_TheMedianPrinciple,
-  P43_SimulationMinimum,
-];
+export const STATISTICAL_PRINCIPLES: Principle[] = [P43_SimulationMinimum];
