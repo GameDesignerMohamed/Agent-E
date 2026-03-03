@@ -30,6 +30,7 @@ export * from './resource-mgmt.js';
 export * from './participant-experience.js';
 export * from './open-economy.js';
 export * from './operations.js';
+export { COMMUNITY_PRINCIPLES } from './community.js';
 
 /** All 60 built-in principles in priority order (supply chain → operations) */
 export const ALL_PRINCIPLES: Principle[] = [

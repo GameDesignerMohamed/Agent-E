@@ -1,12 +1,12 @@
 {
-  "name": "@agent-e/adapter-game",
+  "name": "@agent-e/core",
   "version": "2.0.0",
-  "description": "AgentE adapter for game economies",
+  "description": "Autonomous economic balancer SDK (Community Edition) — 5 principles, MIT licensed, free forever.",
   "license": "MIT",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/GameDesignerMohamed/Agent-E.git",
-    "directory": "packages/adapter-game"
+    "directory": "packages/community"
   },
   "main": "./dist/index.cjs",
   "module": "./dist/index.js",
@@ -23,23 +23,27 @@
     "README.md"
   ],
   "scripts": {
-    "build": "tsup",
-    "dev": "tsup --watch"
+    "build": "tsup"
   },
   "keywords": [
     "economy",
     "balancer",
+    "autonomous",
+    "simulation",
     "game-economy",
-    "adapter",
-    "simulation"
+    "defi",
+    "marketplace",
+    "token-economy",
+    "multi-currency",
+    "multi-system",
+    "community",
+    "open-source"
   ],
   "publishConfig": {
     "access": "public"
   },
-  "dependencies": {
-    "@agent-e/engine": "^1.8.3"
-  },
   "devDependencies": {
+    "@agent-e/engine": "^1.8.3",
     "tsup": "*",
     "typescript": "*"
   }

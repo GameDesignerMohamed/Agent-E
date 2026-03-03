@@ -1,12 +1,12 @@
 {
-  "name": "@agent-e/core",
+  "name": "@agent-e/pro",
   "version": "1.8.3",
-  "description": "Autonomous economic balancer SDK — observe, diagnose, simulate, plan, execute. Any digital economy.",
+  "description": "Autonomous economic balancer SDK (Pro Edition) — all 60 principles, BSL-1.1 licensed.",
   "license": "BUSL-1.1",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/GameDesignerMohamed/Agent-E.git",
-    "directory": "packages/core"
+    "url": "git+https://github.com/GameDesignerMohamed/Agent-E-Pro.git",
+    "directory": "packages/pro"
   },
   "main": "./dist/index.cjs",
   "module": "./dist/index.js",
@@ -23,8 +23,7 @@
     "README.md"
   ],
   "scripts": {
-    "build": "tsup",
-    "dev": "tsup --watch"
+    "build": "tsup"
   },
   "keywords": [
     "economy",
@@ -36,12 +35,15 @@
     "marketplace",
     "token-economy",
     "multi-currency",
-    "multi-system"
+    "multi-system",
+    "pro",
+    "commercial"
   ],
   "publishConfig": {
     "access": "public"
   },
   "devDependencies": {
+    "@agent-e/engine": "^1.8.3",
     "tsup": "*",
     "typescript": "*"
   }

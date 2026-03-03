@@ -14,7 +14,7 @@ import {
   type Diagnosis,
   type AgentEMode,
   type Thresholds,
-} from '@agent-e/core';
+} from '@agent-e/engine';
 import { createRouteHandler } from './routes.js';
 import { createWebSocketHandler, type WebSocketHandle } from './websocket.js';
 
@@ -32,14 +32,14 @@ export interface ServerConfig {
 export interface EnrichedAdjustment {
   parameter: string;
   value: number;
-  scope?: import('@agent-e/core').ParameterScope;
+  scope?: import('@agent-e/engine').ParameterScope;
   reasoning: string;
 }
 
 interface QueuedAdjustment {
   key: string;
   value: number;
-  scope: import('@agent-e/core').ParameterScope | undefined;
+  scope: import('@agent-e/engine').ParameterScope | undefined;
 }
 
 export class AgentEServer {
@@ -86,7 +86,7 @@ export class AgentEServer {
         }
         return this.lastState;
       },
-      setParam: (key: string, value: number, scope?: import('@agent-e/core').ParameterScope) => {
+      setParam: (key: string, value: number, scope?: import('@agent-e/engine').ParameterScope) => {
         this.adjustmentQueue.push({ key, value, scope });
       },
     };

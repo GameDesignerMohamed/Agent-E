@@ -2,12 +2,16 @@
   "name": "@agent-e/monorepo",
   "private": true,
   "workspaces": [
-    "packages/core",
+    "packages/engine",
+    "packages/community",
+    "packages/pro",
     "packages/server",
     "packages/adapter-game"
   ],
   "scripts": {
     "build": "npm run build --workspaces --if-present",
+    "build:community": "npm run build -w packages/engine && npm run build -w packages/community",
+    "build:pro": "npm run build -w packages/engine && npm run build -w packages/pro",
     "test": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",

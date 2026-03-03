@@ -4,7 +4,7 @@ import path from 'path';
 export default defineConfig({
   resolve: {
     alias: {
-      '@agent-e/core': path.resolve(__dirname, 'packages/core/src/index.ts'),
+      '@agent-e/engine': path.resolve(__dirname, 'packages/engine/src/index.ts'),
     },
   },
   server: {

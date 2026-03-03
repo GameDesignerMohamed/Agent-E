@@ -42,7 +42,7 @@ type EventName =
 export class AgentE {
   // ── Config ──
   private readonly config: Required<
-    Omit<AgentEConfig, 'adapter' | 'thresholds' | 'onDecision' | 'onAlert' | 'onRollback' | 'llm'>
+    Omit<AgentEConfig, 'adapter' | 'thresholds' | 'onDecision' | 'onAlert' | 'onRollback' | 'llm' | 'principles'>
   >;
   private readonly thresholds: Thresholds;
   private adapter!: EconomyAdapter;
@@ -113,7 +113,7 @@ export class AgentE {
     this.observer = new Observer(tickConfig);
     this.store = new MetricStore(tickConfig);
 
-    this.diagnoser = new Diagnoser(ALL_PRINCIPLES);
+    this.diagnoser = new Diagnoser(config.principles ?? ALL_PRINCIPLES);
 
     // Register parameters if provided
     if (config.parameters) {

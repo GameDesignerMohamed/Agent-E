@@ -1,6 +1,6 @@
 // Shared event validation — single source of truth for routes.ts and websocket.ts
 
-import type { EconomicEvent } from '@agent-e/core';
+import type { EconomicEvent } from '@agent-e/engine';
 
 /** Valid EconomicEvent type values — must match core EconomicEventType union. */
 export const VALID_EVENT_TYPES = new Set([

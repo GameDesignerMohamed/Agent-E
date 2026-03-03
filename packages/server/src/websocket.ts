@@ -4,7 +4,7 @@
 import type * as http from 'node:http';
 import { timingSafeEqual } from 'node:crypto';
 import { WebSocketServer, WebSocket } from 'ws';
-import { validateEconomyState, type EconomyState } from '@agent-e/core';
+import { validateEconomyState, type EconomyState } from '@agent-e/engine';
 import type { AgentEServer } from './AgentEServer.js';
 import { validateEvent } from './validation.js';
 

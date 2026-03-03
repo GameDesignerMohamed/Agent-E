@@ -547,6 +547,9 @@ export interface AgentEConfig {
   // Executor settlement window (ticks before plan auto-settles; default: 200)
   settlementWindowTicks?: number;
 
+  // Principles override (subset for Community, full set for Pro)
+  principles?: Principle[];
+
   // Thresholds overrides (partial — merged with defaults)
   thresholds?: Partial<Thresholds>;
 

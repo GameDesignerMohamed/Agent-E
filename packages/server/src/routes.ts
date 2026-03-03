@@ -3,7 +3,7 @@
 
 import type * as http from 'node:http';
 import { timingSafeEqual, randomBytes } from 'node:crypto';
-import { validateEconomyState } from '@agent-e/core';
+import { validateEconomyState } from '@agent-e/engine';
 import type { AgentEServer } from './AgentEServer.js';
 import { getDashboardHtml } from './dashboard.js';
 import { validateEvent } from './validation.js';
@@ -160,7 +160,7 @@ export function createRouteHandler(
           : undefined;
 
         const result = await server.processTick(
-          state as import('@agent-e/core').EconomyState,
+          state as import('@agent-e/engine').EconomyState,
           validEvents,
         );
 
@@ -335,7 +335,7 @@ export function createRouteHandler(
           }
         }
 
-        const result = server.diagnoseOnly(state as import('@agent-e/core').EconomyState);
+        const result = server.diagnoseOnly(state as import('@agent-e/engine').EconomyState);
 
         respond(200, {
           health: result.health,

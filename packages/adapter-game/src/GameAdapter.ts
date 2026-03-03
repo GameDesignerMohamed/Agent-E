@@ -1,7 +1,7 @@
 // @agent-e/adapter-game — GameAdapter
 // Translates a game economy's API into AgentE's universal format (V1.3+ multi-currency)
 
-import type { EconomyAdapter, EconomyState, EconomicEvent } from '@agent-e/core';
+import type { EconomyAdapter, EconomyState, EconomicEvent } from '@agent-e/engine';
 
 export interface GameAPI {
   /** Return current game tick */
