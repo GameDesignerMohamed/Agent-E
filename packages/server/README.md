@@ -19,7 +19,7 @@ import { AgentEServer } from '@agent-e/server';
 const server = new AgentEServer({
   port: 3000,
   host: '0.0.0.0',
-  agentEConfig: {
+  agentE: {
     mode: 'autonomous',     // or 'advisor' for recommendations only
     gracePeriod: 50,         // no interventions before tick 50
     checkInterval: 5,        // analyze every 5 ticks
@@ -145,9 +145,10 @@ Send economy state, receive parameter adjustments.
 **Response (200):**
 ```json
 {
-  "adjustments": [{ "key": "your_cost_param", "value": 12.5 }],
-  "alerts": [{ "principle": "P1", "severity": 7 }],
+  "adjustments": [{ "parameter": "your_cost_param", "value": 12.5, "reasoning": "..." }],
+  "alerts": [{ "principleId": "P1", "principleName": "...", "severity": "warning", "evidence": "...", "reasoning": "..." }],
   "health": 85,
+  "tick": 100,
   "decisions": [{ "id": "d_1", "parameter": "your_cost_param", "result": "applied" }]
 }
 ```
@@ -185,14 +186,18 @@ Query parameters: `?limit=50`, `?since=100`
 
 ### POST /config
 
-Lock/unlock parameters, change mode.
+Batch lock/unlock parameters and change mode. All operations in one call.
 
 ```json
-{ "action": "lock", "param": "your_cost_param" }
-{ "action": "unlock", "param": "your_cost_param" }
-{ "action": "constrain", "param": "your_yield_param", "min": 0.5, "max": 2.0 }
-{ "action": "mode", "mode": "advisor" }
+{
+  "lock": ["your_cost_param"],
+  "unlock": ["another_param"],
+  "constrain": [{ "param": "your_yield_param", "min": 0.5, "max": 2.0 }],
+  "mode": "advisor"
+}
 ```
+
+All keys are optional — include only what you want to change. Arrays are capped at 1,000 entries. Constraint bounds must be finite numbers with `min ≤ max`.
 
 ### GET /principles
 
@@ -222,12 +227,12 @@ Connect to the same port via WebSocket upgrade.
 ### Server → Client Messages
 
 ```json
-{ "type": "tick_result", "adjustments": [...], "health": 85 }
-{ "type": "health_result", "health": 85, "uptime": 60000 }
-{ "type": "diagnose_result", "diagnoses": [...] }
-{ "type": "validation_error", "validation": {...} }
-{ "type": "validation_warning", "warning": {...} }
-{ "type": "error", "error": "..." }
+{ "type": "tick_result", "adjustments": [...], "alerts": [...], "health": 85, "tick": 100 }
+{ "type": "health_result", "health": 85, "tick": 100, "mode": "autonomous", "activePlans": 0, "uptime": 60000 }
+{ "type": "diagnose_result", "health": 85, "diagnoses": [...] }
+{ "type": "validation_error", "validationErrors": [...] }
+{ "type": "validation_warning", "validationWarnings": [...] }
+{ "type": "error", "message": "..." }
 ```
 
 Heartbeat: Server pings every 30 seconds.
