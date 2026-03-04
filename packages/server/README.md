@@ -201,7 +201,7 @@ All keys are optional — include only what you want to change. Arrays are cappe
 
 ### GET /principles
 
-Lists all 60 built-in principles.
+Lists all built-in principles.
 
 ### POST /diagnose
 
