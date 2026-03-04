@@ -1,6 +1,6 @@
 # AgentE — Autonomous Economic Balancer
 
-> 60 principles. 5-stage pipeline. One npm install. Any economy.
+> 5 core principles (60 with Pro). 5-stage pipeline. One npm install. Any economy.
 
 AgentE observes, diagnoses, simulates, plans, and executes — keeping any digital economy healthy without manual tuning. If it has currencies, resources, and participants, AgentE balances it.
 
@@ -105,7 +105,7 @@ Your Economy → Observer → Diagnoser → Simulator → Planner → Executor �
 ```
 
 1. **Observer** — computes 40+ metrics at 3 time resolutions (fine/medium/coarse)
-2. **Diagnoser** — runs 60 principles, returns violations sorted by severity
+2. **Diagnoser** — runs active principles (5 in Community, 60 in Pro), returns violations sorted by severity
 3. **Simulator** — Monte Carlo forward projection (≥100 iterations) before any action
 4. **Planner** — lag-aware, cooldown-aware action planning with rollback conditions
 5. **Executor** — applies actions, monitors for rollback triggers
@@ -122,7 +122,7 @@ The core innovation. You register YOUR parameters with semantic metadata:
 - **`flowImpact`** — what does it do to the flow of currency? (`sink`, `faucet`, `friction`, `redistribution`, `neutral`)
 - **`scope`** — where in your economy does it live? (`{ system?, currency?, tags? }`)
 
-AgentE's 60 principles target **types**, not names. When a principle says "decrease the `fee` in `system_1`", the registry resolves that to YOUR parameter name.
+AgentE's principles target **types**, not names. When a principle says "decrease the `fee` in `system_1`", the registry resolves that to YOUR parameter name.
 
 ### Multi-Everything
 
@@ -198,9 +198,21 @@ The engine works identically with or without an LLM. All three features are no-o
 
 **Recommended:** Claude Sonnet 4.6 via the Anthropic SDK. Also works with any open-source model (Llama, Mistral) or self-hosted backend (Ollama, vLLM).
 
-## 60 Principles
+## Principles
 
-Built-in knowledge base across 15 categories: supply chain, incentives, population, currency flow, bootstrap, feedback loops, regulator, market dynamics, measurement, statistical, system dynamics, resource management, participant experience, open economy, and operations.
+This community package ships **5 core principles**:
+
+| ID | Name | Category |
+|----|------|----------|
+| P1 | Production Must Match Consumption | Supply Chain |
+| P12 | One Primary Faucet | Currency |
+| P20 | Decay Prevents Accumulation | Feedback |
+| P33 | Fair ≠ Equal | Participant Experience |
+| P43 | Simulation Minimum (100 Iterations) | Statistical |
+
+These 5 cover the fundamentals: supply/demand balance, currency control, wealth circulation, fairness, and simulation rigor. You can also add **unlimited custom principles**.
+
+**Need all 60?** [`@agent-e/pro`](https://www.npmjs.com/package/@agent-e/pro) includes 55 additional principles across 15 categories — incentives, population, bootstrap, regulator, market dynamics, and more.
 
 Each principle returns either `{ violated: false }` or a full violation with severity, evidence, suggested action (parameterType + scope), confidence score, and estimated lag.
 
@@ -221,11 +233,12 @@ Disable with `serveDashboard: false` if you only want the API.
 
 ## Packages
 
-| Package | Description |
-|---------|-------------|
-| `@agent-e/core` | The SDK. Zero dependencies. |
-| `@agent-e/adapter-game` | Presets for game economies |
-| `@agent-e/server` | HTTP + WebSocket server for game engine integration |
+| Package | Description | License |
+|---------|-------------|---------|
+| `@agent-e/core` | Community SDK — 5 principles, full pipeline | MIT |
+| `@agent-e/pro` | Pro SDK — all 60 principles + LLM layer | BSL-1.1 |
+| `@agent-e/adapter-game` | Presets for game economies | MIT |
+| `@agent-e/server` | HTTP + WebSocket server for game engine integration | MIT |
 
 ## Links
 
@@ -233,7 +246,9 @@ Disable with `serveDashboard: false` if you only want the API.
 
 ## License
 
-[Business Source License 1.1 (BUSL-1.1)](./LICENSE) — free for non-production use. Production use requires a commercial license. Converts to MIT on 2030-02-27.
+[MIT](./LICENSE) — free for any use.
+
+**Pro:** [`@agent-e/pro`](https://www.npmjs.com/package/@agent-e/pro) is licensed under [BSL-1.1](https://mariadb.com/bsl11/) — free for non-production use, production use requires a commercial license.
 
 ---
 
