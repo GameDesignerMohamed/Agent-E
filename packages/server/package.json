@@ -1,6 +1,6 @@
 {
   "name": "@agent-e/server",
-  "version": "2.0.0",
+  "version": "2.0.1",
   "description": "Ready-to-run HTTP + WebSocket server for AgentE",
   "license": "MIT",
   "repository": {
@@ -42,7 +42,7 @@
     "access": "public"
   },
   "dependencies": {
-    "@agent-e/engine": "^1.8.3",
+    "@agent-e/engine": "^2.0.0",
     "ws": "^8.18.0"
   },
   "devDependencies": {

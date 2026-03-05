@@ -1,6 +1,6 @@
 {
   "name": "@agent-e/core",
-  "version": "2.0.0",
+  "version": "2.0.1",
   "description": "Autonomous economic balancer SDK (Community Edition) — 5 principles, MIT licensed, free forever.",
   "license": "MIT",
   "repository": {
@@ -43,7 +43,7 @@
     "access": "public"
   },
   "devDependencies": {
-    "@agent-e/engine": "^1.8.3",
+    "@agent-e/engine": "^2.0.0",
     "tsup": "*",
     "typescript": "*"
   }
