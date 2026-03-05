@@ -1,7 +1,7 @@
 {
   "name": "@agent-e/pro",
-  "version": "2.0.2",
-  "description": "Autonomous economic balancer SDK (Pro Edition) — all 60 principles, BSL-1.1 licensed.",
+  "version": "2.0.3",
+  "description": "AgentE Pro — full 60-principle game economy engine. Coming soon. Currently runs in Community mode (5 principles)."
   "license": "BUSL-1.1",
   "repository": {
     "type": "git",
