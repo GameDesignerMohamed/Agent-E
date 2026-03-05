@@ -42,7 +42,7 @@ type EventName =
 export class AgentE {
   // ── Config ──
   private readonly config: Required<
-    Omit<AgentEConfig, 'adapter' | 'thresholds' | 'onDecision' | 'onAlert' | 'onRollback' | 'llm' | 'principles'>
+    Omit<AgentEConfig, 'adapter' | 'thresholds' | 'onDecision' | 'onAlert' | 'onRollback' | 'llm' | 'principles' | 'apiKey' | 'billingEndpoint'>
   >;
   private readonly thresholds: Thresholds;
   private adapter!: EconomyAdapter;

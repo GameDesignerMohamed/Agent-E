@@ -550,6 +550,12 @@ export interface AgentEConfig {
   // Principles override (subset for Community, full set for Pro)
   principles?: Principle[];
 
+  // Pro metered billing (inactive until MeterClient is wired — see PATCH 03)
+  /** API key for Pro metered billing. Obtain from https://agente.dev/pro */
+  apiKey?: string;
+  /** Billing API endpoint. Defaults to 'https://api.agente.dev/v1'. */
+  billingEndpoint?: string;
+
   // Thresholds overrides (partial — merged with defaults)
   thresholds?: Partial<Thresholds>;
 
