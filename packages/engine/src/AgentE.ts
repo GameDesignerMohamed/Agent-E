@@ -26,6 +26,8 @@ import { MetricStore } from './MetricStore.js';
 import { PersonaTracker } from './PersonaTracker.js';
 import { SatisfactionEstimator } from './SatisfactionEstimator.js';
 import { ALL_PRINCIPLES } from './principles/index.js';
+import { COMMUNITY_PRINCIPLES } from './principles/community.js';
+import { MeterClient } from './MeterClient.js';
 import { ParameterRegistry } from './ParameterRegistry.js';
 import type { RegisteredParameter } from './ParameterRegistry.js';
 import { DiagnosisNarrator } from './llm/DiagnosisNarrator.js';
@@ -66,6 +68,9 @@ export class AgentE {
   private static readonly EXPLANATION_COOLDOWN_TICKS = 20;
   private lastNarrationTick = -Infinity;
   private lastExplanationTick = -Infinity;
+
+  // ── Metering (Pro billing) ──
+  private meter: MeterClient | null = null;
 
   // ── State ──
   readonly log = new DecisionLog();
@@ -145,6 +150,25 @@ export class AgentE {
       }
     }
 
+    // Pro metering: initialize if apiKey is provided
+    if (config.apiKey) {
+      this.meter = new MeterClient({
+        apiKey: config.apiKey,
+        endpoint: config.billingEndpoint ?? 'https://api.agente.dev/v1',
+      });
+      // Validate async — don't block the constructor.
+      // On failure: warn + downgrade to community principles.
+      this.meter.validate().then(valid => {
+        if (!valid) {
+          console.warn(
+            '[AgentE Pro] Invalid API key — downgrading to Community mode (5 principles).',
+            'Get a valid key at https://agente.dev/pro',
+          );
+          this.diagnoser = new Diagnoser(COMMUNITY_PRINCIPLES);
+        }
+      });
+    }
+
     // Wire up config callbacks
     if (config.onDecision) this.on('decision', config.onDecision as never);
     if (config.onAlert) this.on('alert', config.onAlert as never);
@@ -189,6 +213,7 @@ export class AgentE {
   stop(): void {
     this.isRunning = false;
     this.isPaused = false;
+    this.meter?.destroy();
   }
 
   // ── Main cycle (call once per tick from your economy loop) ─────────────────
@@ -313,6 +338,7 @@ export class AgentE {
     if (this.mode === 'advisor') {
       const entry = this.log.record(topDiagnosis, plan, 'skipped_override', metrics);
       this.emit('decision', entry);
+      this.meter?.record('plan_generated');
       return;
     }
 
@@ -326,6 +352,7 @@ export class AgentE {
     // Stage 5: Execute
     await this.executor.apply(plan, this.adapter, this.params);
     this.params[plan.parameter] = plan.targetValue;
+    this.meter?.record('action_applied');
     this.registry.updateValue(plan.parameter, plan.targetValue);
     this.planner.recordApplied(plan, metrics.tick);
 

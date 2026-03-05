@@ -21,6 +21,8 @@ export type { ValidationError, ValidationWarning, ValidationResult } from './Sta
 export { DEFAULT_THRESHOLDS, PERSONA_HEALTHY_RANGES } from './defaults.js';
 export { ALL_PRINCIPLES } from './principles/index.js';
 export * from './principles/index.js';
+export { MeterClient } from './MeterClient.js';
+export type { MeterConfig, BillableEvent } from './MeterClient.js';
 export * from './types.js';
 
 // V1.8: LLM Intelligence Layer
