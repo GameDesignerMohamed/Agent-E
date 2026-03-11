@@ -697,7 +697,7 @@ export function getDashboardHtml(nonce?: string): string {
 <header class="header" id="header">
   <div class="header-left">
     <span class="header-logo">AgentE</span>
-    <span class="header-version">v1.8.1</span>
+    <span class="header-version">v2.0.1</span>
   </div>
   <div class="header-right">
     <div class="kpi-pill">
