@@ -236,9 +236,31 @@ Disable with `serveDashboard: false` if you only want the API.
 | Package | Description | License |
 |---------|-------------|---------|
 | `@agent-e/core` | Community SDK — 5 principles, full pipeline | MIT |
-| `@agent-e/pro` | Pro SDK — all 60 principles + LLM layer | BSL-1.1 |
+| `@agent-e/pro` | Pro SDK — all 60 principles + LLM layer + metered billing | BSL-1.1 |
 | `@agent-e/adapter-game` | Presets for game economies | MIT |
 | `@agent-e/server` | HTTP + WebSocket server for game engine integration | MIT |
+
+### Using Pro
+
+```bash
+npm install @agent-e/pro
+```
+
+```typescript
+import { createProAgent } from '@agent-e/pro';
+
+const engine = createProAgent({
+  adapter: myAdapter,
+  apiKey: process.env.AGENTE_API_KEY,   // get yours at https://agente.dev/pro
+  // billingEndpoint: 'https://api.agente.dev/v1',  // optional, this is the default
+});
+
+engine.start();
+await engine.tick();
+```
+
+- **With a valid `apiKey`:** all 60 principles active, usage metered automatically.
+- **Without `apiKey`:** falls back to Community mode (5 principles) with a warning — useful for local development.
 
 ## Links
 
