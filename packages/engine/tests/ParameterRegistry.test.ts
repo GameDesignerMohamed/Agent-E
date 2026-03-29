@@ -113,7 +113,7 @@ describe('ParameterRegistry', () => {
       const param = makeParam({
         key: 'marketFee',
         type: 'fee',
-        scope: { system: 'marketplace' },
+        scope: { system: 'trading' },
       });
       registry.register(param);
 
@@ -211,10 +211,10 @@ describe('ParameterRegistry', () => {
 
     it('disqualifies a candidate on system mismatch', () => {
       const registry = new ParameterRegistry();
-      const marketplace = makeParam({
+      const scoped = makeParam({
         key: 'marketCost',
         type: 'cost',
-        scope: { system: 'marketplace' },
+        scope: { system: 'trading' },
       });
       const generic = makeParam({
         key: 'genericCost',
@@ -222,9 +222,9 @@ describe('ParameterRegistry', () => {
         // no scope — scores 0
       });
 
-      registry.registerAll([marketplace, generic]);
+      registry.registerAll([scoped, generic]);
 
-      // marketplace gets -1 (system mismatch), generic gets 0 → generic wins
+      // trading gets -1 (system mismatch), generic gets 0 → generic wins
       const result = registry.resolve('cost', { system: 'crafting' });
       expect(result?.key).toBe('genericCost');
     });
@@ -279,7 +279,7 @@ describe('ParameterRegistry', () => {
       const first = makeParam({
         key: 'costA',
         type: 'cost',
-        scope: { system: 'marketplace' },
+        scope: { system: 'trading' },
       });
       const second = makeParam({
         key: 'costB',
@@ -302,7 +302,7 @@ describe('ParameterRegistry', () => {
       const a = makeParam({
         key: 'feeA',
         type: 'fee',
-        scope: { system: 'marketplace' },
+        scope: { system: 'trading' },
       });
       const b = makeParam({
         key: 'feeB',
@@ -359,7 +359,7 @@ describe('ParameterRegistry', () => {
       registry.registerAll([
         makeParam({ key: 'a', type: 'cost', scope: { system: 'crafting' } }),
         makeParam({ key: 'b', type: 'fee', scope: { system: 'crafting' } }),
-        makeParam({ key: 'c', type: 'cost', scope: { system: 'marketplace' } }),
+        makeParam({ key: 'c', type: 'cost', scope: { system: 'trading' } }),
       ]);
 
       const crafting = registry.findBySystem('crafting');

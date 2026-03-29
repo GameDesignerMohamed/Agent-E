@@ -229,7 +229,7 @@ describe('Simulator – registry-based flow impact', () => {
       key: 'transactionFee',
       type: 'fee',
       flowImpact: 'sink',
-      scope: { system: 'marketplace' },
+      scope: { system: 'trading' },
     });
     registry.register({
       key: 'bonusMultiplier',
@@ -247,7 +247,7 @@ describe('Simulator – registry-based flow impact', () => {
       magnitude: 0.15,
       reasoning: 'Increase fee to drain gold',
       resolvedParameter: 'transactionFee',
-      scope: { system: 'marketplace', currency: 'gold' },
+      scope: { system: 'trading', currency: 'gold' },
     };
 
     // Action resolved to bonusMultiplier (neutral)

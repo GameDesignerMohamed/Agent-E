@@ -26,7 +26,7 @@ export type FlowImpact =
 
 /** Scope narrows which concrete parameter a type resolves to */
 export interface ParameterScope {
-  system?: string;        // e.g. 'marketplace', 'staking', 'production'
+  system?: string;        // e.g. 'trading', 'staking', 'production'
   currency?: string;      // e.g. 'gold', 'gems', 'ETH'
   tags?: string[];        // e.g. ['entry'], ['transaction'], ['withdrawal']
 }

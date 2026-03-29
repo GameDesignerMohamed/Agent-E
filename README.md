@@ -64,35 +64,23 @@ The Quick Start above uses placeholder names. Here's what real setups look like:
 
 ```typescript
 currencies: ['gold', 'gems'],
-systems: ['crafting', 'arena', 'marketplace'],
+systems: ['crafting', 'arena', 'trading'],
 parameters: [
   { key: 'craftingCost',  type: 'cost',   flowImpact: 'sink',    scope: { system: 'crafting' } },
   { key: 'arenaReward',   type: 'reward', flowImpact: 'faucet',  scope: { system: 'arena' } },
-  { key: 'auctionFee',    type: 'fee',    flowImpact: 'friction', scope: { system: 'marketplace' } },
+  { key: 'tradingFee',    type: 'fee',    flowImpact: 'friction', scope: { system: 'trading' } },
 ],
 ```
 
-### DeFi Protocol (Coming Soon)
-
-```typescript
-currencies: ['ETH', 'USDC'],
-systems: ['amm', 'lending', 'staking'],
-parameters: [
-  { key: 'swapFee',       type: 'fee',   flowImpact: 'friction', scope: { system: 'amm' } },
-  { key: 'borrowRate',    type: 'rate',  flowImpact: 'sink',     scope: { system: 'lending' } },
-  { key: 'stakingYield',  type: 'yield', flowImpact: 'faucet',   scope: { system: 'staking' } },
-],
-```
-
-### Marketplace (Coming Soon)
+### SaaS Platform
 
 ```typescript
 currencies: ['credits'],
-systems: ['listings', 'promotions', 'referrals'],
+systems: ['subscriptions', 'promotions', 'referrals'],
 parameters: [
-  { key: 'listingFee',    type: 'fee',    flowImpact: 'friction', scope: { system: 'listings' } },
-  { key: 'promoDiscount', type: 'cost',   flowImpact: 'faucet',   scope: { system: 'promotions' } },
-  { key: 'referralBonus', type: 'reward', flowImpact: 'faucet',   scope: { system: 'referrals' } },
+  { key: 'subscriptionFee', type: 'fee',    flowImpact: 'friction', scope: { system: 'subscriptions' } },
+  { key: 'promoDiscount',   type: 'cost',   flowImpact: 'faucet',   scope: { system: 'promotions' } },
+  { key: 'referralBonus',   type: 'reward', flowImpact: 'faucet',   scope: { system: 'referrals' } },
 ],
 ```
 
@@ -112,7 +100,7 @@ Your Economy → Observer → Diagnoser → Simulator → Planner → Executor �
 
 ## Universal by Design
 
-AgentE is not a game tool, a DeFi tool, or a marketplace tool. It's an **economy tool**. The core SDK has zero domain-specific logic.
+AgentE is not tied to any single domain. It's an **economy tool**. The core SDK has zero domain-specific logic.
 
 ### Parameter Registry
 

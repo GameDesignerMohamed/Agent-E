@@ -71,16 +71,16 @@ describe('Observer — enter event classification', () => {
     const observer = new Observer();
     const state = makeState();
     const events: EconomicEvent[] = [
-      { type: 'mint', timestamp: 10, actor: 'a1', amount: 50, system: 'marketplace' },
-      { type: 'enter', timestamp: 10, actor: 'a2', amount: 30, system: 'marketplace' },
+      { type: 'mint', timestamp: 10, actor: 'a1', amount: 50, system: 'trading' },
+      { type: 'enter', timestamp: 10, actor: 'a2', amount: 30, system: 'trading' },
     ];
 
     const metrics = observer.compute(state, events);
 
     // Only mint counted: 50 (not 50+30=80)
-    expect(metrics.flowBySystem['marketplace']).toBe(50);
+    expect(metrics.flowBySystem['trading']).toBe(50);
     // Both counted in activity
-    expect(metrics.activityBySystem['marketplace']).toBe(2);
+    expect(metrics.activityBySystem['trading']).toBe(2);
   });
 
   // ── Per-source: enter is NOT a faucet ──────────────────────────────────

@@ -41,7 +41,7 @@ describe('ParameterRegistry.resolve() — specificity scoring + priority tiebrea
     const sysOnly = makeParam({
       key: 'sysOnly',
       type: 'fee',
-      scope: { system: 'marketplace' },
+      scope: { system: 'trading' },
     });
     const curTag = makeParam({
       key: 'curTag',
@@ -52,11 +52,11 @@ describe('ParameterRegistry.resolve() — specificity scoring + priority tiebrea
     registry.registerAll([sysOnly, curTag]);
 
     const result = registry.resolve('fee', {
-      system: 'marketplace',
+      system: 'trading',
       currency: 'gold',
       tags: ['transaction'],
     });
-    // sysOnly: 10, curTag: -Infinity (system not 'marketplace' — no system on param, so 0) + 5 + 3 = 8
+    // sysOnly: 10, curTag: -Infinity (system not 'trading' — no system on param, so 0) + 5 + 3 = 8
     // Actually curTag has no system field so no system disqualification: score = 0 + 5 + 3 = 8
     // sysOnly: 10 + 0 + 0 = 10
     expect(result?.key).toBe('sysOnly');
@@ -67,7 +67,7 @@ describe('ParameterRegistry.resolve() — specificity scoring + priority tiebrea
     const a = makeParam({
       key: 'a',
       type: 'fee',
-      scope: { system: 'marketplace' },
+      scope: { system: 'trading' },
     });
     const b = makeParam({
       key: 'b',

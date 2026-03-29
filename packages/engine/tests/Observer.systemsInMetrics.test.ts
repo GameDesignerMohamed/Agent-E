@@ -22,12 +22,12 @@ describe('Observer — systems/sources/sinks populated from state', () => {
   it('populates metrics.systems from state.systems', () => {
     const observer = new Observer();
     const state = makeState({
-      systems: ['marketplace', 'staking', 'production'],
+      systems: ['trading', 'staking', 'production'],
     });
 
     const metrics = observer.compute(state, []);
 
-    expect(metrics.systems).toEqual(['marketplace', 'staking', 'production']);
+    expect(metrics.systems).toEqual(['trading', 'staking', 'production']);
   });
 
   it('populates metrics.sources from state.sources', () => {
@@ -67,14 +67,14 @@ describe('Observer — systems/sources/sinks populated from state', () => {
   it('all three can be populated simultaneously', () => {
     const observer = new Observer();
     const state = makeState({
-      systems: ['marketplace'],
+      systems: ['trading'],
       sources: ['daily_reward'],
       sinks: ['upgrade_cost'],
     });
 
     const metrics = observer.compute(state, []);
 
-    expect(metrics.systems).toEqual(['marketplace']);
+    expect(metrics.systems).toEqual(['trading']);
     expect(metrics.sources).toEqual(['daily_reward']);
     expect(metrics.sinks).toEqual(['upgrade_cost']);
   });

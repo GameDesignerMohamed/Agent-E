@@ -70,12 +70,12 @@ describe('Observer — per-system and per-source/sink tracking', () => {
       const observer = new Observer();
       const state = makeState();
       const events: EconomicEvent[] = [
-        { type: 'mint', timestamp: 10, actor: 'a1', amount: 30, system: 'marketplace' },
+        { type: 'mint', timestamp: 10, actor: 'a1', amount: 30, system: 'trading' },
       ];
 
       const metrics = observer.compute(state, events);
 
-      expect(metrics.flowBySystem['marketplace']).toBe(30);
+      expect(metrics.flowBySystem['trading']).toBe(30);
     });
 
     it('does NOT track enter events in per-system flow (enter is global-only faucet)', () => {
@@ -97,12 +97,12 @@ describe('Observer — per-system and per-source/sink tracking', () => {
       const observer = new Observer();
       const state = makeState();
       const events: EconomicEvent[] = [
-        { type: 'burn', timestamp: 10, actor: 'a1', amount: 15, system: 'marketplace' },
+        { type: 'burn', timestamp: 10, actor: 'a1', amount: 15, system: 'trading' },
       ];
 
       const metrics = observer.compute(state, events);
 
-      expect(metrics.flowBySystem['marketplace']).toBe(-15);
+      expect(metrics.flowBySystem['trading']).toBe(-15);
     });
 
     it('tracks negative flow for consume events in a system', () => {
@@ -121,28 +121,28 @@ describe('Observer — per-system and per-source/sink tracking', () => {
       const observer = new Observer();
       const state = makeState();
       const events: EconomicEvent[] = [
-        { type: 'mint', timestamp: 10, actor: 'a1', amount: 100, system: 'marketplace' },
-        { type: 'burn', timestamp: 10, actor: 'a2', amount: 40, system: 'marketplace' },
-        { type: 'enter', timestamp: 10, actor: 'a1', amount: 10, system: 'marketplace' },
+        { type: 'mint', timestamp: 10, actor: 'a1', amount: 100, system: 'trading' },
+        { type: 'burn', timestamp: 10, actor: 'a2', amount: 40, system: 'trading' },
+        { type: 'enter', timestamp: 10, actor: 'a1', amount: 10, system: 'trading' },
       ];
 
       const metrics = observer.compute(state, events);
 
       // net = +100 - 40 = 60 (enter is no longer counted in per-system flow)
-      expect(metrics.flowBySystem['marketplace']).toBe(60);
+      expect(metrics.flowBySystem['trading']).toBe(60);
     });
 
     it('tracks multiple systems independently', () => {
       const observer = new Observer();
       const state = makeState();
       const events: EconomicEvent[] = [
-        { type: 'mint', timestamp: 10, actor: 'a1', amount: 50, system: 'marketplace' },
+        { type: 'mint', timestamp: 10, actor: 'a1', amount: 50, system: 'trading' },
         { type: 'burn', timestamp: 10, actor: 'a2', amount: 20, system: 'crafting' },
       ];
 
       const metrics = observer.compute(state, events);
 
-      expect(metrics.flowBySystem['marketplace']).toBe(50);
+      expect(metrics.flowBySystem['trading']).toBe(50);
       expect(metrics.flowBySystem['crafting']).toBe(-20);
     });
   });
@@ -153,28 +153,28 @@ describe('Observer — per-system and per-source/sink tracking', () => {
       const observer = new Observer();
       const state = makeState();
       const events: EconomicEvent[] = [
-        { type: 'mint', timestamp: 10, actor: 'a1', amount: 10, system: 'marketplace' },
-        { type: 'burn', timestamp: 10, actor: 'a2', amount: 5, system: 'marketplace' },
-        { type: 'trade', timestamp: 10, actor: 'a1', amount: 1, system: 'marketplace' },
+        { type: 'mint', timestamp: 10, actor: 'a1', amount: 10, system: 'trading' },
+        { type: 'burn', timestamp: 10, actor: 'a2', amount: 5, system: 'trading' },
+        { type: 'trade', timestamp: 10, actor: 'a1', amount: 1, system: 'trading' },
       ];
 
       const metrics = observer.compute(state, events);
 
-      expect(metrics.activityBySystem['marketplace']).toBe(3);
+      expect(metrics.activityBySystem['trading']).toBe(3);
     });
 
     it('counts across multiple systems independently', () => {
       const observer = new Observer();
       const state = makeState();
       const events: EconomicEvent[] = [
-        { type: 'mint', timestamp: 10, actor: 'a1', amount: 10, system: 'marketplace' },
+        { type: 'mint', timestamp: 10, actor: 'a1', amount: 10, system: 'trading' },
         { type: 'burn', timestamp: 10, actor: 'a2', amount: 5, system: 'crafting' },
         { type: 'burn', timestamp: 10, actor: 'a1', amount: 3, system: 'crafting' },
       ];
 
       const metrics = observer.compute(state, events);
 
-      expect(metrics.activityBySystem['marketplace']).toBe(1);
+      expect(metrics.activityBySystem['trading']).toBe(1);
       expect(metrics.activityBySystem['crafting']).toBe(2);
     });
   });
@@ -185,29 +185,29 @@ describe('Observer — per-system and per-source/sink tracking', () => {
       const observer = new Observer();
       const state = makeState();
       const events: EconomicEvent[] = [
-        { type: 'mint', timestamp: 10, actor: 'a1', amount: 10, system: 'marketplace' },
-        { type: 'burn', timestamp: 10, actor: 'a1', amount: 5, system: 'marketplace' },
-        { type: 'trade', timestamp: 10, actor: 'a2', amount: 1, system: 'marketplace' },
+        { type: 'mint', timestamp: 10, actor: 'a1', amount: 10, system: 'trading' },
+        { type: 'burn', timestamp: 10, actor: 'a1', amount: 5, system: 'trading' },
+        { type: 'trade', timestamp: 10, actor: 'a2', amount: 1, system: 'trading' },
       ];
 
       const metrics = observer.compute(state, events);
 
       // a1 appears twice but should only be counted once
-      expect(metrics.participantsBySystem['marketplace']).toBe(2);
+      expect(metrics.participantsBySystem['trading']).toBe(2);
     });
 
     it('counts participants in different systems independently', () => {
       const observer = new Observer();
       const state = makeState();
       const events: EconomicEvent[] = [
-        { type: 'mint', timestamp: 10, actor: 'a1', amount: 10, system: 'marketplace' },
+        { type: 'mint', timestamp: 10, actor: 'a1', amount: 10, system: 'trading' },
         { type: 'burn', timestamp: 10, actor: 'a1', amount: 5, system: 'crafting' },
         { type: 'burn', timestamp: 10, actor: 'a2', amount: 3, system: 'crafting' },
       ];
 
       const metrics = observer.compute(state, events);
 
-      expect(metrics.participantsBySystem['marketplace']).toBe(1);
+      expect(metrics.participantsBySystem['trading']).toBe(1);
       expect(metrics.participantsBySystem['crafting']).toBe(2);
     });
 
@@ -215,13 +215,13 @@ describe('Observer — per-system and per-source/sink tracking', () => {
       const observer = new Observer();
       const state = makeState();
       const events: EconomicEvent[] = [
-        { type: 'mint', timestamp: 10, actor: 'a1', amount: 10, system: 'marketplace' },
+        { type: 'mint', timestamp: 10, actor: 'a1', amount: 10, system: 'trading' },
         { type: 'burn', timestamp: 10, actor: 'a1', amount: 5, system: 'crafting' },
       ];
 
       const metrics = observer.compute(state, events);
 
-      expect(metrics.participantsBySystem['marketplace']).toBe(1);
+      expect(metrics.participantsBySystem['trading']).toBe(1);
       expect(metrics.participantsBySystem['crafting']).toBe(1);
     });
   });
@@ -456,7 +456,7 @@ describe('Observer — per-system and per-source/sink tracking', () => {
       const observer = new Observer();
       const state = makeState();
       const events: EconomicEvent[] = [
-        { type: 'mint', timestamp: 10, actor: 'a1', amount: 60, system: 'marketplace', sourceOrSink: 'daily_reward' },
+        { type: 'mint', timestamp: 10, actor: 'a1', amount: 60, system: 'trading', sourceOrSink: 'daily_reward' },
         { type: 'mint', timestamp: 10, actor: 'a2', amount: 40 },
         { type: 'burn', timestamp: 10, actor: 'a1', amount: 10, system: 'crafting' },
         { type: 'burn', timestamp: 10, actor: 'a2', amount: 20, sourceOrSink: 'tax' },
@@ -469,9 +469,9 @@ describe('Observer — per-system and per-source/sink tracking', () => {
       expect(metrics.sinkVolume).toBe(30);
 
       // Per-system: only events with system field
-      expect(metrics.flowBySystem['marketplace']).toBe(60);
+      expect(metrics.flowBySystem['trading']).toBe(60);
       expect(metrics.flowBySystem['crafting']).toBe(-10);
-      expect(metrics.activityBySystem['marketplace']).toBe(1);
+      expect(metrics.activityBySystem['trading']).toBe(1);
       expect(metrics.activityBySystem['crafting']).toBe(1);
 
       // Per-source/sink: only events with sourceOrSink field
@@ -485,16 +485,16 @@ describe('Observer — per-system and per-source/sink tracking', () => {
       const observer = new Observer();
       const state = makeState();
       const events: EconomicEvent[] = [
-        { type: 'trade', timestamp: 10, actor: 'a1', amount: 5, system: 'marketplace' },
+        { type: 'trade', timestamp: 10, actor: 'a1', amount: 5, system: 'trading' },
       ];
 
       const metrics = observer.compute(state, events);
 
       // Trade events contribute to activityBySystem
-      expect(metrics.activityBySystem['marketplace']).toBe(1);
-      expect(metrics.participantsBySystem['marketplace']).toBe(1);
+      expect(metrics.activityBySystem['trading']).toBe(1);
+      expect(metrics.participantsBySystem['trading']).toBe(1);
       // But trade events do NOT add to flowBySystem (only mint/enter/burn/consume do)
-      expect(metrics.flowBySystem['marketplace']).toBeUndefined();
+      expect(metrics.flowBySystem['trading']).toBeUndefined();
     });
   });
 });

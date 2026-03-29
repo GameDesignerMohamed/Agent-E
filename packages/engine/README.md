@@ -86,7 +86,7 @@ Need all 60 principles across 15 categories? See [@agent-e/pro](https://www.npmj
 
 ## Universal by Design
 
-AgentE is not a game tool, a DeFi tool, or a marketplace tool. It's an **economy tool**. The core SDK has zero domain-specific logic.
+AgentE is not tied to any single domain. It's an **economy tool**. The core SDK has zero domain-specific logic.
 
 ### Parameter Registry
 

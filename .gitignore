@@ -13,7 +13,5 @@ Patches/
 v1/
 *.backup
 V1.1_SPEC.md
-packages/adapter-defi/
-packages/adapter-marketplace/
 demo/
 website/

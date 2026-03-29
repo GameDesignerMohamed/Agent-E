@@ -387,7 +387,7 @@ export interface EconomyState {
   marketPrices: Record<string, Record<string, number>>;      // currencyName → { resource → price }
   recentTransactions: EconomicEvent[];
   poolSizes?: Record<string, Record<string, number>>;        // poolName → { currencyName → amount }
-  systems?: string[];                                        // e.g. ['marketplace', 'staking', 'production']
+  systems?: string[];                                        // e.g. ['trading', 'staking', 'production']
   sources?: string[];                                        // named faucet sources
   sinks?: string[];                                          // named sink channels
   customData?: Record<string, unknown>;

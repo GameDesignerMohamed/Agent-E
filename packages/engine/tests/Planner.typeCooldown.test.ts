@@ -113,7 +113,7 @@ describe('Planner — type-level cooldowns', () => {
       key: 'marketCost',
       type: 'cost',
       flowImpact: 'sink',
-      scope: { system: 'marketplace' },
+      scope: { system: 'trading' },
       currentValue: 100,
     });
 
@@ -124,8 +124,8 @@ describe('Planner — type-level cooldowns', () => {
     const plan1 = planner.plan(craftDiag, metrics, makeSimResult(), {}, t, registry);
     planner.recordApplied(plan1!, 100);
 
-    // Marketplace cost should still be plannable (different scope)
-    const marketDiag = makeDiagnosis({ scope: { system: 'marketplace' } });
+    // Trading cost should still be plannable (different scope)
+    const marketDiag = makeDiagnosis({ scope: { system: 'trading' } });
     const metrics2 = emptyMetrics(105);
     metrics2.avgSatisfaction = 70;
     const plan2 = planner.plan(marketDiag, metrics2, makeSimResult(), {}, t, registry);

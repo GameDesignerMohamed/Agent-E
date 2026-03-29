@@ -22,7 +22,7 @@ describe('ParameterRegistry.validate()', () => {
     const registry = new ParameterRegistry();
     registry.registerAll([
       makeParam({ key: 'craftingCost', type: 'cost', flowImpact: 'sink', scope: { system: 'crafting' } }),
-      makeParam({ key: 'marketFee', type: 'fee', flowImpact: 'sink', scope: { system: 'marketplace' } }),
+      makeParam({ key: 'marketFee', type: 'fee', flowImpact: 'sink', scope: { system: 'trading' } }),
       makeParam({ key: 'miningReward', type: 'reward', flowImpact: 'faucet', scope: { system: 'mining' } }),
     ]);
 
@@ -49,7 +49,7 @@ describe('ParameterRegistry.validate()', () => {
     const registry = new ParameterRegistry();
     registry.registerAll([
       makeParam({ key: 'costA', type: 'cost', flowImpact: 'sink', scope: { system: 'crafting' } }),
-      makeParam({ key: 'costB', type: 'cost', flowImpact: 'sink', scope: { system: 'marketplace' } }),
+      makeParam({ key: 'costB', type: 'cost', flowImpact: 'sink', scope: { system: 'trading' } }),
     ]);
 
     const result = registry.validate();

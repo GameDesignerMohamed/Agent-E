@@ -51,7 +51,7 @@ function buildState() {
 
     // currency → { resource → price }
     marketPrices: {
-      // TODO: populate from your marketplace
+      // TODO: populate from your economy
       currency_a: { resource_x: 15, resource_y: 50 },
     },
 

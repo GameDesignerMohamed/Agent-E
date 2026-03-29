@@ -47,7 +47,7 @@ describe('Adapter Migration (V1.5.0)', () => {
     it('passes scope as 3rd argument to adapter.setParam when plan has scope', async () => {
       const state = makeState(0);
       const adapter = makeAdapter(state);
-      const scope = { system: 'marketplace', currency: 'gold' };
+      const scope = { system: 'trading', currency: 'gold' };
 
       const agent = new AgentE({
         adapter,
@@ -56,7 +56,7 @@ describe('Adapter Migration (V1.5.0)', () => {
             key: 'marketFee',
             type: 'fee',
             flowImpact: 'sink',
-            scope: { system: 'marketplace', currency: 'gold' },
+            scope: { system: 'trading', currency: 'gold' },
             currentValue: 5,
           },
         ],
@@ -240,7 +240,7 @@ describe('Adapter Migration (V1.5.0)', () => {
     it('parameters passed in config.parameters are registered in the registry', () => {
       const params: RegisteredParameter[] = [
         { key: 'stakingYield', type: 'yield', flowImpact: 'faucet', scope: { system: 'staking' } },
-        { key: 'tradeFee', type: 'fee', flowImpact: 'sink', scope: { system: 'marketplace' } },
+        { key: 'tradeFee', type: 'fee', flowImpact: 'sink', scope: { system: 'trading' } },
         { key: 'craftCost', type: 'cost', flowImpact: 'sink', scope: { system: 'crafting' } },
       ];
 
@@ -256,7 +256,7 @@ describe('Adapter Migration (V1.5.0)', () => {
       expect(registry.get('stakingYield')!.type).toBe('yield');
       expect(registry.get('stakingYield')!.flowImpact).toBe('faucet');
       expect(registry.get('tradeFee')).toBeDefined();
-      expect(registry.get('tradeFee')!.scope?.system).toBe('marketplace');
+      expect(registry.get('tradeFee')!.scope?.system).toBe('trading');
       expect(registry.get('craftCost')).toBeDefined();
     });
 
