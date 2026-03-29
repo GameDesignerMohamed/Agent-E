@@ -72,17 +72,6 @@ parameters: [
 ],
 ```
 
-### SaaS Platform
-
-```typescript
-currencies: ['credits'],
-systems: ['subscriptions', 'promotions', 'referrals'],
-parameters: [
-  { key: 'subscriptionFee', type: 'fee',    flowImpact: 'friction', scope: { system: 'subscriptions' } },
-  { key: 'promoDiscount',   type: 'cost',   flowImpact: 'faucet',   scope: { system: 'promotions' } },
-  { key: 'referralBonus',   type: 'reward', flowImpact: 'faucet',   scope: { system: 'referrals' } },
-],
-```
 
 **The parameter names are YOURS. AgentE only cares about the `type` and `flowImpact`.**
 
