@@ -1,10 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { PersonaTracker } from '../src/PersonaTracker.js';
 import { Observer } from '../src/Observer.js';
-import { DEFAULT_THRESHOLDS } from '../src/defaults.js';
 import type { EconomyState } from '../src/types.js';
-
-const t = DEFAULT_THRESHOLDS;
 
 // ── Helpers ──
 

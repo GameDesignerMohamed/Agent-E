@@ -232,20 +232,6 @@ describe('PlanExplainer', () => {
 // ── AnomalyInterpreter ──────────────────────────────────────────────────────
 
 describe('AnomalyInterpreter', () => {
-  function feedHistory(interpreter: AnomalyInterpreter, count: number, provider: LLMProvider) {
-    // Feed `count` ticks of stable metrics so rolling stats are established
-    const promises: Promise<unknown>[] = [];
-    for (let i = 0; i < count; i++) {
-      promises.push(
-        interpreter.check(
-          makeMetrics(i, { totalSupply: 10_000, velocity: 0.5, netFlow: 0, totalAgents: 100 }),
-          [],
-        ),
-      );
-    }
-    return Promise.all(promises);
-  }
-
   it('returns null when history is <10 ticks (MIN_HISTORY)', async () => {
     const provider = mockProvider('anomaly interpretation');
     const interpreter = new AnomalyInterpreter(provider);

@@ -1,17 +1,17 @@
 // Stage 1: Observer — translates raw EconomyState into EconomyMetrics
 
 import type { EconomyState, EconomyMetrics, EconomicEvent, TickConfig } from './types.js';
-import { DEFAULT_TICK_CONFIG } from './defaults.js';
 
 export class Observer {
   private previousMetrics: EconomyMetrics | null = null;
   private previousPricesByCurrency: Record<string, Record<string, number>> = {};
   private customMetricFns: Record<string, (state: EconomyState) => number> = {};
   private anchorBaselineByCurrency: Record<string, { currencyPerPeriod: number; itemsPerCurrency: number }> = {};
-  private tickConfig: TickConfig;
 
-  constructor(tickConfig?: Partial<TickConfig>) {
-    this.tickConfig = { ...DEFAULT_TICK_CONFIG, ...tickConfig };
+  // tickConfig accepted for future windowing support (mediumWindow / coarseWindow);
+  // not yet consumed by compute() — suppressing field storage until wired up.
+  constructor(_tickConfig?: Partial<TickConfig>) {
+    void _tickConfig; // acknowledged: will be used for rolling window config in a future patch
   }
 
   registerCustomMetric(name: string, fn: (state: EconomyState) => number): void {
