@@ -1,6 +1,6 @@
 {
   "name": "@agent-e/pro",
-  "version": "2.0.6",
+  "version": "2.0.7",
   "description": "AgentE Pro — full 60-principle autonomous economic balancer. Currently runs in Community mode (5 principles).",
   "license": "BUSL-1.1",
   "repository": {
