@@ -1,6 +1,6 @@
 {
   "name": "@agent-e/engine",
-  "version": "2.0.4",
+  "version": "2.0.5",
   "private": true,
   "description": "Internal engine — bundled by @agent-e/core (Community) and @agent-e/pro.",
   "license": "BUSL-1.1",
